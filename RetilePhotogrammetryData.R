@@ -53,13 +53,16 @@ cat20 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2020_07
   
   
 overlap <- 25
-# Retile 2009 lidar with overlap
+
+# Retile 2009 lidar with overlap, and only keep highest points
   for(i in 1:dim(gridInfo)[1]){
     data <- lidR::lasclipRectangle(cat09, 
                                    xleft = gridInfo$xmin[i] - overlap,
                                    ybottom = gridInfo$ymin[i] - overlap,
                                    xright = gridInfo$xmax[i] + overlap,
                                    ytop = gridInfo$ymax[i] + overlap)
+    data <- lidR::decimate_points(data, algorithm = lidR::highest(res=2))
+    
     if(length(data@data$X)>0){
       lidR::writeLAS(data, file=paste0("D:/BCI Spatial Data/Lidar data/BCI09Tiles/BCI09_",i,".laz"))
     }
