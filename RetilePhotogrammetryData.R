@@ -1,11 +1,11 @@
 # Make lidR catalog entries for each dataset
-cat09 <- lidR::catalog("D:/BCI Spatial Data/Lidar data/lidar tiles 2009/lidar tiles 2009/")
+cat09 <- lidR::catalog("D:/BCI_Spatial/Lidar_Data/lidar tiles 2009/lidar tiles 2009/")
   sp::proj4string(cat09) <- "+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs"
-cat15 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2015_07_30_All_BCI_PointCloud.las")
-cat17 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2017_06_22_AllBCI_EBEE.las")
-cat18 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2018_Todos_BCI_Dipteryx_EBEE_PointCloud.las")
-cat19 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2019_02_25_BCI_50ha.las")
-cat20 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2020_07_31_BCI_Dipteryx_Ebee_DensePts.las")
+cat15 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2015_07_30_All_BCI_PointCloud.las")
+cat17 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2017_06_22_AllBCI_EBEE.las")
+cat18 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2018_Todos_BCI_Dipteryx_EBEE_PointCloud.las")
+cat19 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2019_02_25_BCI_50ha.las")
+cat20 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2020_07_31_BCI_Dipteryx_Ebee_DensePts.las")
 
 
 # Create grid for new .las tiles
@@ -27,7 +27,7 @@ cat20 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2020_07
                          ymax=rep(ymaxs, each=length(xmins)))
   
 # Only keep grid cells that actually overlay BCI, using BCI soils shapefile
-  soils <- rgdal::readOGR("D:/BCI Spatial Data/BCI_Soils/BCI_Soils.shp")
+  soils <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
   soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
   
   gridInfo$Use <- NA
@@ -50,6 +50,8 @@ cat20 <- lidR::catalog("D:/BCI Spatial Data/UAV data/OriginalPointClouds/2020_07
   # Only keep tiles that overlap BCI soils shapefile
   gridInfo <- gridInfo[gridInfo$Use==T,]
   gridInfo$ID <- 1:dim(gridInfo)[1]
+  
+  write.csv(gridInfo, row.names = F, file = "gridInfo.csv")
   
   
 overlap <- 25
