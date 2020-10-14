@@ -4,8 +4,8 @@ cat09 <- lidR::catalog("D:/BCI_Spatial/Lidar_Data/lidar tiles 2009/lidar tiles 2
 cat15 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2015_07_30_All_BCI_PointCloud.las")
 cat17 <- lidR::catalog("C:/Users/cushmank/Desktop/2017_06_22_AllBCI_EBEE.las")
 cat18 <- lidR::catalog("C:/Users/cushmank/Desktop/2018_Todos_BCI_Dipteryx_EBEE_PointCloud.las")
-cat19 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2019_02_25_BCI_50ha.las")
-cat20 <- lidR::catalog("D:/BCI_Spatial/UAV_Data/OriginalPointClouds/2020_07_31_BCI_Dipteryx_Ebee_DensePts.las")
+cat19 <- lidR::catalog("C:/Users/cushmank/Desktop/2019_06_24_BCI_Dipteyx.las")
+cat20 <- lidR::catalog("C:/Users/cushmank/Desktop/2020_07_31_BCI_Dipteryx_Ebee_DensePts.las")
 
 
 #### Create grid for new .las tiles ####
@@ -74,6 +74,8 @@ overlap <- 30
   }
   
 #### Retile 2015 ppc with overlap ####
+
+  # full-resolution
   for(i in 1:dim(gridInfo)[1]){
     data <- lidR::lasclipRectangle(cat15, 
                                    xleft = gridInfo$xmin[i] - overlap,
@@ -86,6 +88,22 @@ overlap <- 30
     
     print(i)
   }
+
+  #decimated
+  for(i in 1:dim(gridInfo)[1]){
+    data <- lidR::lasclipRectangle(cat15, 
+                                   xleft = gridInfo$xmin[i] - overlap,
+                                   ybottom = gridInfo$ymin[i] - overlap,
+                                   xright = gridInfo$xmax[i] + overlap,
+                                   ytop = gridInfo$ymax[i] + overlap)
+    data <- lidR::decimate_points(data, algorithm = lidR::highest(res=0.5))
+    if(length(data@data$X)>0){
+      lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI15Tiles_dec/BCI15d_",i,".laz"))
+    }
+    
+    print(i)
+  }
+
 
 
 #### Retile 2017 ppc with overlap ####
@@ -116,4 +134,79 @@ overlap <- 30
     }
     
     print(i)
+  }
+
+#### Retile 2019 ppc with overlap ####
+for(i in 1:dim(gridInfo)[1]){
+  data <- lidR::lasclipRectangle(cat19, 
+                                 xleft = gridInfo$xmin[i] - overlap,
+                                 ybottom = gridInfo$ymin[i] - overlap,
+                                 xright = gridInfo$xmax[i] + overlap,
+                                 ytop = gridInfo$ymax[i] + overlap)
+  data <- lidR::decimate_points(data, algorithm = lidR::highest(res=0.5))
+  if(length(data@data$X)>0){
+    lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI19Tiles_dec/BCI19_",i,".laz"))
+  }
+  
+  print(i)
+}
+
+#### Retile 2020 ppc with overlap ####
+for(i in 1:dim(gridInfo)[1]){
+  data <- lidR::lasclipRectangle(cat20, 
+                                 xleft = gridInfo$xmin[i] - overlap,
+                                 ybottom = gridInfo$ymin[i] - overlap,
+                                 xright = gridInfo$xmax[i] + overlap,
+                                 ytop = gridInfo$ymax[i] + overlap)
+  data <- lidR::decimate_points(data, algorithm = lidR::highest(res=0.5))
+  if(length(data@data$X)>0){
+    lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI20Tiles_dec/BCI20_",i,".laz"))
+  }
+  
+  print(i)
+}
+
+for(i in 1:dim(gridInfo)[1]){
+  data <- lidR::lasclipRectangle(cat20, 
+                                 xleft = gridInfo$xmin[i] - overlap,
+                                 ybottom = gridInfo$ymin[i] - overlap,
+                                 xright = gridInfo$xmax[i] + overlap,
+                                 ytop = gridInfo$ymax[i] + overlap)
+  if(length(data@data$X)>0){
+    lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI20Tiles/BCI20_",i,".laz"))
+  }
+  
+  print(i)
+}
+
+#### Rename transition matrix files ####
+  # 2015
+  
+    for(i in 1:dim(gridInfo)[1]){
+      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI15Tiles_dec/",
+                                    full.names = T, pattern = paste0("BCI15d_",i,"_REG")),
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI15Tiles_dec/BCI15mat_",i,".txt"))
+    }
+
+  # 2017
+
+    for(i in 1:dim(gridInfo)[1]){
+      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI17Tiles_dec/",
+                                    full.names = T, pattern = paste0("BCI17_",i,"_REG")),
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI17Tiles_dec/BCI17mat_",i,".txt"))
+    }
+#### Remove overlap from aligned point clouds ####
+
+# 2015
+  for(i in 1:dim(gridInfo)[1]){
+    
+    data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI15Tiles_alignedFull/BCI15af_",gridInfo$ID[i],".las")),
+                                 xleft=gridInfo$xmin[i],
+                                 xright=gridInfo$xmax[i],
+                                 ybottom=gridInfo$ymin[i],
+                                 ytop=gridInfo$ymax[i])
+    if(length(data@data$X)>0){
+      lidR::writeLAS(las = data,
+                     file = paste0(path2, "BCI15Tiles_alignedTrim/BCI15at_",gridInfo$ID[i],".laz"))
+    }
   }
