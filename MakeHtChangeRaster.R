@@ -1,45 +1,15 @@
 #### Read grid info data ####
 gridInfo <- read.csv("gridInfo.csv")
 
-#### 2009 to 2015 #### 
-
-# Remove overlap from tiles
-
-#overlap <- 30
-
 path1 <- "D:/BCI_Spatial/Lidar_Data/"
 path2 <- "D:/BCI_Spatial/UAV_Data/TiledPointClouds/"
 
-# 2009
-for(i in 1:dim(gridInfo)[1]){
-  
-  data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path1,"BCI09Tiles/BCI09_",gridInfo$ID[i],".laz")),
-                               xleft=gridInfo$xmin[i],
-                               xright=gridInfo$xmax[i],
-                               ybottom=gridInfo$ymin[i],
-                               ytop=gridInfo$ymax[i])
-  lidR::writeLAS(las = data,
-                 file = paste0(path1,"BCI09Tiles_trim/BCI09at_",gridInfo$ID[i],".laz"))
-}
-
-# 2015
-for(i in 1:dim(gridInfo)[1]){
-  
-  data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI15Tiles_aligned/BCI15a_",gridInfo$ID[i],".las")),
-                               xleft=gridInfo$xmin[i],
-                               xright=gridInfo$xmax[i],
-                               ybottom=gridInfo$ymin[i],
-                               ytop=gridInfo$ymax[i])
-  if(length(data@data$X)>0){
-    lidR::writeLAS(las = data,
-                   file = paste0(path2, "BCI15Tiles_alignedTrim/BCI15at_",gridInfo$ID[i],".laz"))
-  }
-}
+#### 2009 to 2015 #### 
 
 
 # Make canopy height rasters for each year
 
-cat09at <- lidR::catalog(paste0(path1,"lidar tiles 2009/lidar tiles 2009/"))
+cat09at <- lidR::catalog(paste0(path1,"BCI09Tiles_trim/"))
 cat15at <- lidR::catalog(paste0(path2,"BCI15Tiles_alignedTrim/"))
 
 chm09 <- lidR::grid_canopy(cat09at,
@@ -48,7 +18,7 @@ chm09 <- lidR::grid_canopy(cat09at,
 
 chm15 <- lidR::grid_canopy(cat15at,
                            res = 1,
-                           algorithm = lidR::p2r(subcircle=0.5))
+                           algorithm = lidR::p2r(subcircle=0.01))
 
 # Plot canopy height rasters and canopy height change
 colBrks1 <- seq(1,250)
@@ -80,27 +50,6 @@ raster::writeRaster(chm15, file = "CHM_2015_corrected.tif")
 
 #### 2015 to 2017 #### 
 
-# Remove overlap from tiles
-
-#overlap <- 30
-
-path1 <- "D:/BCI_Spatial/Lidar_Data/"
-path2 <- "D:/BCI_Spatial/UAV_Data/TiledPointClouds/"
-
-# 2017
-for(i in 1:dim(gridInfo)[1]){
-  
-  data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI17Tiles_aligned/BCI17a_",gridInfo$ID[i],".las")),
-                               xleft=gridInfo$xmin[i],
-                               xright=gridInfo$xmax[i],
-                               ybottom=gridInfo$ymin[i],
-                               ytop=gridInfo$ymax[i])
-  if(length(data@data$X)>0){
-    lidR::writeLAS(las = data,
-                   file = paste0(path2, "BCI17Tiles_alignedTrim/BCI17at_",gridInfo$ID[i],".laz"))
-  }
-}
-
 # Make canopy height raster for each year
 
 cat17at <- lidR::catalog(paste0(path2,"BCI17Tiles_alignedTrim/"))
@@ -109,7 +58,7 @@ chm15 <- raster::raster("CHM_2015_corrected.tif")
 
 chm17 <- lidR::grid_canopy(cat17at,
                            res = 1,
-                           algorithm = lidR::p2r(subcircle=0.1))
+                           algorithm = lidR::p2r(subcircle=0.01))
 
 # Plot canopy height rasters and canopy height change
 colBrks1 <- seq(1,250)

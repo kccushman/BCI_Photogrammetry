@@ -130,7 +130,20 @@ overlap <- 30
                                    ytop = gridInfo$ymax[i] + overlap)
     data <- lidR::decimate_points(data, algorithm = lidR::highest(res=0.5))
     if(length(data@data$X)>0){
-      lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI18Tiles_dec/BCI18_",i,".laz"))
+      lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI18Tiles_dec/BCI18d_",i,".laz"))
+    }
+    
+    print(i)
+  }
+
+  for(i in 1:dim(gridInfo)[1]){
+    data <- lidR::lasclipRectangle(cat18, 
+                                   xleft = gridInfo$xmin[i] - overlap,
+                                   ybottom = gridInfo$ymin[i] - overlap,
+                                   xright = gridInfo$xmax[i] + overlap,
+                                   ytop = gridInfo$ymax[i] + overlap)
+    if(length(data@data$X)>0){
+      lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI18Tiles/BCI18_",i,".laz"))
     }
     
     print(i)
@@ -192,21 +205,44 @@ for(i in 1:dim(gridInfo)[1]){
 
     for(i in 1:dim(gridInfo)[1]){
       file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI17Tiles_dec/",
-                                    full.names = T, pattern = paste0("BCI17_",i,"_REG")),
+                                    full.names = T, pattern = paste0("BCI17d_",i,"_REG")),
                   to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI17Tiles_dec/BCI17mat_",i,".txt"))
     }
+  
+  # 2018
+  
+  for(i in 1:dim(gridInfo)[1]){
+    file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI18Tiles_dec/",
+                                  full.names = T, pattern = paste0("BCI18d_",i,"_REG")),
+                to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI18Tiles_dec/BCI18mat_",i,".txt"))
+  }
+
 #### Remove overlap from aligned point clouds ####
 
-# 2015
-  for(i in 1:dim(gridInfo)[1]){
-    
-    data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI15Tiles_alignedFull/BCI15af_",gridInfo$ID[i],".las")),
-                                 xleft=gridInfo$xmin[i],
-                                 xright=gridInfo$xmax[i],
-                                 ybottom=gridInfo$ymin[i],
-                                 ytop=gridInfo$ymax[i])
-    if(length(data@data$X)>0){
-      lidR::writeLAS(las = data,
-                     file = paste0(path2, "BCI15Tiles_alignedTrim/BCI15at_",gridInfo$ID[i],".laz"))
+  # 2015
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI15Tiles_alignedFull/BCI15af_",gridInfo$ID[i],".las")),
+                                   xleft=gridInfo$xmin[i],
+                                   xright=gridInfo$xmax[i],
+                                   ybottom=gridInfo$ymin[i],
+                                   ytop=gridInfo$ymax[i])
+      if(length(data@data$X)>0){
+        lidR::writeLAS(las = data,
+                       file = paste0(path2, "BCI15Tiles_alignedTrim/BCI15at_",gridInfo$ID[i],".laz"))
+      }
     }
-  }
+
+  # 2017
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI17Tiles_alignedFull/BCI17af_",gridInfo$ID[i],".las")),
+                                   xleft=gridInfo$xmin[i],
+                                   xright=gridInfo$xmax[i],
+                                   ybottom=gridInfo$ymin[i],
+                                   ytop=gridInfo$ymax[i])
+      if(length(data@data$X)>0){
+        lidR::writeLAS(las = data,
+                       file = paste0(path2, "BCI17Tiles_alignedTrim/BCI17at_",gridInfo$ID[i],".laz"))
+      }
+    }
