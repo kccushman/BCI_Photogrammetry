@@ -1,5 +1,5 @@
 #### Read grid info and soils data ####
-gridInfo <- read.csv("gridInfo.csv")
+gridInfo <- read.csv("gridInfo_QAQC.csv")
 
 path1 <- "D:/BCI_Spatial/Lidar_Data/"
 path2 <- "D:/BCI_Spatial/UAV_Data/TiledPointClouds/"
@@ -13,7 +13,7 @@ soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_def
   # Make variables to store two QAQC metrics
 
     # A. Proportion of pixels (1 x 1 m resolution) with no data
-    # B. Median height range within single pixels (0.1 x 0.1 m resolution)
+    # B. Mean height range within single pixels (0.1 x 0.1 m resolution)
 
     gridInfo$QAQC15_A <- NA
     gridInfo$QAQC15_B <- NA
@@ -97,7 +97,7 @@ soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_def
     # Make variables to store two QAQC metrics
     
     # A. Proportion of pixels (1 x 1 m resolution) with no data
-    # B. Median height range within single pixels (0.1 x 0.1 m resolution)
+    # B. Mean height range within single pixels (0.1 x 0.1 m resolution)
     
     gridInfo$QAQC17_A <- NA
     gridInfo$QAQC17_B <- NA
@@ -175,3 +175,86 @@ soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_def
       }
     }
  
+#### 2018 ####
+    
+    # Make variables to store two QAQC metrics
+    
+    # A. Proportion of pixels (1 x 1 m resolution) with no data
+    # B. Mean height range within single pixels (0.1 x 0.1 m resolution)
+    
+    gridInfo$QAQC18_A <- NA
+    gridInfo$QAQC18_B <- NA
+    
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::readLAS(paste0(path2, "BCI18Tiles_alignedTrim/BCI18at_",gridInfo$ID[i],".laz"))
+      
+      chmA <- lidR::grid_canopy(data,
+                                res = 1,
+                                algorithm = lidR::p2r(subcircle=0.01))
+      
+      gridInfo$QAQC18_A[i] <-  length(chmA@data@values[is.na(chmA@data@values)])/length(chmA@data@values)
+      
+      chmB <- lidR::grid_metrics(data,
+                                 res = 0.2,
+                                 func = ~max(Z)-min(Z))
+      
+      gridInfo$QAQC18_B[i] <- mean(chmB@data@values,na.rm=T)
+      
+    }
+    
+    plot(QAQC18_B~QAQC18_A, data = gridInfo,
+         xlab="Proportion of empty 1 m pixels",
+         ylab="Mean height range in 0.2 m pixels",
+         pch=19,
+         col = adjustcolor("black",alpha.f = 0.5))
+    
+    gridInfo$Use18 <- ifelse(gridInfo$QAQC18_A < 0.035 & gridInfo$QAQC18_B < 1.5,
+                             T,
+                             F)
+    
+    write.csv(gridInfo, "gridInfo_QAQC.csv", row.names = F)
+    
+    # Plot masked tiles on canopy height change raster
+    
+    chm17 <- raster::raster("CHM_2017_corrected.tif")
+    chm18 <- raster::raster("CHM_2018_corrected.tif")
+    
+    dHeight17to18 <- chm18-chm17
+    
+    colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
+    colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
+                                  "white",
+                                  "aliceblue","cornflowerblue","darkblue"))
+    
+    raster::plot(dHeight17to18,
+                 col = colPal2(length(colBrks2)-1),
+                 breaks = colBrks2,
+                 main = "Corrected 2017 to 2018 height change")
+    
+    for(i in 1:dim(gridInfo)[1]){
+      if(gridInfo$Use18[i]==F | gridInfo$Use17[i]==F){
+        
+        x1 <- gridInfo[i, "xmin"] 
+        x2 <- gridInfo[i, "xmax"]
+        y1 <- gridInfo[i, "ymin"] 
+        y2 <- gridInfo[i, "ymax"] 
+        
+        raster::plot(raster::extent(c(x1,x2,y1,y2)), add=T, col="red", lwd=2)
+      }
+    }
+    
+    # Make reference folder based on QAQC metrics
+    
+    for(i in 1:dim(gridInfo)[1]){
+      if(gridInfo$Use18[i]==T){
+        data <- lidR::readLAS(paste0(path2, "BCI18Tiles_aligned/BCI18a_",gridInfo$ID[i],".las"))
+        lidR::writeLAS(data, paste0(path2, "BCI18Tiles_ref/BCI18r_",gridInfo$ID[i],".laz"))
+      }
+      
+      if(gridInfo$Use18[i]==F){
+        data <- lidR::readLAS(paste0(path2,"BCI17Tiles_ref/BCI17r_",gridInfo$ID[i],".las"))
+        lidR::writeLAS(data, paste0(path2, "BCI18Tiles_ref/BCI18r_",gridInfo$ID[i],".laz"))
+      }
+    }
+    

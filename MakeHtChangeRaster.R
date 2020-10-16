@@ -85,60 +85,39 @@ raster::plot(dHeight15to17,
 
 raster::writeRaster(chm17, file = "CHM_2017_corrected.tif")
 
-#### QAQC #####
+#### 2017 to 2018 #### 
 
-# Look for "holes" in each year
-soils <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
-soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
+# Make canopy height raster for each year
 
-# 2017
-gridInfo$QAQC17 <- NA
+cat18at <- lidR::catalog(paste0(path2,"BCI18Tiles_alignedTrim/"))
 
-chm17 <- lidR::grid_canopy(cat17at,
-                           res = 0.5,
+chm17 <- raster::raster("CHM_2017_corrected.tif")
+
+chm18 <- lidR::grid_canopy(cat18at,
+                           res = 1,
                            algorithm = lidR::p2r(subcircle=0.01))
 
-for(i in 1:dim(gridInfo)[1]){
-  x1 <- gridInfo[i, "xmin"] 
-  x2 <- gridInfo[i, "xmax"]
-  y1 <- gridInfo[i, "ymin"] 
-  y2 <- gridInfo[i, "ymax"] 
-  
-  cropi <- raster::crop(dHeight15to17,
-                        raster::extent(c(x1,x2,y1,y2)))
-  
-  gridInfo$QAQC1517[i] <-  length(cropi@data@values[is.na(cropi@data@values)])/length(cropi@data@values)
-}
+# Plot canopy height rasters and canopy height change
+colBrks1 <- seq(1,250)
+raster::plot(chm17,
+             main="Canopy height 2017",
+             col = terrain.colors(length(colBrks1), rev=T),
+             breaks = colBrks1)
+raster::plot(chm18,
+             main="Canopy height 2018",
+             col = terrain.colors(length(colBrks1), rev=T),
+             breaks = colBrks1)
 
+dHeight17to18 <- chm18-chm17
 
+colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
+colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
+                              "white",
+                              "aliceblue","cornflowerblue","darkblue"))
 
-gridInfo$QAQC1517_mean <- NA
-gridInfo$QAQC1517_median <- NA
+raster::plot(dHeight17to18,
+             col = colPal2(length(colBrks2)-1),
+             breaks = colBrks2,
+             main = "Corrected 2017 to 2018 height change")
 
-for(i in 1:dim(gridInfo)[1]){
- x1 <- gridInfo[i, "xmin"] 
- x2 <- gridInfo[i, "xmax"]
- y1 <- gridInfo[i, "ymin"] 
- y2 <- gridInfo[i, "ymax"] 
- 
- cropi <- raster::crop(dHeight15to17,
-                       raster::extent(c(x1,x2,y1,y2)))
- 
- gridInfo$QAQC1517_mean[i] <- mean(abs(cropi@data@values), na.rm = T)
- gridInfo$QAQC1517_median[i] <- median(abs(cropi@data@values), na.rm = T)
-}
-
-hist(gridInfo$QAQC1517_mean,
-     breaks = seq(0,100,0.5),
-     xlim=c(0,15),
-     col="black", border="white")
-hist(gridInfo$QAQC1517_median,
-     breaks = seq(0,100,0.5),
-     xlim=c(0,15),
-     col="black", border="white")
-
-head(gridInfo[gridInfo$QAQC1517_mean>4 & gridInfo$QAQC1517_mean<8,],100)
-
-gridInfo[gridInfo$xmin<628039.3  & gridInfo$xmax>628039.3  & gridInfo$ymin<1011579  & gridInfo$ymax>1011579 ,]
-
-
+raster::writeRaster(chm18, file = "CHM_2018_corrected.tif")

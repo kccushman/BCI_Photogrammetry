@@ -7,6 +7,8 @@ cat18 <- lidR::catalog("C:/Users/cushmank/Desktop/2018_Todos_BCI_Dipteryx_EBEE_P
 cat19 <- lidR::catalog("C:/Users/cushmank/Desktop/2019_06_24_BCI_Dipteyx.las")
 cat20 <- lidR::catalog("C:/Users/cushmank/Desktop/2020_07_31_BCI_Dipteryx_Ebee_DensePts.las")
 
+path1 <- "D:/BCI_Spatial/Lidar_Data/"
+path2 <- "D:/BCI_Spatial/UAV_Data/TiledPointClouds/"
 
 #### Create grid for new .las tiles ####
   
@@ -164,6 +166,18 @@ for(i in 1:dim(gridInfo)[1]){
   print(i)
 }
 
+for(i in 1:dim(gridInfo)[1]){
+  data <- lidR::lasclipRectangle(cat19, 
+                                 xleft = gridInfo$xmin[i] - overlap,
+                                 ybottom = gridInfo$ymin[i] - overlap,
+                                 xright = gridInfo$xmax[i] + overlap,
+                                 ytop = gridInfo$ymax[i] + overlap)
+  if(length(data@data$X)>0){
+    lidR::writeLAS(data, file=paste0("C:/Users/cushmank/Desktop/BCI19_Tiles/BCI19_",i,".laz"))
+  }
+  
+  print(i)
+}
 #### Retile 2020 ppc with overlap ####
 for(i in 1:dim(gridInfo)[1]){
   data <- lidR::lasclipRectangle(cat20, 
@@ -217,6 +231,14 @@ for(i in 1:dim(gridInfo)[1]){
                 to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI18Tiles_dec/BCI18mat_",i,".txt"))
   }
 
+  # 2019
+    
+    for(i in 1:dim(gridInfo)[1]){
+      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_dec/",
+                                    full.names = T, pattern = paste0("BCI19d_",i,"_REG")),
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_dec/BCI19mat_",i,".txt"))
+    }
+
 #### Remove overlap from aligned point clouds ####
 
   # 2015
@@ -246,3 +268,18 @@ for(i in 1:dim(gridInfo)[1]){
                        file = paste0(path2, "BCI17Tiles_alignedTrim/BCI17at_",gridInfo$ID[i],".laz"))
       }
     }
+
+  # 2018
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI18Tiles_alignedFull/BCI18af_",gridInfo$ID[i],".las")),
+                                   xleft=gridInfo$xmin[i],
+                                   xright=gridInfo$xmax[i],
+                                   ybottom=gridInfo$ymin[i],
+                                   ytop=gridInfo$ymax[i])
+      if(length(data@data$X)>0){
+        lidR::writeLAS(las = data,
+                       file = paste0(path2, "BCI18Tiles_alignedTrim/BCI18at_",gridInfo$ID[i],".laz"))
+      }
+    }
+
