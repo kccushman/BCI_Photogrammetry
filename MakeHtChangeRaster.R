@@ -121,3 +121,77 @@ raster::plot(dHeight17to18,
              main = "Corrected 2017 to 2018 height change")
 
 raster::writeRaster(chm18, file = "CHM_2018_corrected.tif")
+
+#### 2018 to 2019 #### 
+
+# Make canopy height raster for each year
+
+cat19at <- lidR::catalog(paste0(path2,"BCI19Tiles_alignedTrim/"))
+
+chm18 <- raster::raster("CHM_2018_corrected.tif")
+
+chm19 <- lidR::grid_canopy(cat19at,
+                           res = 1,
+                           algorithm = lidR::p2r(subcircle=0.01))
+
+# Plot canopy height rasters and canopy height change
+colBrks1 <- seq(1,250)
+raster::plot(chm18,
+             main="Canopy height 2018",
+             col = terrain.colors(length(colBrks1), rev=T),
+             breaks = colBrks1)
+raster::plot(chm19,
+             main="Canopy height 2019",
+             col = terrain.colors(length(colBrks1), rev=T),
+             breaks = colBrks1)
+
+dHeight18to19 <- chm19-chm18
+
+colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
+colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
+                              "white",
+                              "aliceblue","cornflowerblue","darkblue"))
+
+raster::plot(dHeight18to19,
+             col = colPal2(length(colBrks2)-1),
+             breaks = colBrks2,
+             main = "Corrected 2018 to 2019 height change")
+
+raster::writeRaster(chm19, file = "CHM_2019_corrected.tif")
+
+#### 2019 to 2020 #### 
+
+# Make canopy height raster for each year
+
+cat20at <- lidR::catalog(paste0(path2,"BCI20Tiles_alignedTrim/"))
+
+chm19 <- raster::raster("CHM_2019_corrected.tif")
+
+chm20 <- lidR::grid_canopy(cat20at,
+                           res = 1,
+                           algorithm = lidR::p2r(subcircle=0.01))
+
+# Plot canopy height rasters and canopy height change
+colBrks1 <- seq(1,250)
+raster::plot(chm19,
+             main="Canopy height 2019",
+             col = terrain.colors(length(colBrks1), rev=T),
+             breaks = colBrks1)
+raster::plot(chm20,
+             main="Canopy height 2020",
+             col = terrain.colors(length(colBrks1), rev=T),
+             breaks = colBrks1)
+
+dHeight19to20 <- chm20-chm19
+
+colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
+colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
+                              "white",
+                              "aliceblue","cornflowerblue","darkblue"))
+
+raster::plot(dHeight19to20,
+             col = colPal2(length(colBrks2)-1),
+             breaks = colBrks2,
+             main = "Corrected 2019 to 2020 height change")
+
+raster::writeRaster(chm20, file = "CHM_2020_corrected.tif")

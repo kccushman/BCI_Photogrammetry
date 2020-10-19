@@ -239,6 +239,14 @@ for(i in 1:dim(gridInfo)[1]){
                   to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_dec/BCI19mat_",i,".txt"))
     }
 
+  # 2019
+  
+    for(i in 1:dim(gridInfo)[1]){
+      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_dec/",
+                                    full.names = T, pattern = paste0("BCI20d_",i,"_REG")),
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_dec/BCI20mat_",i,".txt"))
+    }
+
 #### Remove overlap from aligned point clouds ####
 
   # 2015
@@ -283,3 +291,30 @@ for(i in 1:dim(gridInfo)[1]){
       }
     }
 
+  # 2019
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI19Tiles_alignedFull/BCI19af_",gridInfo$ID[i],".las")),
+                                   xleft=gridInfo$xmin[i],
+                                   xright=gridInfo$xmax[i],
+                                   ybottom=gridInfo$ymin[i],
+                                   ytop=gridInfo$ymax[i])
+      if(length(data@data$X)>0){
+        lidR::writeLAS(las = data,
+                       file = paste0(path2, "BCI19Tiles_alignedTrim/BCI19at_",gridInfo$ID[i],".laz"))
+      }
+    }
+
+  # 2020
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI20Tiles_alignedFull/BCI20af_",gridInfo$ID[i],".las")),
+                                   xleft=gridInfo$xmin[i],
+                                   xright=gridInfo$xmax[i],
+                                   ybottom=gridInfo$ymin[i],
+                                   ytop=gridInfo$ymax[i])
+      if(length(data@data$X)>0){
+        lidR::writeLAS(las = data,
+                       file = paste0(path2, "BCI20Tiles_alignedTrim/BCI20at_",gridInfo$ID[i],".laz"))
+      }
+    }
