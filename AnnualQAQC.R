@@ -383,20 +383,20 @@ soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_def
     
     # Plot masked tiles on canopy height change raster
     
-    chm18 <- raster::raster("CHM_2018_corrected.tif")
+    chm19 <- raster::raster("CHM_2019_corrected.tif")
     chm20 <- raster::raster("CHM_2020_corrected.tif")
     
-    dHeight18to20 <- chm20-chm18
+    dHeight19to20 <- chm20-chm19
     
     colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
     colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
                                   "white",
                                   "aliceblue","cornflowerblue","darkblue"))
     
-    raster::plot(dHeight18to20,
+    raster::plot(dHeight19to20,
                  col = colPal2(length(colBrks2)-1),
                  breaks = colBrks2,
-                 main = "Corrected 2018 to 2020 height change")
+                 main = "Corrected 2019 to 2020 height change")
     
     for(i in 1:dim(gridInfo)[1]){
       if(gridInfo$Use20[i]==F | gridInfo$Use18[i]==F){
@@ -423,4 +423,10 @@ soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_def
         lidR::writeLAS(data, paste0(path2, "BCI20Tiles_ref/BCI20r_",gridInfo$ID[i],".laz"))
       }
     }
+    
+#### Find tile ID from coordinates ####
+    
+    coords <- locator(1)
+    
+    gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
     
