@@ -27,7 +27,10 @@
  
 #### PROCESS DATA ####
   
-# Remove raster areas outside soil polygon
+# Remove raster areas outside soil polygon with 25 m buffer
+  soilsAll <- sp::aggregate(soils,dissolve=T)
+  soilsBuff <- raster::buffer(soils, width=-25, dissolve = F)
+  
   dsm09 <- raster::mask(dsm09, soils)
   dsm15 <- raster::mask(dsm15, soils)  
   dsm17 <- raster::mask(dsm17, soils)  
@@ -84,55 +87,105 @@
   chm18 <- raster::crop(chm18, raster::extent(soils))
   chm19 <- raster::crop(chm19, raster::extent(soils))
   chm20 <- raster::crop(chm20, raster::extent(soils))
+
+# Mask weird really high values in 2015 -- REVISIT THIS eventually
+  chm15@data@values[chm15@data@values>200 & !is.na(chm15@data@values)] <- NA
+    
+# Save
+  raster::writeRaster(chm09, "CHM_2009_QAQC.tif")
+  raster::writeRaster(chm15, "CHM_2015_QAQC.tif")
+  raster::writeRaster(chm17, "CHM_2017_QAQC.tif")
+  raster::writeRaster(chm18, "CHM_2018_QAQC.tif")
+  raster::writeRaster(chm19, "CHM_2019_QAQC.tif")
+  raster::writeRaster(chm20, "CHM_2020_QAQC.tif")
   
 #### MAKE GRAPHS ####
   
-  hist(dsm09, breaks=seq(-200,200,1),
-       xlim=c(-5,75),
-       main = "Canopy height distribution 2009")
-  hist(dsm15, breaks=seq(-200,200,1),
-       xlim=c(-5,75),
-       main = "Canopy height distribution 2015")
-  hist(dsm17, breaks=seq(-200,200,1),
-       xlim=c(-5,75),
-       main = "Canopy height distribution 2017")
-  hist(dsm18, breaks=seq(-200,200,1),
-       xlim=c(-5,75),
-       main = "Canopy height distribution 2018")
-  hist(dsm19, breaks=seq(-200,200,1),
-       xlim=c(-5,75),
-       main = "Canopy height distribution 2019")
-  hist(dsm20, breaks=seq(-200,200,1),
-       xlim=c(-5,75),
-       main = "Canopy height distribution 2020")
+  #USE A BUFFER AROUND EDGES
+  buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+  buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
   
+  chm09 <- raster::mask(chm09, buffer)
+  chm15 <- raster::mask(chm15, buffer)
+  chm17 <- raster::mask(chm17, buffer)
+  chm18 <- raster::mask(chm18, buffer)
+  chm19 <- raster::mask(chm19, buffer)
+  chm20 <- raster::mask(chm20, buffer)
   
+  dens09 <- density(chm09@data@values, na.rm=T)
+  dens15 <- density(chm15@data@values, na.rm=T)
+  dens17 <- density(chm17@data@values, na.rm=T)
+  dens18 <- density(chm18@data@values, na.rm=T)
+  dens19 <- density(chm19@data@values, na.rm=T)
+  dens20 <- density(chm20@data@values, na.rm=T)
+  
+  plot(dens09, col="black", lwd=2,
+       main="Canopy height distribution",
+       xlab="Canopy height (m)",
+       ylim=c(0,0.01),
+       xlim=c(-1,10))
+  lines(dens15, col="#99d8c9", lwd=2)
+  lines(dens17, col="#66c2a4", lwd=2)
+  lines(dens18, col="#41ae76", lwd=2)
+  lines(dens19, col="#238b45", lwd=2)
+  lines(dens20, col="#005824", lwd=2)
+  
+  legend(x=35,y=0.05,
+         c("2009","2015","2017","2018","2019","2020"),
+         col=c("black","#99d8c9","#66c2a4","#41ae76","#238b45","#005824"),
+         lwd=2,
+         bty="n")
+  
+
 #### BINARY LOW CANOPY ####
   
+  htThresh <-5
+  
   low09 <- chm09
-  low09@data@values[low09@data@values<=5] <- 1
-  low09@data@values[low09@data@values>5] <- 0
+  low09@data@values[low09@data@values<=htThresh & !is.na(low09@data@values)] <- 1
+  low09@data@values[low09@data@values>htThresh & !is.na(low09@data@values)] <- 0
   
   low15 <- chm15
-  low15@data@values[low15@data@values<=5] <- 1
-  low15@data@values[low15@data@values>5] <- 0
+  low15@data@values[low15@data@values<=htThresh & !is.na(low15@data@values)] <- 1
+  low15@data@values[low15@data@values>htThresh & !is.na(low15@data@values)] <- 0
   
   low17 <- chm17
-  low17@data@values[low17@data@values<=5] <- 1
-  low17@data@values[low17@data@values>5] <- 0
+  low17@data@values[low17@data@values<=htThresh & !is.na(low17@data@values)] <- 1
+  low17@data@values[low17@data@values>htThresh & !is.na(low17@data@values)] <- 0
   
   low18 <- chm18
-  low18@data@values[low18@data@values<=5] <- 1
-  low18@data@values[low18@data@values>5] <- 0
+  low18@data@values[low18@data@values<=htThresh & !is.na(low18@data@values)] <- 1
+  low18@data@values[low18@data@values>htThresh & !is.na(low18@data@values)] <- 0
   
   low19 <- chm19
-  low19@data@values[low19@data@values<=5] <- 1
-  low19@data@values[low19@data@values>5] <- 0
+  low19@data@values[low19@data@values<=htThresh & !is.na(low19@data@values)] <- 1
+  low19@data@values[low19@data@values>htThresh & !is.na(low19@data@values)] <- 0
   
   low20 <- chm20
-  low20@data@values[low20@data@values<=5] <- 1
-  low20@data@values[low20@data@values>5] <- 0
+  low20@data@values[low20@data@values<=htThresh & !is.na(low20@data@values)] <- 1
+  low20@data@values[low20@data@values>htThresh & !is.na(low20@data@values)] <- 0
   
+  # Estimate maximum age of low canopy areas in 2020
+  low20age <- low20
+  low20age@data@values[low20@data@values==1 & !is.na(low20@data@values)] <- 0
+  low20age@data@values[low20@data@values==1 & low19@data@values==0 & !is.na(low20@data@values) & !is.na(low19@data@values)] <- 1
+  low20age@data@values[low20@data@values==1 & low19@data@values==1 & 
+                         low18@data@values==0 & !is.na(low20@data@values) & !is.na(low18@data@values)] <- 2
+  low20age@data@values[low20@data@values==1 & low19@data@values==1 & low18@data@values==1 & 
+                         low17@data@values==0 & !is.na(low20@data@values) & !is.na(low17@data@values)] <- 3
+  low20age@data@values[low20@data@values==1 & low19@data@values==1 & low18@data@values==1 & low17@data@values==1 & 
+                         low15@data@values==0 & !is.na(low20@data@values) & !is.na(low15@data@values)] <- 5
+  low20age@data@values[low20@data@values==1 & low19@data@values==1 & low18@data@values==1 & low17@data@values==1 & low15@data@values==1 & 
+                         low09@data@values==0 & !is.na(low20@data@values) & !is.na(low09@data@values)] <- 11
   
+  low20NA <- low20
+  low20NA@data@values[low20@data@values==1 & !is.na(low20@data@values)] <- 0
+  low20NA@data@values[low20@data@values==1 & low20age@data@values == 0 & !is.na(low20@data@values)] <- 1
+  
+  100*length(low20age@data@values[low20age@data@values==1 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 & !is.na(low20age@data@values)])
+  100*length(low20age@data@values[low20age@data@values==2 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
+  100*length(low20age@data@values[low20age@data@values==3 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
+  100*length(low20age@data@values[low20age@data@values==5 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
+  100*length(low20age@data@values[low20age@data@values==11 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
   
 #### BINARY NEW GAPS ####  
