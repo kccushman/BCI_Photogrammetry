@@ -7,17 +7,25 @@
 #### READ DATA ####
 
 # Read in canopy height rasters:
-  dsm09 <- raster::raster("CHM_2009.tif")
-  dsm15 <- raster::raster("CHM_2015_corrected.tif")
-  dsm17 <- raster::raster("CHM_2017_corrected.tif")
-  dsm18 <- raster::raster("CHM_2018_corrected.tif")
-  dsm19 <- raster::raster("CHM_2019_corrected.tif")
-  dsm20 <- raster::raster("CHM_2020_corrected.tif")
+  dsm09 <- raster::raster("DSM_2009.tif")
+  dsm15 <- raster::raster("DSM_2015_corrected.tif")
+  dsm17 <- raster::raster("DSM_2017_corrected.tif")
+  dsm18 <- raster::raster("DSM_2018_corrected.tif")
+  dsm19 <- raster::raster("DSM_2019_corrected.tif")
+  dsm20 <- raster::raster("DSM_2020_corrected.tif")
 
 # Read in soil polygon layers
   soils <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
   soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
   
+# Read in forest age
+  age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+  ageUse <- age[!(age$TYPE=="Clearings"),]
+
+# Read polygon buffer 25 m inland from lake
+  buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+  buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")  
+    
 # Read in BCI DEM
   dem <- raster::raster("D:/BCI_Spatial/LidarDEM_BCI.tif")
   dem <- raster::resample(dem,dsm15)
@@ -27,16 +35,29 @@
  
 #### PROCESS DATA ####
   
-# Remove raster areas outside soil polygon with 25 m buffer
-  soilsAll <- sp::aggregate(soils,dissolve=T)
-  soilsBuff <- raster::buffer(soils, width=-25, dissolve = F)
-  
-  dsm09 <- raster::mask(dsm09, soils)
-  dsm15 <- raster::mask(dsm15, soils)  
-  dsm17 <- raster::mask(dsm17, soils)  
-  dsm18 <- raster::mask(dsm18, soils)  
-  dsm19 <- raster::mask(dsm19, soils)  
-  dsm20 <- raster::mask(dsm20, soils)
+# Remove raster areas outside BCI perimeter (exclude within 25 m of lake)
+  dsm09 <- raster::mask(dsm09, buffer)
+  dsm15 <- raster::mask(dsm15, buffer)  
+  dsm17 <- raster::mask(dsm17, buffer)  
+  dsm18 <- raster::mask(dsm18, buffer)  
+  dsm19 <- raster::mask(dsm19, buffer)  
+  dsm20 <- raster::mask(dsm20, buffer)
+
+# Remove raster areas in clearings
+  dsm09 <- raster::mask(dsm09, ageUse)
+  dsm15 <- raster::mask(dsm15, ageUse)  
+  dsm17 <- raster::mask(dsm17, ageUse)  
+  dsm18 <- raster::mask(dsm18, ageUse)  
+  dsm19 <- raster::mask(dsm19, ageUse)  
+  dsm20 <- raster::mask(dsm20, ageUse)
+
+# Crop to ensure each raster has same extent
+  dsm09 <- raster::crop(dsm09, extent(ageUse))
+  dsm15 <- raster::crop(dsm15, extent(ageUse))  
+  dsm17 <- raster::crop(dsm17, extent(ageUse))  
+  dsm18 <- raster::crop(dsm18, extent(ageUse))  
+  dsm19 <- raster::crop(dsm19, extent(ageUse))  
+  dsm20 <- raster::crop(dsm20, extent(ageUse))    
   
 # Subtract ground elevation
   chm09 <- dsm09-dem
@@ -81,37 +102,23 @@
   }
 
 # Make sure all years have the same extent
-  chm09 <- raster::crop(chm09, raster::extent(soils))
-  chm15 <- raster::crop(chm15, raster::extent(soils))
-  chm17 <- raster::crop(chm17, raster::extent(soils))
-  chm18 <- raster::crop(chm18, raster::extent(soils))
-  chm19 <- raster::crop(chm19, raster::extent(soils))
-  chm20 <- raster::crop(chm20, raster::extent(soils))
-
-# Mask weird really high values in 2015 -- REVISIT THIS eventually
-  chm15@data@values[chm15@data@values>200 & !is.na(chm15@data@values)] <- NA
+  chm09 <- raster::crop(chm09, raster::extent(ageUse))
+  chm15 <- raster::crop(chm15, raster::extent(chm09))
+  chm17 <- raster::crop(chm17, raster::extent(chm09))
+  chm18 <- raster::crop(chm18, raster::extent(chm09))
+  chm19 <- raster::crop(chm19, raster::extent(chm09))
+  chm20 <- raster::crop(chm20, raster::extent(chm09))
     
-# Save
-  raster::writeRaster(chm09, "CHM_2009_QAQC.tif")
-  raster::writeRaster(chm15, "CHM_2015_QAQC.tif")
-  raster::writeRaster(chm17, "CHM_2017_QAQC.tif")
-  raster::writeRaster(chm18, "CHM_2018_QAQC.tif")
-  raster::writeRaster(chm19, "CHM_2019_QAQC.tif")
-  raster::writeRaster(chm20, "CHM_2020_QAQC.tif")
+# # Save
+#   raster::writeRaster(chm09, "CHM_2009_QAQC.tif", overwrite=T)
+#   raster::writeRaster(chm15, "CHM_2015_QAQC.tif", overwrite=T)
+#   raster::writeRaster(chm17, "CHM_2017_QAQC.tif", overwrite=T)
+#   raster::writeRaster(chm18, "CHM_2018_QAQC.tif", overwrite=T)
+#   raster::writeRaster(chm19, "CHM_2019_QAQC.tif", overwrite=T)
+#   raster::writeRaster(chm20, "CHM_2020_QAQC.tif", overwrite=T)
   
 #### MAKE GRAPHS ####
-  
-  #USE A BUFFER AROUND EDGES
-  buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
-  buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
-  
-  chm09 <- raster::mask(chm09, buffer)
-  chm15 <- raster::mask(chm15, buffer)
-  chm17 <- raster::mask(chm17, buffer)
-  chm18 <- raster::mask(chm18, buffer)
-  chm19 <- raster::mask(chm19, buffer)
-  chm20 <- raster::mask(chm20, buffer)
-  
+
   dens09 <- density(chm09@data@values, na.rm=T)
   dens15 <- density(chm15@data@values, na.rm=T)
   dens17 <- density(chm17@data@values, na.rm=T)
@@ -122,8 +129,8 @@
   plot(dens09, col="black", lwd=2,
        main="Canopy height distribution",
        xlab="Canopy height (m)",
-       ylim=c(0,0.01),
-       xlim=c(-1,10))
+       ylim=c(0,0.05),
+       xlim=c(-1,50))
   lines(dens15, col="#99d8c9", lwd=2)
   lines(dens17, col="#66c2a4", lwd=2)
   lines(dens18, col="#41ae76", lwd=2)
@@ -135,6 +142,18 @@
          col=c("black","#99d8c9","#66c2a4","#41ae76","#238b45","#005824"),
          lwd=2,
          bty="n")
+  
+  plot(dens09, col="black", lwd=2,
+       main="Canopy height distribution",
+       xlab="Canopy height (m)",
+       ylim=c(0,0.03),
+       xlim=c(-1,15))
+  lines(dens15, col="#99d8c9", lwd=2)
+  lines(dens17, col="#66c2a4", lwd=2)
+  lines(dens18, col="#41ae76", lwd=2)
+  lines(dens19, col="#238b45", lwd=2)
+  lines(dens20, col="#005824", lwd=2)
+  
   
 
 #### BINARY LOW CANOPY ####

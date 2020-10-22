@@ -9,12 +9,20 @@ path2 <- "D:/BCI_Spatial/UAV_Data/TiledPointClouds/"
 
 # Make canopy height rasters for each year
 
+cat09 <- lidR::catalog("D:/BCI_Spatial/Lidar_Data/lidar tiles 2009/lidar tiles 2009")
+
 cat09at <- lidR::catalog(paste0(path1,"BCI09Tiles_trim/"))
 cat15at <- lidR::catalog(paste0(path2,"BCI15Tiles_alignedTrim/"))
 
 chm09 <- lidR::grid_canopy(cat09at,
                            res = 1,
                            algorithm = lidR::p2r(subcircle=0.5))
+
+chm09 <- lidR::grid_canopy(cat09,
+                           res = 1,
+                           algorithm = lidR::p2r(subcircle=0.01))
+
+chm09 <- raster::crop(chm09, soils)
 
 chm15 <- lidR::grid_canopy(cat15at,
                            res = 1,
@@ -54,9 +62,15 @@ raster::writeRaster(chm15, file = "CHM_2015_corrected.tif")
 
 cat17at <- lidR::catalog(paste0(path2,"BCI17Tiles_alignedTrim/"))
 
+cat17at09 <- lidR::catalog(paste0(path2,"BCI17Tiles_alignedTrim09/"))
+
 chm15 <- raster::raster("CHM_2015_corrected.tif")
 
 chm17 <- lidR::grid_canopy(cat17at,
+                           res = 1,
+                           algorithm = lidR::p2r(subcircle=0.01))
+
+chm17_09 <- lidR::grid_canopy(cat17at09,
                            res = 1,
                            algorithm = lidR::p2r(subcircle=0.01))
 
@@ -84,6 +98,8 @@ raster::plot(dHeight15to17,
              main = "Corrected 2015 to 2017 height change")
 
 raster::writeRaster(chm17, file = "CHM_2017_corrected.tif")
+raster::writeRaster(chm17_09, file = "CHM_2017_corrected_09.tif")
+
 
 #### 2017 to 2018 #### 
 

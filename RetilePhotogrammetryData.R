@@ -222,6 +222,14 @@ for(i in 1:dim(gridInfo)[1]){
                                     full.names = T, pattern = paste0("BCI17d_",i,"_REG")),
                   to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI17Tiles_dec/BCI17mat_",i,".txt"))
     }
+
+# 2017 to 2009
+
+  for(i in 1:dim(gridInfo)[1]){
+    file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI17Tiles_dec/",
+                                  full.names = T, pattern = paste0("BCI17d_",i,"_REG")),
+                to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI17Tiles_dec/BCI17mat09_",i,".txt"))
+  }
   
   # 2018
   
@@ -276,6 +284,20 @@ for(i in 1:dim(gridInfo)[1]){
                        file = paste0(path2, "BCI17Tiles_alignedTrim/BCI17at_",gridInfo$ID[i],".laz"))
       }
     }
+
+  # 2017 to 2019
+  for(i in 1:dim(gridInfo)[1]){
+    
+    data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI17Tiles_alignedFull09/BCI17af_",gridInfo$ID[i],".las")),
+                                 xleft=gridInfo$xmin[i],
+                                 xright=gridInfo$xmax[i],
+                                 ybottom=gridInfo$ymin[i],
+                                 ytop=gridInfo$ymax[i])
+    if(length(data@data$X)>0){
+      lidR::writeLAS(las = data,
+                     file = paste0(path2, "BCI17Tiles_alignedTrim09/BCI17at_",gridInfo$ID[i],".laz"))
+    }
+  }
 
   # 2018
     for(i in 1:dim(gridInfo)[1]){
