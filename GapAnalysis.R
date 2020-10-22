@@ -207,4 +207,35 @@
   100*length(low20age@data@values[low20age@data@values==5 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
   100*length(low20age@data@values[low20age@data@values==11 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
   
-#### BINARY NEW GAPS ####  
+#### BINARY NEW GAPS #### 
+  d17to18 <- chm18-chm17
+  d18to19 <- chm19-chm18
+  d19to20 <- chm20-chm19
+  
+  colBrks <- c(-2,0,2)
+  colPal <- colorRampPalette(c("cornflowerblue","red"))
+  
+  gaps17to18 <- d17to18
+  gaps17to18@data@values[d17to18@data@values <= -5 & !is.na(d17to18@data@values)] <- 1
+  gaps17to18@data@values[d17to18@data@values > -5 & !is.na(d17to18@data@values)] <- 0
+  raster::plot(gaps17to18,
+               col = colPal(length(colBrks)-1),
+               breaks = colBrks)
+  
+  gaps18to19 <- d18to19
+  gaps18to19@data@values[d18to19@data@values <= -5 & !is.na(d18to19@data@values)] <- 1
+  gaps18to19@data@values[d18to19@data@values > -5 & !is.na(d18to19@data@values)] <- 0
+  raster::plot(gaps18to19,
+               col = colPal(length(colBrks)-1),
+               breaks = colBrks)
+  
+  gaps19to20 <- d19to20
+  gaps19to20@data@values[d19to20@data@values <= -5 & !is.na(d19to20@data@values)] <- 1
+  gaps19to20@data@values[d19to20@data@values > -5 & !is.na(d19to20@data@values)] <- 0
+  raster::plot(gaps19to20,
+               col = colPal(length(colBrks)-1),
+               breaks = colBrks)
+  
+  
+  
+  
