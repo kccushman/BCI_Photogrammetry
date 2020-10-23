@@ -444,7 +444,6 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
   albedo17 <- raster::mask(albedo17,buffer)
   
   # Read red-blue difference (because clouds tend to be blue)
-  
   redblu17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2017.tif")
   redblu17 <- raster::mask(redblu17,buffer)
   
@@ -458,28 +457,66 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
   
   raster::writeRaster(mask17, "CloudMask_2017.tif")
 
-#### Cloud mask 2019 ####
+#### Cloud mask 2018 ####
   
   # Read albedo (because clouds are bright)
-  albedo17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2017.tif")
-  albedo17 <- raster::mask(albedo17,buffer)
+  albedo18 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2018.tif")
+  albedo18 <- raster::mask(albedo18,buffer)
   
   # Read red-blue difference (because clouds tend to be blue)
-  
-  redblu17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2017.tif")
-  redblu17 <- raster::mask(redblu17,buffer)
+  redblu18 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2018.tif")
+  redblu18 <- raster::mask(redblu18,buffer)
   
   
   thresh_albedo <- 375
   thresh_redblu <- 20
-  mask17 <- albedo17
-  mask17@data@values[albedo17@data@values >= thresh_albedo & redblu17@data@values <= thresh_redblu] <- 0
-  mask17@data@values[albedo17@data@values < thresh_albedo | redblu17@data@values > thresh_redblu] <- 1
-  raster::plot(mask17)
+  mask18 <- albedo18
+  mask18@data@values[albedo18@data@values >= thresh_albedo & redblu18@data@values <= thresh_redblu] <- 0
+  mask18@data@values[albedo18@data@values < thresh_albedo | redblu18@data@values > thresh_redblu] <- 1
+  raster::plot(mask18)
   
-  raster::writeRaster(mask17, "CloudMask_2017.tif")      
+  raster::writeRaster(mask18, "CloudMask_2018.tif")      
     
 
+#### Cloud mask 2019 ####
+  
+  # Read albedo (because clouds are bright)
+  albedo19 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2019.tif")
+  albedo19 <- raster::mask(albedo19,buffer)
+  
+  # Read red-blue difference (because clouds tend to be blue)
+  redblu19 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2019.tif")
+  redblu19 <- raster::mask(redblu19,buffer)
+  
+  
+  thresh_albedo <- 375
+  thresh_redblu <- 5
+  mask19 <- albedo19
+  mask19@data@values[albedo19@data@values >= thresh_albedo & redblu19@data@values <= thresh_redblu] <- 0
+  mask19@data@values[albedo19@data@values < thresh_albedo | redblu19@data@values > thresh_redblu] <- 1
+  raster::plot(mask19)
+  
+  raster::writeRaster(mask19, "CloudMask_2019.tif")      
+  
+#### Cloud mask 2020 ####
+  
+  # Read albedo (because clouds are bright)
+  albedo20 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2020.tif")
+  albedo20 <- raster::mask(albedo20,buffer)
+  
+  # Read red-blue difference (because clouds tend to be blue)
+  redblu20 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2020.tif")
+  redblu20 <- raster::mask(redblu20,buffer)
+  
+  
+  thresh_albedo <- 375
+  thresh_redblu <- 15
+  mask20 <- albedo20
+  mask20@data@values[albedo20@data@values >= thresh_albedo & redblu20@data@values <= thresh_redblu] <- 0
+  mask20@data@values[albedo20@data@values < thresh_albedo | redblu20@data@values > thresh_redblu] <- 1
+  raster::plot(mask20)
+  
+  raster::writeRaster(mask20, "CloudMask_2020.tif")      
   
   
   
