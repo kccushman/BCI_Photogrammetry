@@ -7,6 +7,13 @@ path2 <- "D:/BCI_Spatial/UAV_Data/TiledPointClouds/"
 soils <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
 soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
 
+# Read in forest age
+age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+ageUse <- age[!(age$TYPE=="Clearings"),]
+
+# Read polygon buffer 25 m inland from lake
+buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")  
 
 #### 2015 ####
   
@@ -430,3 +437,51 @@ soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_def
     
     gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
     
+#### Cloud mask 2017 ####
+    
+  # Read albedo (because clouds are bright)
+  albedo17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2017.tif")
+  albedo17 <- raster::mask(albedo17,buffer)
+  
+  # Read red-blue difference (because clouds tend to be blue)
+  
+  redblu17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2017.tif")
+  redblu17 <- raster::mask(redblu17,buffer)
+  
+  
+  thresh_albedo <- 375
+  thresh_redblu <- 20
+  mask17 <- albedo17
+  mask17@data@values[albedo17@data@values >= thresh_albedo & redblu17@data@values <= thresh_redblu] <- 0
+  mask17@data@values[albedo17@data@values < thresh_albedo | redblu17@data@values > thresh_redblu] <- 1
+  raster::plot(mask17)
+  
+  raster::writeRaster(mask17, "CloudMask_2017.tif")
+
+#### Cloud mask 2019 ####
+  
+  # Read albedo (because clouds are bright)
+  albedo17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2017.tif")
+  albedo17 <- raster::mask(albedo17,buffer)
+  
+  # Read red-blue difference (because clouds tend to be blue)
+  
+  redblu17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2017.tif")
+  redblu17 <- raster::mask(redblu17,buffer)
+  
+  
+  thresh_albedo <- 375
+  thresh_redblu <- 20
+  mask17 <- albedo17
+  mask17@data@values[albedo17@data@values >= thresh_albedo & redblu17@data@values <= thresh_redblu] <- 0
+  mask17@data@values[albedo17@data@values < thresh_albedo | redblu17@data@values > thresh_redblu] <- 1
+  raster::plot(mask17)
+  
+  raster::writeRaster(mask17, "CloudMask_2017.tif")      
+    
+
+  
+  
+  
+  
+      
