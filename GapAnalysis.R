@@ -275,10 +275,21 @@
       gaps17to18sp[gaps17to18sp$gap_id==i,"perimeter"] <- spatialEco::polyPerimeter(gaps17to18sp[gaps17to18sp$gap_id==i,])
       
     }
-    
     gaps17to18sp@data$ratio <- gaps17to18sp@data$area/gaps17to18sp@data$perimeter
-    gaps17to18_circ <- gaps17to18sp[gaps17to18sp@data$ratio<5,]
     
+    # Remove gaps that don't meet Raquel's area/perimeter threshold
+      for(i in 1:length(gaps17to18sp@data$ratio)){
+        if(gaps17to18sp@data$ratio[i]<0.6){
+          gaps17to18[gaps17to18==i] <- NA
+        }
+      }
+    # Get stats for remaining new gaps
+      # initial canopy height
+        gapStats17to18_i <- ForestGapR::GapStats(gap_layer = gaps17to18,
+                                                 chm_layer = chm17)
+      # final canopy height  
+        gapStats17to18_f <- ForestGapR::GapStats(gap_layer = gaps17to18,
+                                                 chm_layer = chm18)
     
     gaps18to19 <- ForestGapR::getForestGaps(d18to19,
                                             threshold = -5, size=c(10,10^4))
@@ -291,7 +302,19 @@
       
     }
     gaps18to19sp@data$ratio <- gaps18to19sp@data$area/gaps18to19sp@data$perimeter
-    gaps18to19_circ <- gaps18to19sp[gaps18to19sp@data$ratio<5,]
+    # Remove gaps that don't meet Raquel's area/perimeter threshold
+      for(i in 1:length(gaps18to19sp@data$ratio)){
+        if(gaps18to19sp@data$ratio[i]<0.6){
+          gaps18to19[gaps18to19==i] <- NA
+        }
+      }
+    # Get stats for remaining new gaps
+      # initial canopy height
+      gapStats18to19_i <- ForestGapR::GapStats(gap_layer = gaps18to19,
+                                               chm_layer = chm18)
+      # final canopy height  
+      gapStats18to19_f <- ForestGapR::GapStats(gap_layer = gaps18to19,
+                                               chm_layer = chm19)
     
     
     gaps19to20 <- ForestGapR::getForestGaps(d19to20,
@@ -305,7 +328,42 @@
       
     }
     gaps19to20sp@data$ratio <- gaps19to20sp@data$area/gaps19to20sp@data$perimeter
-    gaps19to20_circ <- gaps19to20sp[gaps19to20sp@data$ratio<5,]
-    save(gaps17to18sp, gaps18to19sp, gaps19to20sp, gaps17to18, gaps18to19, gaps19to20, file="PrelimGapLayers.RData")
+    # Remove gaps that don't meet Raquel's area/perimeter threshold
+      for(i in 1:length(gaps19to20sp@data$ratio)){
+        if(gaps19to20sp@data$ratio[i]<0.6){
+          gaps19to20[gaps19to20==i] <- NA
+        }
+      }
+      # Get stats for remaining new gaps
+      # initial canopy height
+      gapStats19to20_i <- ForestGapR::GapStats(gap_layer = gaps19to20,
+                                               chm_layer = chm19)
+      # final canopy height  
+      gapStats19to20_f <- ForestGapR::GapStats(gap_layer = gaps19to20,
+                                               chm_layer = chm20)
+    
+    
+#### PLOT GAP SIZE FREQUENCY DISTRIBUTION ####
+
+  gapSzFreq17to18 <- ForestGapR::GapSizeFDist(gapStats17to18_i,
+                                              xlim=c(10,10^4),
+                                              ylim=c(1,700),
+                                              main="17 to 18")
+  gapSzFreq18to19 <- ForestGapR::GapSizeFDist(gapStats18to19_i,
+                                              xlim=c(10,10^4),
+                                              ylim=c(1,700),
+                                              main="18 to 19")
+  gapSzFreq19to20 <- ForestGapR::GapSizeFDist(gapStats19to20_i,
+                                              xlim=c(10,10^4),
+                                              ylim=c(1,700),
+                                              main="19 to 20")
+  
+  raster::writeRaster(gaps17to18, file="newGaps17to18.tif")
+  raster::writeRaster(gaps18to19, file="newGaps18to19.tif")
+  raster::writeRaster(gaps19to20, file="newGaps19to20.tif")
+  
+  
+    
+    #save(gaps17to18sp, gaps18to19sp, gaps19to20sp, gaps17to18, gaps18to19, gaps19to20, file="PrelimGapLayers.RData")
   
   
