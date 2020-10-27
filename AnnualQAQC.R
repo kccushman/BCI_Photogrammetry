@@ -55,8 +55,8 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
     
   # Plot masked tiles on canopy height change raster
     
-    chm09 <- raster::raster("CHM_2009.tif")
-    chm15 <- raster::raster("CHM_2015_corrected.tif")
+    chm09 <- raster::raster("DSM_2009.tif")
+    chm15 <- raster::raster("DSM_2015_corrected.tif")
     
     dHeight09to15 <- chm15-chm09
     
@@ -133,7 +133,7 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use17 <- ifelse(gridInfo$QAQC17_A < 0.035 & gridInfo$QAQC17_B < 1.5,
+    gridInfo$Use17 <- ifelse(gridInfo$QAQC17_A < 0.023 & gridInfo$QAQC17_B < 1.5,
                              T,
                              F)
     
@@ -141,8 +141,8 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
     
   # Plot masked tiles on canopy height change raster
     
-    chm15 <- raster::raster("CHM_2015_corrected.tif")
-    chm17 <- raster::raster("CHM_2017_corrected.tif")
+    chm15 <- raster::raster("DSM_2015_corrected.tif")
+    chm17 <- raster::raster("DSM_2017_corrected.tif")
     
     dHeight15to17 <- chm17-chm15
     
@@ -216,7 +216,7 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use18 <- ifelse(gridInfo$QAQC18_A < 0.035 & gridInfo$QAQC18_B < 1.5,
+    gridInfo$Use18 <- ifelse(gridInfo$QAQC18_A < 0.023 & gridInfo$QAQC18_B < 1.5,
                              T,
                              F)
     
@@ -299,7 +299,7 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use19 <- ifelse(gridInfo$QAQC19_A < 0.035 & gridInfo$QAQC19_B < 1.5,
+    gridInfo$Use19 <- ifelse(gridInfo$QAQC19_A < 0.023 & gridInfo$QAQC19_B < 1.5,
                              T,
                              F)
     
@@ -382,7 +382,7 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
          pch=20,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use20 <- ifelse(gridInfo$QAQC20_A < 0.035 & gridInfo$QAQC20_B < 1.5,
+    gridInfo$Use20 <- ifelse(gridInfo$QAQC20_A < 0.023 & gridInfo$QAQC20_B < 1.5,
                              T,
                              F)
     
@@ -434,8 +434,9 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
 #### Find tile ID from coordinates ####
     
     coords <- locator(1)
+    ID <- gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
     
-    gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
+    gridInfo[ID,c("QAQC17_A","QAQC17_B")]
     
 #### Cloud mask 2017 ####
     

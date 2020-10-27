@@ -4,7 +4,7 @@
 # *not* be automatically masked by current QAQC routines. I think this is a 
 # small issue but needs to be fixed.
 
-#### READ DATA ####
+#### READ RAW DATA ####
 
 # Read in canopy height rasters:
   dsm09 <- raster::raster("DSM_2009.tif")
@@ -108,6 +108,25 @@
   chm18 <- raster::crop(chm18, raster::extent(chm09))
   chm19 <- raster::crop(chm19, raster::extent(chm09))
   chm20 <- raster::crop(chm20, raster::extent(chm09))
+  
+  
+# Cloud masks for 2017-2020
+  mask17 <- raster::raster("CloudMask_2017.tif")
+  mask18 <- raster::raster("CloudMask_2018.tif")
+  mask19 <- raster::raster("CloudMask_2019.tif")
+  mask20 <- raster::raster("CloudMask_2020.tif")
+  
+  # Resample to resolution of CHMs
+  mask17 <- raster::resample(mask17, chm17)
+  mask18 <- raster::resample(mask18, chm18)
+  mask19 <- raster::resample(mask19, chm19)
+  mask20 <- raster::resample(mask20, chm20)
+  
+  # Remove cloud pixels
+  chm17[!(mask17==1)] <- NA
+  chm18[!(mask18==1)] <- NA
+  chm19[!(mask19==1)] <- NA
+  chm20[!(mask20==1)] <- NA
     
 # # Save
 #   raster::writeRaster(chm09, "CHM_2009_QAQC.tif", overwrite=T)
@@ -117,14 +136,26 @@
 #   raster::writeRaster(chm19, "CHM_2019_QAQC.tif", overwrite=T)
 #   raster::writeRaster(chm20, "CHM_2020_QAQC.tif", overwrite=T)
   
-#### MAKE GRAPHS ####
 
-  dens09 <- density(chm09@data@values, na.rm=T)
-  dens15 <- density(chm15@data@values, na.rm=T)
-  dens17 <- density(chm17@data@values, na.rm=T)
-  dens18 <- density(chm18@data@values, na.rm=T)
-  dens19 <- density(chm19@data@values, na.rm=T)
-  dens20 <- density(chm20@data@values, na.rm=T)
+#### READ PROCESSED DATA ####  
+  
+  # Canopy height models for all years
+    chm09 <- raster::raster("CHM_2009_QAQC.tif")
+    chm15 <- raster::raster("CHM_2015_QAQC.tif")
+    chm17 <- raster::raster("CHM_2017_QAQC.tif")
+    chm18 <- raster::raster("CHM_2018_QAQC.tif")
+    chm19 <- raster::raster("CHM_2019_QAQC.tif")
+    chm20 <- raster::raster("CHM_2020_QAQC.tif")
+    
+  
+#### CANOPY HEIGHT DISTRIBUTION ####
+
+  dens09 <- density(raster::values(chm09), na.rm=T)
+  dens15 <- density(raster::values(chm15), na.rm=T)
+  dens17 <- density(raster::values(chm17), na.rm=T)
+  dens18 <- density(raster::values(chm18), na.rm=T)
+  dens19 <- density(raster::values(chm19), na.rm=T)
+  dens20 <- density(raster::values(chm20), na.rm=T)
   
   plot(dens09, col="black", lwd=2,
        main="Canopy height distribution",
@@ -208,34 +239,73 @@
   100*length(low20age@data@values[low20age@data@values==11 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
   
 #### BINARY NEW GAPS #### 
+  
   d17to18 <- chm18-chm17
   d18to19 <- chm19-chm18
   d19to20 <- chm20-chm19
   
-  colBrks <- c(-2,0,2)
-  colPal <- colorRampPalette(c("cornflowerblue","red"))
+  colBrks2 <- c(-100,-5,-1,-0.5,0.5,1,5,100)
+  colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
+                                "white",
+                                "aliceblue","cornflowerblue","darkblue"))
   
-  gaps17to18 <- d17to18
-  gaps17to18@data@values[d17to18@data@values <= -5 & !is.na(d17to18@data@values)] <- 1
-  gaps17to18@data@values[d17to18@data@values > -5 & !is.na(d17to18@data@values)] <- 0
-  raster::plot(gaps17to18,
-               col = colPal(length(colBrks)-1),
-               breaks = colBrks)
+  raster::plot(d17to18,
+               col = colPal2(length(colBrks2)-1),
+               breaks = colBrks2,
+               main = "2017 to 2018 height change")
   
-  gaps18to19 <- d18to19
-  gaps18to19@data@values[d18to19@data@values <= -5 & !is.na(d18to19@data@values)] <- 1
-  gaps18to19@data@values[d18to19@data@values > -5 & !is.na(d18to19@data@values)] <- 0
-  raster::plot(gaps18to19,
-               col = colPal(length(colBrks)-1),
-               breaks = colBrks)
+  raster::plot(d18to19,
+               col = colPal2(length(colBrks2)-1),
+               breaks = colBrks2,
+               main = "2018 to 2019 height change")
   
-  gaps19to20 <- d19to20
-  gaps19to20@data@values[d19to20@data@values <= -5 & !is.na(d19to20@data@values)] <- 1
-  gaps19to20@data@values[d19to20@data@values > -5 & !is.na(d19to20@data@values)] <- 0
-  raster::plot(gaps19to20,
-               col = colPal(length(colBrks)-1),
-               breaks = colBrks)
-  
-  
+  raster::plot(d19to20,
+               col = colPal2(length(colBrks2)-1),
+               breaks = colBrks2,
+               main = "2019 to 2020 height change")
+
+  # Use ForestGapR package to delineate new gaps (kind of hack-y)
+    gaps17to18 <- ForestGapR::getForestGaps(d17to18,
+                                            threshold = -5, size=c(10,10^4))
+    gaps17to18sp <- ForestGapR::GapSPDF(gaps17to18)
+    gaps17to18sp@data$area <- NA
+    gaps17to18sp@data$perimeter <- NA
+    for(i in 1:length(gaps17to18sp)){
+      gaps17to18sp[gaps17to18sp$gap_id==i,"area"] <- raster::area(gaps17to18sp[gaps17to18sp$gap_id==i,])
+      gaps17to18sp[gaps17to18sp$gap_id==i,"perimeter"] <- spatialEco::polyPerimeter(gaps17to18sp[gaps17to18sp$gap_id==i,])
+      
+    }
+    
+    gaps17to18sp@data$ratio <- gaps17to18sp@data$area/gaps17to18sp@data$perimeter
+    gaps17to18_circ <- gaps17to18sp[gaps17to18sp@data$ratio<5,]
+    
+    
+    gaps18to19 <- ForestGapR::getForestGaps(d18to19,
+                                            threshold = -5, size=c(10,10^4))
+    gaps18to19sp <- ForestGapR::GapSPDF(gaps18to19)
+    gaps18to19sp@data$area <- NA
+    gaps18to19sp@data$perimeter <- NA
+    for(i in 1:length(gaps18to19sp)){
+      gaps18to19sp[gaps18to19sp$gap_id==i,"area"] <- raster::area(gaps18to19sp[gaps18to19sp$gap_id==i,])
+      gaps18to19sp[gaps18to19sp$gap_id==i,"perimeter"] <- spatialEco::polyPerimeter(gaps18to19sp[gaps18to19sp$gap_id==i,])
+      
+    }
+    gaps18to19sp@data$ratio <- gaps18to19sp@data$area/gaps18to19sp@data$perimeter
+    gaps18to19_circ <- gaps18to19sp[gaps18to19sp@data$ratio<5,]
+    
+    
+    gaps19to20 <- ForestGapR::getForestGaps(d19to20,
+                                            threshold = -5, size=c(10,10^4))
+    gaps19to20sp <- ForestGapR::GapSPDF(gaps19to20)
+    gaps19to20sp@data$area <- NA
+    gaps19to20sp@data$perimeter <- NA
+    for(i in 1:length(gaps19to20sp)){
+      gaps19to20sp[gaps19to20sp$gap_id==i,"area"] <- raster::area(gaps19to20sp[gaps19to20sp$gap_id==i,])
+      gaps19to20sp[gaps19to20sp$gap_id==i,"perimeter"] <- spatialEco::polyPerimeter(gaps19to20sp[gaps19to20sp$gap_id==i,])
+      
+    }
+    gaps19to20sp@data$ratio <- gaps19to20sp@data$area/gaps19to20sp@data$perimeter
+    gaps19to20_circ <- gaps19to20sp[gaps19to20sp@data$ratio<5,]
+    save(gaps17to18sp, gaps18to19sp, gaps19to20sp, gaps17to18, gaps18to19, gaps19to20, file="PrelimGapLayers.RData")
   
   
