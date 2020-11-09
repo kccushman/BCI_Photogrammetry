@@ -345,18 +345,19 @@
     
 #### PLOT GAP SIZE FREQUENCY DISTRIBUTION ####
 
+  par(mfrow=c(1,1))
   gapSzFreq17to18 <- ForestGapR::GapSizeFDist(gapStats17to18_i,
                                               xlim=c(10,10^4),
                                               ylim=c(1,700),
-                                              main="17 to 18")
+                                              main="Gaps 2017 to 2018")
   gapSzFreq18to19 <- ForestGapR::GapSizeFDist(gapStats18to19_i,
                                               xlim=c(10,10^4),
                                               ylim=c(1,700),
-                                              main="18 to 19")
+                                              main="Gaps 2018 to 2019")
   gapSzFreq19to20 <- ForestGapR::GapSizeFDist(gapStats19to20_i,
                                               xlim=c(10,10^4),
                                               ylim=c(1,700),
-                                              main="19 to 20")
+                                              main="Gaps 2019 to 2020")
   
   raster::writeRaster(gaps17to18, file="newGaps17to18.tif")
   raster::writeRaster(gaps18to19, file="newGaps18to19.tif")
@@ -365,5 +366,101 @@
   
     
     #save(gaps17to18sp, gaps18to19sp, gaps19to20sp, gaps17to18, gaps18to19, gaps19to20, file="PrelimGapLayers.RData")
+  
+#### SUMMARY GAP STATS PER YEAR ####
+  
+  # Gap area (%)
+  
+  gapVals18 <- raster::values(gaps17to18)
+  100*length(gapVals18[!is.na(gapVals18)])/length(d17to18@data@values[!is.na(d17to18@data@values)])  
+  
+  gapVals19 <- raster::values(gaps18to19)
+  100*length(gapVals19[!is.na(gapVals19)])/length(d18to19@data@values[!is.na(d18to19@data@values)])
+  
+  gapVals20 <- raster::values(gaps19to20)
+  100*length(gapVals20[!is.na(gapVals20)])/length(d19to20@data@values[!is.na(d19to20@data@values)])
+  100*length(gapVals20[!is.na(gapVals20)])/length(d19to20@data@values[!is.na(d19to20@data@values)])/(13/12)
+  
+  # Gap number (gaps/hectare)
+  
+  length(unique(gapVals18[!is.na(gapVals18)]))/(length(d17to18@data@values[!is.na(d17to18@data@values)])/10000)
+  
+  length(unique(gapVals19[!is.na(gapVals19)]))/(length(d18to19@data@values[!is.na(d18to19@data@values)])/10000)
+  
+  length(unique(gapVals20[!is.na(gapVals20)]))/(length(d19to20@data@values[!is.na(d19to20@data@values)])/10000)
+  length(unique(gapVals20[!is.na(gapVals20)]))/(length(d19to20@data@values[!is.na(d19to20@data@values)])/10000)/(13/12)
+  
+#### INITIAL AND FINAL HEIGHT OF GAPS ####
+  htVals17 <- raster::values(chm17)
+  htVals18 <- raster::values(chm18)
+  htVals19 <- raster::values(chm19)
+  htVals20 <- raster::values(chm20)
+  
+  # 2017 to 2018
+  totalHt17 <- density(htVals17[!is.na(d17to18@data@values)])
+  totalHt18 <- density(htVals18[!is.na(d17to18@data@values)])
+  gapStartHt17 <-  density(htVals17[!is.na(gapVals18)])
+  gapEndHt18 <-  density(htVals18[!is.na(gapVals18)])
+  
+plot(totalHt17, lwd=3, col=adjustcolor("black",alpha.f = 0.6),
+     ylim=c(0,0.07),
+     xlab = "Height (m)",
+     main=NA)
+lines(totalHt18, lwd=3, col=adjustcolor("black",alpha.f = 0.6), lty=2)
+lines(gapStartHt17, lwd=3, col=adjustcolor("blue",alpha.f = 0.6))
+lines(gapEndHt18, lwd=3, col=adjustcolor("red",alpha.f = 0.6))
+legend(x=25,y=0.075,
+       c("2017 Landscape", "2018 Landscape",
+         "New gaps--initial height",
+         "New gaps--final height"),
+       col=adjustcolor(c("black","black","blue","red"),alpha.f =0.6),
+       lty=c(1,2,1,1),
+       lwd=3,
+       bty="n")
+
+# 2018 to 2019
+totalHt18 <- density(htVals18[!is.na(d18to19@data@values)])
+totalHt19 <- density(htVals19[!is.na(d18to19@data@values)])
+gapStartHt18 <-  density(htVals18[!is.na(gapVals19)])
+gapEndHt19 <-  density(htVals19[!is.na(gapVals19)])
+
+plot(totalHt18, lwd=3, col=adjustcolor("black",alpha.f = 0.6),
+     ylim=c(0,0.07),
+     xlab = "Height (m)",
+     main=NA)
+lines(totalHt19, lwd=3, col=adjustcolor("black",alpha.f = 0.6), lty=2)
+lines(gapStartHt18, lwd=3, col=adjustcolor("blue",alpha.f = 0.6))
+lines(gapEndHt19, lwd=3, col=adjustcolor("red",alpha.f = 0.6))
+legend(x=25,y=0.075,
+       c("2018 Landscape", "2019 Landscape",
+         "New gaps--initial height",
+         "New gaps--final height"),
+       col=adjustcolor(c("black","black","blue","red"),alpha.f =0.6),
+       lty=c(1,2,1,1),
+       lwd=3,
+       bty="n")
+
+# 2019 to 2020
+totalHt19 <- density(htVals19[!is.na(d19to20@data@values)])
+totalHt20 <- density(htVals20[!is.na(d19to20@data@values)])
+gapStartHt19 <-  density(htVals19[!is.na(gapVals20)])
+gapEndHt20 <-  density(htVals20[!is.na(gapVals20)])
+
+plot(totalHt19, lwd=3, col=adjustcolor("black",alpha.f = 0.6),
+     ylim=c(0,0.07),
+     xlab = "Height (m)",
+     main=NA)
+lines(totalHt20, lwd=3, col=adjustcolor("black",alpha.f = 0.6), lty=2)
+lines(gapStartHt19, lwd=3, col=adjustcolor("blue",alpha.f = 0.6))
+lines(gapEndHt20, lwd=3, col=adjustcolor("red",alpha.f = 0.6))
+legend(x=25,y=0.075,
+       c("2019 Landscape", "2020 Landscape",
+         "New gaps--initial height",
+         "New gaps--final height"),
+       col=adjustcolor(c("black","black","blue","red"),alpha.f =0.6),
+       lty=c(1,2,1,1),
+       lwd=3,
+       bty="n")
+
   
   

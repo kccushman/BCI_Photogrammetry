@@ -532,7 +532,7 @@
     
   }
     
-  write.csv(gapTopo, file="gapTopoStats.csv", row.names = F, col.names = T)
+  write.csv(gapTopo, file="gapTopoStats.csv", row.names = F)
   
   
     
@@ -568,10 +568,10 @@
 
 #### Do MCMC univariate: slope ####
   # Make a vector of gap areas (must convert to integer if not already)
-  d <- gapData$gapArea
+  d <- gapData[gapData$gapArea>=minGap & !is.na(gapData$slope),"gapArea"]
   
   # Transform slope data
-  p <- sqrt(gapData$slope)
+  p <- sqrt(gapData[gapData$gapArea>=minGap & !is.na(gapData$slope),"slope"])
   var <- c(scale(p,center= TRUE,scale= TRUE))
   
   #________________________________
@@ -645,12 +645,14 @@
   par(mfrow=c(2,2),mar=c(3,2,2,2))
   
   theta_est = res[,,1]
-  plot(theta_est[,1],col="blue",type = "l",main ="Theta 0" )
-  plot(theta_est[,2],col="magenta",type = "l",main = "Theta 1")
-  theta.1 = theta_est[,1]
+  plot(theta_est[100:1000,1],col="blue",type = "l",main ="Theta 0" )
+  plot(theta_est[100:1000,2],col="magenta",type = "l",main = "Theta 1")
+  theta.1 = theta_est[100:1000,1]
   plot(density(theta.1))
-  theta.2 = theta_est[,2]
-  plot(density(theta.2))
+  theta.2 = theta_est[100:1000,2]
+  plot(density(theta.2),
+       main = "Slope effect")
+  abline(v=0,lty=2)
   
   #_____________________________
   # Save result
@@ -661,6 +663,199 @@
   
 
 
+#### Do MCMC univariate: easting ####
+  # Make a vector of gap areas (must convert to integer if not already)
+  d <- gapData[gapData$gapArea>=minGap & !is.na(gapData$easting),"gapArea"]
+  
+  # Transform slope data
+  p <- gapData[gapData$gapArea>=minGap & !is.na(gapData$easting),"easting"]
+  var <- c(scale(p,center= TRUE,scale= TRUE))
+  
+  #________________________________
+  #       START with model paramter (THETA)
+  # At this step all parameter must be adjusted, 
+  #_________________________________ 
+  theta <- c(0.5,0.4)
+  nb_param <- length(theta)
+  step <- c(0.05,0.05)
+  count= 0
+  nb_it <- 1000 #number of iterations
+  nb_sample <- 2    
+  m_prior <- 0.5
+  sd_prior <- 500
+  theta <- matrix(theta,nrow=nb_param,ncol = 2,byrow=F)
+  v_e1 <- var
+  save_res  = "TRUE" # TRUE or FALSE  # If we want to save results
+  
+  #_________________________________ 
+  #      COMPUTE LILKELIHOO_PARETO for the fist elements of theta and var     
+  #_________________________________ 
+  llp = loglikelihood_pareto(data = d  ,xmin = minGap ,theta,var)
+  llp_res=c(llp, rep(0, nb_it))
+  
+  #________________________________
+  #      Prepare OUTPUT             
+  #________________________________
+  accept <- rep(0,nb_param)
+  res <- array(dim=c(nb_it+1,nb_param,nb_sample))
+  res[1,,] <- theta
+  
+  #________________________________
+  #   CHAINE DE Metropolis_Hastings      
+  #________________________________
+  for(compt in 1:nb_it)
+  {
+    
+    ordre <- sample(1 : nb_param)
+    
+    for (i in ordre)
+    {
+      
+      theta_new <- theta #candidat
+      theta_new[i,] <- rnorm(2,theta[i,],step[i])
+      
+      llp_new = loglikelihood_pareto(d,xmin=minGap,theta=theta_new, var = var)
+      
+      logr = llp_new - llp +dnorm(theta[i,],theta_new[i,],step[i],log=T) - 
+        dnorm(theta_new[i,],theta[i,],step[i],log=T) +
+        dnorm(theta_new[i,], m_prior, sd_prior, log=T) - 
+        dnorm(theta[i,], m_prior, sd_prior, log=T)
+      r <- exp(logr)
+      
+      nb_ok <- which(!is.na(r))
+      r_ok <- na.omit(r)
+      
+      accepte <- nb_ok[(runif(length(r_ok),min=0,max=1) < r_ok)]
+      llp_res[compt+1]=llp_new
+      theta[,accepte] <- theta_new[,accepte]
+      llp <- llp_new
+    }
+    
+    res[compt+1,,] <- theta
+    print(compt)
+  }
+  
+  #________________________________
+  #      Plot results 
+  #________________________________
+  windows(10,10)
+  par(mfrow=c(2,2),mar=c(3,2,2,2))
+  
+  theta_est = res[,,1]
+  plot(theta_est[,1],col="blue",type = "l",main ="Theta 0" )
+  plot(theta_est[,2],col="magenta",type = "l",main = "Theta 1")
+  theta.1 = theta_est[100:1000,1]
+  plot(density(theta.1))
+  theta.2 = theta_est[100:1000,2]
+  plot(density(theta.2),
+       main = "Easting effect")
+  abline(v=0,lty=2)
+  
+  #_____________________________
+  # Save result
+  #_____________________________
+  if (save_res == TRUE) {
+    write.csv(res,file="easting_MCMC.csv")
+  }
+  
+  
+  
+  
+#### Do MCMC univariate: northing ####
+  # Make a vector of gap areas (must convert to integer if not already)
+  d <- gapData[gapData$gapArea>=minGap & !is.na(gapData$northing),"gapArea"]
+  
+  # Transform slope data
+  p <- gapData[gapData$gapArea>=minGap & !is.na(gapData$northing),"northing"]
+  var <- c(scale(p,center= TRUE,scale= TRUE))
+  
+  #________________________________
+  #       START with model paramter (THETA)
+  # At this step all parameter must be adjusted, 
+  #_________________________________ 
+  theta <- c(0.5,0.4)
+  nb_param <- length(theta)
+  step <- c(0.05,0.05)
+  count= 0
+  nb_it <- 1000 #number of iterations
+  nb_sample <- 2    
+  m_prior <- 0.5
+  sd_prior <- 500
+  theta <- matrix(theta,nrow=nb_param,ncol = 2,byrow=F)
+  v_e1 <- var
+  save_res  = "TRUE" # TRUE or FALSE  # If we want to save results
+  
+  #_________________________________ 
+  #      COMPUTE LILKELIHOO_PARETO for the fist elements of theta and var     
+  #_________________________________ 
+  llp = loglikelihood_pareto(data = d  ,xmin = minGap ,theta,var)
+  llp_res=c(llp, rep(0, nb_it))
+  
+  #________________________________
+  #      Prepare OUTPUT             
+  #________________________________
+  accept <- rep(0,nb_param)
+  res <- array(dim=c(nb_it+1,nb_param,nb_sample))
+  res[1,,] <- theta
+  
+  #________________________________
+  #   CHAINE DE Metropolis_Hastings      
+  #________________________________
+  for(compt in 1:nb_it)
+  {
+    
+    ordre <- sample(1 : nb_param)
+    
+    for (i in ordre)
+    {
+      
+      theta_new <- theta #candidat
+      theta_new[i,] <- rnorm(2,theta[i,],step[i])
+      
+      llp_new = loglikelihood_pareto(d,xmin=minGap,theta=theta_new, var = var)
+      
+      logr = llp_new - llp +dnorm(theta[i,],theta_new[i,],step[i],log=T) - 
+        dnorm(theta_new[i,],theta[i,],step[i],log=T) +
+        dnorm(theta_new[i,], m_prior, sd_prior, log=T) - 
+        dnorm(theta[i,], m_prior, sd_prior, log=T)
+      r <- exp(logr)
+      
+      nb_ok <- which(!is.na(r))
+      r_ok <- na.omit(r)
+      
+      accepte <- nb_ok[(runif(length(r_ok),min=0,max=1) < r_ok)]
+      llp_res[compt+1]=llp_new
+      theta[,accepte] <- theta_new[,accepte]
+      llp <- llp_new
+    }
+    
+    res[compt+1,,] <- theta
+    print(compt)
+  }
+  
+  #________________________________
+  #      Plot results 
+  #________________________________
+  windows(10,10)
+  par(mfrow=c(2,2),mar=c(3,2,2,2))
+  
+  theta_est = res[,,1]
+  plot(theta_est[,1],col="blue",type = "l",main ="Theta 0" )
+  plot(theta_est[,2],col="magenta",type = "l",main = "Theta 1")
+  theta.1 = theta_est[100:1000,1]
+  plot(density(theta.1))
+  theta.2 = theta_est[100:1000,2]
+  plot(density(theta.2),
+       main = "Northing effect")
+  abline(v=0,lty=2)
+  
+  #_____________________________
+  # Save result
+  #_____________________________
+  if (save_res == TRUE) {
+    write.csv(res,file="northing_MCMC.csv")
+  }
+  
 #### GRAVEYARD ####    
 # Get soil type grap frequency from lidar
   soilTypes$PropGapStanding <- NA
