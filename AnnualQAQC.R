@@ -15,6 +15,31 @@ ageUse <- age[!(age$TYPE=="Clearings"),]
 buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
 buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")  
 
+#### 2009 ####
+
+dsm09 <- raster::raster("DSM_2009.tif")
+dem09 <- raster::raster("D:/BCI_Spatial/BCI_Topo/LidarDEM_BCI.tif")
+dem09 <- raster::crop(dem09,dsm09)
+raster::crs(dem09) <- "+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs"
+raster::crs(dsm09) <- "+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs"
+dem09 <- raster::resample(dem09,dsm09)
+
+chm09 <- dsm09-dem09
+chm09 <- raster::mask(chm09, buffer)
+
+
+threshLo <- quantile(chm09@data@values,0.03,na.rm=T)
+threshHi <- quantile(chm09@data@values,0.97,na.rm=T)
+
+binLo <- chm09
+binLo@data@values[binLo@data@values > threshLo] <- NA
+
+binHi <- chm09
+binHi@data@values[binHi@data@values < threshHi] <- NA
+
+raster::writeRaster(binLo, "binaryLoCanopy.tif", overwrite=T)
+raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
+
 #### 2015 ####
   
   # Make variables to store two QAQC metrics
