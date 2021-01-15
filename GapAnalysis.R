@@ -3,18 +3,12 @@
 #### READ RAW DATA ####
 
 # Read in canopy height rasters:
-  dsm09 <- raster::raster("DSM_2009.tif")
-  dsm15 <- raster::raster("DSM_2015_corrected.tif")
   dsm17 <- raster::raster("DSM_2017_corrected.tif")
   dsm18 <- raster::raster("DSM_2018_corrected.tif")
   dsm19 <- raster::raster("DSM_2019_corrected.tif")
   dsm20 <- raster::raster("DSM_2020_corrected.tif")
-
-# Read in soil polygon layers
-  soils <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
-  soils <- sp::spTransform(soils,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
   
-# Read in forest age
+# Read in forest age (used to exclude recent clearings)
   age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
   ageUse <- age[!(age$TYPE=="Clearings"),]
 
@@ -24,7 +18,8 @@
     
 # Read in BCI DEM
   dem <- raster::raster("D:/BCI_Spatial/BCI_Topo/LidarDEM_BCI.tif")
-  dem <- raster::resample(dem,dsm15)
+  dem <- raster::crop(dem, raster::extent(ageUse))
+  dem <- raster::resample(dem,dsm17)
   
 # Read in QAQC data
   qaqc <- read.csv("gridInfo_QAQC.csv")
@@ -32,32 +27,24 @@
 #### PROCESS DATA ####
   
 # Remove raster areas outside BCI perimeter (exclude within 25 m of lake)
-  dsm09 <- raster::mask(dsm09, buffer)
-  dsm15 <- raster::mask(dsm15, buffer)  
   dsm17 <- raster::mask(dsm17, buffer)  
   dsm18 <- raster::mask(dsm18, buffer)  
   dsm19 <- raster::mask(dsm19, buffer)  
   dsm20 <- raster::mask(dsm20, buffer)
 
 # Remove raster areas in clearings
-  dsm09 <- raster::mask(dsm09, ageUse)
-  dsm15 <- raster::mask(dsm15, ageUse)  
   dsm17 <- raster::mask(dsm17, ageUse)  
   dsm18 <- raster::mask(dsm18, ageUse)  
   dsm19 <- raster::mask(dsm19, ageUse)  
   dsm20 <- raster::mask(dsm20, ageUse)
 
 # Crop to ensure each raster has same extent
-  dsm09 <- raster::crop(dsm09, extent(ageUse))
-  dsm15 <- raster::crop(dsm15, extent(ageUse))  
-  dsm17 <- raster::crop(dsm17, extent(ageUse))  
-  dsm18 <- raster::crop(dsm18, extent(ageUse))  
-  dsm19 <- raster::crop(dsm19, extent(ageUse))  
-  dsm20 <- raster::crop(dsm20, extent(ageUse))    
+  dsm17 <- raster::crop(dsm17, raster::extent(ageUse))  
+  dsm18 <- raster::crop(dsm18, raster::extent(ageUse))  
+  dsm19 <- raster::crop(dsm19, raster::extent(ageUse))  
+  dsm20 <- raster::crop(dsm20, raster::extent(ageUse))    
   
 # Subtract ground elevation
-  chm09 <- dsm09-dem
-  chm15 <- dsm15-dem
   chm17 <- dsm17-dem
   chm18 <- dsm18-dem
   chm19 <- dsm19-dem
@@ -75,10 +62,6 @@
       extent_i <- as(extent_i, 'SpatialPolygons')
     
     # set values within failed tiles to NA  
-    if(qaqc$Use15[i]==F){
-      chm15 <- raster::mask(chm15, extent_i, inverse = T)
-    }    
-      
     if(qaqc$Use17[i]==F){
       chm17 <- raster::mask(chm17, extent_i, inverse = T)
     }
@@ -98,12 +81,10 @@
   }
 
 # Make sure all years have the same extent
-  chm09 <- raster::crop(chm09, raster::extent(ageUse))
-  chm15 <- raster::crop(chm15, raster::extent(chm09))
-  chm17 <- raster::crop(chm17, raster::extent(chm09))
-  chm18 <- raster::crop(chm18, raster::extent(chm09))
-  chm19 <- raster::crop(chm19, raster::extent(chm09))
-  chm20 <- raster::crop(chm20, raster::extent(chm09))
+
+  chm18 <- raster::crop(chm18, raster::extent(chm17))
+  chm19 <- raster::crop(chm19, raster::extent(chm17))
+  chm20 <- raster::crop(chm20, raster::extent(chm17))
   
   
 # Cloud masks for 2017-2020
@@ -112,7 +93,7 @@
   mask19 <- raster::raster("CloudMask_2019.tif")
   mask20 <- raster::raster("CloudMask_2020.tif")
   
-  # Resample to resolution of CHMs
+  # Resample to extent and resolution of CHMs
   mask17 <- raster::resample(mask17, chm17)
   mask18 <- raster::resample(mask18, chm18)
   mask19 <- raster::resample(mask19, chm19)
@@ -125,8 +106,6 @@
   chm20[!(mask20==1)] <- NA
     
 # # Save
-#   raster::writeRaster(chm09, "CHM_2009_QAQC.tif", overwrite=T)
-#   raster::writeRaster(chm15, "CHM_2015_QAQC.tif", overwrite=T)
 #   raster::writeRaster(chm17, "CHM_2017_QAQC.tif", overwrite=T)
 #   raster::writeRaster(chm18, "CHM_2018_QAQC.tif", overwrite=T)
 #   raster::writeRaster(chm19, "CHM_2019_QAQC.tif", overwrite=T)
@@ -136,444 +115,358 @@
 #### READ PROCESSED DATA ####  
   
   # Canopy height models for all years
-    chm09 <- raster::raster("CHM_2009_QAQC.tif")
-    chm15 <- raster::raster("CHM_2015_QAQC.tif")
     chm17 <- raster::raster("CHM_2017_QAQC.tif")
     chm18 <- raster::raster("CHM_2018_QAQC.tif")
     chm19 <- raster::raster("CHM_2019_QAQC.tif")
     chm20 <- raster::raster("CHM_2020_QAQC.tif")
     
   
-#### CANOPY HEIGHT DISTRIBUTION ####
-
-  dens09 <- density(raster::values(chm09), na.rm=T)
-  dens15 <- density(raster::values(chm15), na.rm=T)
-  dens17 <- density(raster::values(chm17), na.rm=T)
-  dens18 <- density(raster::values(chm18), na.rm=T)
-  dens19 <- density(raster::values(chm19), na.rm=T)
-  dens20 <- density(raster::values(chm20), na.rm=T)
-  
-  plot(dens09, col="black", lwd=2,
-       main="Canopy height distribution",
-       xlab="Canopy height (m)",
-       ylim=c(0,0.05),
-       xlim=c(-1,50))
-  lines(dens15, col="#99d8c9", lwd=2)
-  lines(dens17, col="#66c2a4", lwd=2)
-  lines(dens18, col="#41ae76", lwd=2)
-  lines(dens19, col="#238b45", lwd=2)
-  lines(dens20, col="#005824", lwd=2)
-  
-  legend(x=35,y=0.05,
-         c("2009","2015","2017","2018","2019","2020"),
-         col=c("black","#99d8c9","#66c2a4","#41ae76","#238b45","#005824"),
-         lwd=2,
-         bty="n")
-  
-  plot(dens09, col="black", lwd=2,
-       main="Canopy height distribution",
-       xlab="Canopy height (m)",
-       ylim=c(0,0.03),
-       xlim=c(-1,15))
-  lines(dens15, col="#99d8c9", lwd=2)
-  lines(dens17, col="#66c2a4", lwd=2)
-  lines(dens18, col="#41ae76", lwd=2)
-  lines(dens19, col="#238b45", lwd=2)
-  lines(dens20, col="#005824", lwd=2)
-  
-  
-
-#### BINARY LOW CANOPY ####
-  
-  htThresh <-5
-  
-  low09 <- chm09
-  low09@data@values[low09@data@values<=htThresh & !is.na(low09@data@values)] <- 1
-  low09@data@values[low09@data@values>htThresh & !is.na(low09@data@values)] <- 0
-  
-  low15 <- chm15
-  low15@data@values[low15@data@values<=htThresh & !is.na(low15@data@values)] <- 1
-  low15@data@values[low15@data@values>htThresh & !is.na(low15@data@values)] <- 0
-  
-  low17 <- chm17
-  low17@data@values[low17@data@values<=htThresh & !is.na(low17@data@values)] <- 1
-  low17@data@values[low17@data@values>htThresh & !is.na(low17@data@values)] <- 0
-  
-  low18 <- chm18
-  low18@data@values[low18@data@values<=htThresh & !is.na(low18@data@values)] <- 1
-  low18@data@values[low18@data@values>htThresh & !is.na(low18@data@values)] <- 0
-  
-  low19 <- chm19
-  low19@data@values[low19@data@values<=htThresh & !is.na(low19@data@values)] <- 1
-  low19@data@values[low19@data@values>htThresh & !is.na(low19@data@values)] <- 0
-  
-  low20 <- chm20
-  low20@data@values[low20@data@values<=htThresh & !is.na(low20@data@values)] <- 1
-  low20@data@values[low20@data@values>htThresh & !is.na(low20@data@values)] <- 0
-  
-  # Estimate maximum age of low canopy areas in 2020
-  low20age <- low20
-  low20age@data@values[low20@data@values==1 & !is.na(low20@data@values)] <- 0
-  low20age@data@values[low20@data@values==1 & low19@data@values==0 & !is.na(low20@data@values) & !is.na(low19@data@values)] <- 1
-  low20age@data@values[low20@data@values==1 & low19@data@values==1 & 
-                         low18@data@values==0 & !is.na(low20@data@values) & !is.na(low18@data@values)] <- 2
-  low20age@data@values[low20@data@values==1 & low19@data@values==1 & low18@data@values==1 & 
-                         low17@data@values==0 & !is.na(low20@data@values) & !is.na(low17@data@values)] <- 3
-  low20age@data@values[low20@data@values==1 & low19@data@values==1 & low18@data@values==1 & low17@data@values==1 & 
-                         low15@data@values==0 & !is.na(low20@data@values) & !is.na(low15@data@values)] <- 5
-  low20age@data@values[low20@data@values==1 & low19@data@values==1 & low18@data@values==1 & low17@data@values==1 & low15@data@values==1 & 
-                         low09@data@values==0 & !is.na(low20@data@values) & !is.na(low09@data@values)] <- 11
-  
-  low20NA <- low20
-  low20NA@data@values[low20@data@values==1 & !is.na(low20@data@values)] <- 0
-  low20NA@data@values[low20@data@values==1 & low20age@data@values == 0 & !is.na(low20@data@values)] <- 1
-  
-  100*length(low20age@data@values[low20age@data@values==1 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 & !is.na(low20age@data@values)])
-  100*length(low20age@data@values[low20age@data@values==2 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
-  100*length(low20age@data@values[low20age@data@values==3 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
-  100*length(low20age@data@values[low20age@data@values==5 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
-  100*length(low20age@data@values[low20age@data@values==11 & !is.na(low20age@data@values)])/length(low20age@data@values[low20@data@values==1 &!is.na(low20age@data@values)])
-  
 #### BINARY NEW GAPS #### 
   
-  d17to18 <- chm18-chm17
-  d18to19 <- chm19-chm18
-  d19to20 <- chm20-chm19
+  # Calculate the change in canopy height for each interval  
+    d17to18 <- chm18-chm17
+    d18to19 <- chm19-chm18
+    d19to20 <- chm20-chm19
   
-  colBrks2 <- c(-100,-5,-1,-0.5,0.5,1,5,100)
-  colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
-                                "white",
-                                "aliceblue","cornflowerblue","darkblue"))
-  
-  raster::plot(d17to18,
-               col = colPal2(length(colBrks2)-1),
-               breaks = colBrks2,
-               main = "2017 to 2018 height change")
-  
-  raster::plot(d18to19,
-               col = colPal2(length(colBrks2)-1),
-               breaks = colBrks2,
-               main = "2018 to 2019 height change")
-  
-  raster::plot(d18to19,
-               col = colPal2(length(colBrks2)-1),
-               breaks = colBrks2,
-               main = "2019 to 2020 height change")
-
-  # Use ForestGapR package to delineate new gaps (kind of hack-y)
-    gaps17to18 <- ForestGapR::getForestGaps(d17to18,
-                                            threshold = -5, size=c(10,10^4))
-    gaps17to18sp <- ForestGapR::GapSPDF(gaps17to18)
-    gaps17to18sp@data$area <- NA
-    gaps17to18sp@data$perimeter <- NA
-    for(i in 1:length(gaps17to18sp)){
-      gaps17to18sp[gaps17to18sp$gap_id==i,"area"] <- raster::area(gaps17to18sp[gaps17to18sp$gap_id==i,])
+  # Use ForestGapR package to delineate new gaps
+    
+    # Define gap height threshold, min gap size, max gap size, and min area:perimeter ratio
+      gapHtThresh <- -5
+      gapSzMin <- 10
+      gapSzMax <- 10^6
+      areaPerimThresh <- 0.6
       
-      perims_j <- c()
-      for(j in 1:length(gaps17to18sp[gaps17to18sp$gap_id==i,]@polygons[[1]]@Polygons)){
+    # 2017 - 2018
         
-        coordsj <- gaps17to18sp[gaps17to18sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
+      # Identify gaps  
+        gaps17to18 <- ForestGapR::getForestGaps(d17to18,
+                                                threshold = gapHtThresh ,
+                                                size=c(gapSzMin,gapSzMax))
         
-        lengths_k <- c()
-        for(k in 2:dim(coordsj)[1]){
-          lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
+      # Create a Spatial Polygon Data Frame object, where each polygon is a gap
+        gaps17to18sp <- ForestGapR::GapSPDF(gaps17to18)
+      
+      # Calculate the area and perimeter from each gap object
+        gaps17to18sp@data$area <- NA
+        gaps17to18sp@data$perimeter <- NA
+        for(i in 1:length(gaps17to18sp)){
+          gaps17to18sp[gaps17to18sp$gap_id==i,"area"] <- raster::area(gaps17to18sp[gaps17to18sp$gap_id==i,])
+          
+          perims_j <- c()
+          for(j in 1:length(gaps17to18sp[gaps17to18sp$gap_id==i,]@polygons[[1]]@Polygons)){
+            
+            coordsj <- gaps17to18sp[gaps17to18sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
+            
+            lengths_k <- c()
+            for(k in 2:dim(coordsj)[1]){
+              lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
+              
+            }
+            perims_j[j] <- sum(lengths_k)
+            
+            if(gaps17to18sp[gaps17to18sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
+              perims_j[j] <- 0
+            }
+            
+          }
+          gaps17to18sp[gaps17to18sp$gap_id==i,"perimeter"] <- sum(perims_j)
           
         }
-        perims_j[j] <- sum(lengths_k)
         
-        if(gaps17to18sp[gaps17to18sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
-          perims_j[j] <- 0
-        }
-        
-      }
-      gaps17to18sp[gaps17to18sp$gap_id==i,"perimeter"] <- sum(perims_j)
+      # Calculate the ratio of area to perimeter
+        gaps17to18sp@data$ratio <- gaps17to18sp@data$area/gaps17to18sp@data$perimeter
       
-      print(i)
-    }
-    
-    gaps17to18sp@data$ratio <- gaps17to18sp@data$area/gaps17to18sp@data$perimeter
-    
-    # Remove gaps that don't meet Raquel's area/perimeter threshold
-      for(i in 1:length(gaps17to18sp@data$ratio)){
-        if(gaps17to18sp@data$ratio[i]<0.6){
-          gaps17to18[gaps17to18==gaps17to18sp@data$gap_id[i]] <- NA
+      # Remove gaps that don't meet a minimum area/perimeter threshold
+        for(i in 1:length(gaps17to18sp@data$ratio)){
+          if(gaps17to18sp@data$ratio[i] < areaPerimThresh){
+            gaps17to18[gaps17to18==gaps17to18sp@data$gap_id[i]] <- NA
+          }
         }
-        print(i)
-      }
-    # Get stats for remaining new gaps
-      # initial canopy height
-        gapStats17to18_i <- ForestGapR::GapStats(gap_layer = gaps17to18,
-                                                 chm_layer = chm17)
-      # final canopy height  
-        gapStats17to18_f <- ForestGapR::GapStats(gap_layer = gaps17to18,
-                                                 chm_layer = chm18)
-    
-        
-        
-    gaps18to19 <- ForestGapR::getForestGaps(d18to19,
-                                            threshold = -5, size=c(10,10^4))
-    gaps18to19sp <- ForestGapR::GapSPDF(gaps18to19)
-    gaps18to19sp@data$area <- NA
-    gaps18to19sp@data$perimeter <- NA
-    for(i in 1:length(gaps18to19sp)){
-      gaps18to19sp[gaps18to19sp$gap_id==i,"area"] <- raster::area(gaps18to19sp[gaps18to19sp$gap_id==i,])
       
-      perims_j <- c()
-      for(j in 1:length(gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons)){
+    # 2018 - 2019
         
-        coordsj <- gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
-        
-        lengths_k <- c()
-        for(k in 2:dim(coordsj)[1]){
-          lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
+      # Identify gaps  
+        gaps18to19 <- ForestGapR::getForestGaps(d18to19,
+                                                threshold = gapHtThresh ,
+                                                size=c(gapSzMin,gapSzMax))
+      
+      # Create a Spatial Polygon Data Frame object, where each polygon is a gap
+        gaps18to19sp <- ForestGapR::GapSPDF(gaps18to19)
+      
+      # Calculate the area and perimeter from each gap object
+        gaps18to19sp@data$area <- NA
+        gaps18to19sp@data$perimeter <- NA
+        for(i in 1:length(gaps18to19sp)){
+          gaps18to19sp[gaps18to19sp$gap_id==i,"area"] <- raster::area(gaps18to19sp[gaps18to19sp$gap_id==i,])
+          
+          perims_j <- c()
+          for(j in 1:length(gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons)){
+            
+            coordsj <- gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
+            
+            lengths_k <- c()
+            for(k in 2:dim(coordsj)[1]){
+              lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
+              
+            }
+            perims_j[j] <- sum(lengths_k)
+            
+            if(gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
+              perims_j[j] <- 0
+            }
+            
+          }
+          gaps18to19sp[gaps18to19sp$gap_id==i,"perimeter"] <- sum(perims_j)
           
         }
-        perims_j[j] <- sum(lengths_k)
-        
-        if(gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
-          perims_j[j] <- 0
-        }
-        
-      }
-      gaps18to19sp[gaps18to19sp$gap_id==i,"perimeter"] <- sum(perims_j)
       
-      print(i)
-    }
-    
-    gaps18to19sp@data$ratio <- gaps18to19sp@data$area/gaps18to19sp@data$perimeter
-    # Remove gaps that don't meet Raquel's area/perimeter threshold
-      for(i in 1:length(gaps18to19sp@data$ratio)){
-        if(gaps18to19sp@data$ratio[i]<0.6){
-          gaps18to19[gaps18to19==gaps18to19sp@data$gap_id[i]] <- NA
-        }
-        print(i)
-      }
-    # Get stats for remaining new gaps
-      # initial canopy height
-      gapStats18to19_i <- ForestGapR::GapStats(gap_layer = gaps18to19,
-                                               chm_layer = chm18)
-      # final canopy height  
-      gapStats18to19_f <- ForestGapR::GapStats(gap_layer = gaps18to19,
-                                               chm_layer = chm19)
-    
-    
-    gaps19to20 <- ForestGapR::getForestGaps(d19to20,
-                                            threshold = -5, size=c(10,10^4))
-    gaps19to20sp <- ForestGapR::GapSPDF(gaps19to20)
-    gaps19to20sp@data$area <- NA
-    gaps19to20sp@data$perimeter <- NA
-    
-    for(i in 1:length(gaps19to20sp)){
-      gaps19to20sp[gaps19to20sp$gap_id==i,"area"] <- raster::area(gaps19to20sp[gaps19to20sp$gap_id==i,])
+      # Calculate the ratio of area to perimeter
+        gaps18to19sp@data$ratio <- gaps18to19sp@data$area/gaps18to19sp@data$perimeter
       
-      perims_j <- c()
-      for(j in 1:length(gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons)){
-        
-        coordsj <- gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
-        
-        lengths_k <- c()
-        for(k in 2:dim(coordsj)[1]){
-          lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
-
-        }
-        perims_j[j] <- sum(lengths_k)
-        
-        if(gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
-          perims_j[j] <- 0
+      # Remove gaps that don't meet a minimum area/perimeter threshold
+        for(i in 1:length(gaps18to19sp@data$ratio)){
+          if(gaps18to19sp@data$ratio[i] < areaPerimThresh){
+            gaps18to19[gaps18to19==gaps18to19sp@data$gap_id[i]] <- NA
+          }
         }
         
-      }
-      gaps19to20sp[gaps19to20sp$gap_id==i,"perimeter"] <- sum(perims_j)
+    # 2019 - 2020
+        
+      # Identify gaps  
+        gaps19to20 <- ForestGapR::getForestGaps(d19to20,
+                                                threshold = gapHtThresh ,
+                                                size=c(gapSzMin,gapSzMax))
       
-      print(i)
-    }
-    
-    gaps19to20sp@data$ratio <- gaps19to20sp@data$area/gaps19to20sp@data$perimeter
-    # Remove gaps that don't meet Raquel's area/perimeter threshold
-      for(i in 1:length(gaps19to20sp@data$ratio)){
-        if(gaps19to20sp@data$ratio[i]<0.6){
-          gaps19to20[gaps19to20==gaps19to20sp@data$gap_id[i]] <- NA
+      # Create a Spatial Polygon Data Frame object, where each polygon is a gap
+        gaps19to20sp <- ForestGapR::GapSPDF(gaps19to20)
+      
+      # Calculate the area and perimeter from each gap object
+        gaps19to20sp@data$area <- NA
+        gaps19to20sp@data$perimeter <- NA
+        for(i in 1:length(gaps19to20sp)){
+          gaps19to20sp[gaps19to20sp$gap_id==i,"area"] <- raster::area(gaps19to20sp[gaps19to20sp$gap_id==i,])
+          
+          perims_j <- c()
+          for(j in 1:length(gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons)){
+            
+            coordsj <- gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
+            
+            lengths_k <- c()
+            for(k in 2:dim(coordsj)[1]){
+              lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
+              
+            }
+            perims_j[j] <- sum(lengths_k)
+            
+            if(gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
+              perims_j[j] <- 0
+            }
+            
+          }
+          gaps19to20sp[gaps19to20sp$gap_id==i,"perimeter"] <- sum(perims_j)
+          
         }
-        print(i)
-      }
-    
-      # Get stats for remaining new gaps
-      # initial canopy height
-      gapStats19to20_i <- ForestGapR::GapStats(gap_layer = gaps19to20,
-                                               chm_layer = chm19)
-      # final canopy height  
-      gapStats19to20_f <- ForestGapR::GapStats(gap_layer = gaps19to20,
-                                               chm_layer = chm20)
-    
-    
+      
+      # Calculate the ratio of area to perimeter
+        gaps19to20sp@data$ratio <- gaps19to20sp@data$area/gaps19to20sp@data$perimeter
+      
+      # Remove gaps that don't meet a minimum area/perimeter threshold
+        for(i in 1:length(gaps19to20sp@data$ratio)){
+          if(gaps19to20sp@data$ratio[i] < areaPerimThresh){
+            gaps19to20[gaps19to20==gaps19to20sp@data$gap_id[i]] <- NA
+          }
+        }
+  
   # Save gap shapefiles
-      gaps17to18sp$use <- ifelse(gaps17to18sp$ratio<0.6,
+      gaps17to18sp$use <- ifelse(gaps17to18sp$ratio<areaPerimThresh,
                                  F,T)
       rgdal::writeOGR(gaps17to18sp,
                       dsn = "gaps17to18_shapefile",
                       layer = "gaps17to18sp", 
                       driver = "ESRI Shapefile")
       
-      gaps18to19sp$use <- ifelse(gaps18to19sp$ratio<0.6,
+      gaps18to19sp$use <- ifelse(gaps18to19sp$ratio<areaPerimThresh,
                                  F,T)
       rgdal::writeOGR(gaps18to19sp,
                       dsn = "gaps18to19_shapefile",
                       layer = "gaps18to19sp", 
                       driver = "ESRI Shapefile")
       
-      gaps19to20sp$use <- ifelse(gaps19to20sp$ratio<0.6,
+      gaps19to20sp$use <- ifelse(gaps19to20sp$ratio<areaPerimThresh,
                                  F,T)
       rgdal::writeOGR(gaps19to20sp,
                       dsn = "gaps19to20_shapefile",
                       layer = "gaps19to20sp", 
                       driver = "ESRI Shapefile")
+  
+  # Save rasters of new gap pixels
+      raster::writeRaster(gaps17to18, file="newGaps17to18.tif")
+      raster::writeRaster(gaps18to19, file="newGaps18to19.tif")
+      raster::writeRaster(gaps19to20, file="newGaps19to20.tif")
       
       
-#### PLOT GAP SIZE FREQUENCY DISTRIBUTION ####
-
-  par(mfrow=c(1,1), las=1)
-  gapSzFreq17to18 <- ForestGapR::GapSizeFDist(gapStats17to18_i,
-                                              xlim=c(10,10^4),
-                                              ylim=c(1,200),
-                                              pch=20,
-                                              cex.axis=1.5,
-                                              xlab=NA,
-                                              ylab=NA,
-                                              col=adjustcolor("black",0.5),
-                                              main=NA)
-  gapSzFreq18to19 <- ForestGapR::GapSizeFDist(gapStats18to19_i,
-                                              xlim=c(10,10^4),
-                                              ylim=c(1,200),
-                                              pch=20,
-                                              cex.axis=1.5,
-                                              xlab=NA,
-                                              ylab=NA,
-                                              col=adjustcolor("black",0.5),
-                                              main=NA)
-  gapSzFreq19to20 <- ForestGapR::GapSizeFDist(gapStats19to20_i,
-                                              xlim=c(10,10^4),
-                                              ylim=c(1,200),
-                                              pch=20,
-                                              cex.axis=1.5,
-                                              xlab=NA,
-                                              ylab=NA,
-                                              col=adjustcolor("black",0.5),
-                                              main=NA)
-  
-  #raster::writeRaster(gaps17to18, file="newGaps17to18.tif")
-  #raster::writeRaster(gaps18to19, file="newGaps18to19.tif")
-  #raster::writeRaster(gaps19to20, file="newGaps19to20.tif")
-  
-  #raster::writeRaster(gaps17to18, file="newGaps17to18a.tif", overwrite = T)
-  #raster::writeRaster(gaps18to19, file="newGaps18to19a.tif", overwrite = T)
-  #raster::writeRaster(gaps19to20, file="newGaps19to20a.tif", overwrite = T)
-  
-  
-    
-    #save(gaps17to18sp, gaps18to19sp, gaps18to19sp, gaps17to18, gaps18to19, gaps18to19, file="PrelimGapLayers.RData")
-  
+  # Save rasters of canopy height change
+      raster::writeRaster(d17to18, file="dCHM17to18.tif")
+      raster::writeRaster(d18to19, file="dCHM18to19.tif")
+      raster::writeRaster(d19to20, file="dCHM19to20.tif")
+      
 #### SUMMARY GAP STATS PER YEAR ####
-  # gaps17to18 <- raster::raster("newGaps17to18.tif")
-  # gaps18to19 <- raster::raster("newGaps18to19.tif")
-  # gaps19to20 <- raster::raster("newGaps19to20.tif")
+
+      # Make vectors of all sampled values in each interval, and of gap values
+      # sampled in each interval
+        # All values
+          allVals18 <- raster::values(d17to18)
+          allVals19 <- raster::values(d18to19)
+          allVals20 <- raster::values(d19to20)
+        # Gap values
+          gapVals18 <- raster::values(gaps17to18)
+          gapVals19 <- raster::values(gaps18to19)
+          gapVals20 <- raster::values(gaps19to20)
+      
+      
+      # Total area sampled in each interval (in ha)
+        area18 <- length(allVals18[!is.na(allVals18)])/10000
+        area19 <- length(allVals19[!is.na(allVals19)])/10000
+        area20 <- length(allVals20[!is.na(allVals20)])/10000
+
+      # Gap area (% yr-1)
+      # Correct for measuring 13 months in 2019-2020  
+        round(100*length(gapVals18[!is.na(gapVals18)])/length(allVals18[!is.na(allVals18)]),1)
+        round(100*length(gapVals19[!is.na(gapVals19)])/length(allVals19[!is.na(allVals19)]),1)
+        round(100*length(gapVals20[!is.na(gapVals20)])/length(allVals20[!is.na(allVals20)])/(13/12),1)
+
+      
+      # Gap number (gaps ha-1 yr-1)
+        round(length(unique(gapVals18[!is.na(gapVals18)]))/(area18),1)
+        round(length(unique(gapVals19[!is.na(gapVals19)]))/(area19),1)
+        round(length(unique(gapVals20[!is.na(gapVals20)]))/(area20),1)
+
+#### CALCULATE GAP SIZE FREQUENCY DISTRIBUTION ####
+        
+  # Define a Metropolis-Hastings MCMC algorithm to esimates the posterior distribution of lambda    
+  # Based on recommendations from: https://theoreticalecology.wordpress.com/2010/09/17/metropolis-hastings-mcmc-in-r/
+  
+  # Data: vector of individual gap sizes (in # of pixels)
+  
+  # Likelihood function: 
+    dpl <- function(param, data){
+      sum(log(data^-param/VGAM::zeta(param)))
+    }
+  
+  # Define a prior for lambda
+    prior <- function(param){
+      lambdaPrior <- dunif(param, min=1.001, max=5, log=T)
+      #lambdaPrior <- dgamma(param-1, 0.001, 0.001, log=T)
+      return(lambdaPrior)
+    }
+    
+  # Define the posterior, the sum of the likelihood function and the prior (because log-transformed)
+    posterior <- function(data, param){
+      return(dpl(param,data) + prior(param))
+    }
+  
+  # Define proposal function (adjust to get acceptance rate ~ 20%)
+    proposalFunction <- function(param){
+      return(rnorm(1,  mean=param, sd=0.11))
+      #return(rgamma(1, shape=2500, rate=2500/(param-1))+1)
+    }
+  
+  
+  # Define MCMC routine
+    runMCMC <- function(startvalue, iterations, data){
+      
+      chain = array(dim = c(iterations+1,1))
+      chain[1] = startvalue
+      accept = array(dim= c(iterations,1))
+      
+      for (i in 1:iterations){
+        proposal = proposalFunction(chain[i])
+        
+        # Proposal must be greater than 1
+        while(proposal < 1){
+          proposal = proposalFunction(chain[i])
+        }
+        
+        q1 <- dgamma(chain[i]-1, shape=2500, rate=2500/(proposal-1), log=T)
+        q2 <- dgamma((proposal-1), shape=2500, rate=2500/(chain[i]-1), log=T)
+        
+        probabNumerator = exp(posterior(data, param = proposal) - posterior(data, param = chain[i]))
+        probabDenominator = exp(q2-q1)
+        #probab <- probabNumerator/probabDenominator
+        probab <- probabNumerator
+        
+        if (runif(1) < probab){
+          chain[i+1,] = proposal
+          accept[i] = 1
+        }else{
+          chain[i+1,] = chain[i,]
+          accept[i] = 0
+        }
+      }
+      
+      return(list(chain,accept))
+      
+    }    
+  
+  # # Test MCMC routine on simulated data
+  #   lambda <- 2.5
+  #   gapValues <- c(1:10000)
+  #   gapProbs <- (gapValues^-lambda)/VGAM::zeta(lambda)
+  #   gapSims <- sample(size=1000, x=gapValues, prob=gapProbs, replace=T)
+  #   
+  #   fitdp <- optimize(dpl, data=gapSims, lower = 1.0001, upper = 20, maximum = T)
   # 
-  # d17to18 <- chm18-chm17
-  # d18to19 <- chm19-chm18
-  # d19to20 <- chm20-chm19
-  
-  
-  # Gap area (%)
-  
-  gapVals18 <- raster::values(gaps17to18)
-  100*length(gapVals18[!is.na(gapVals18)])/length(d17to18@data@values[!is.na(d17to18@data@values)])  
-  
-  gapVals19 <- raster::values(gaps18to19)
-  100*length(gapVals19[!is.na(gapVals19)])/length(d18to19@data@values[!is.na(d18to19@data@values)])
-  
-  gapVals20 <- raster::values(gaps19to20)
-  100*length(gapVals20[!is.na(gapVals20)])/length(d19to20@data@values[!is.na(d19to20@data@values)])
-  100*length(gapVals20[!is.na(gapVals20)])/length(d19to20@data@values[!is.na(d19to20@data@values)])/(13/12)
-  
-  # Gap number (gaps/hectare)
-  
-  length(unique(gapVals18[!is.na(gapVals18)]))/(length(d17to18@data@values[!is.na(d17to18@data@values)])/10000)
-  
-  length(unique(gapVals19[!is.na(gapVals19)]))/(length(d18to19@data@values[!is.na(d18to19@data@values)])/10000)
-  
-  length(unique(gapVals20[!is.na(gapVals20)]))/(length(d19to20@data@values[!is.na(d19to20@data@values)])/10000)
-  length(unique(gapVals20[!is.na(gapVals20)]))/(length(d19to20@data@values[!is.na(d19to20@data@values)])/10000)/(13/12)
-  
-#### INITIAL AND FINAL HEIGHT OF GAPS ####
-  htVals17 <- raster::values(chm17)
-  htVals18 <- raster::values(chm18)
-  htVals19 <- raster::values(chm19)
-  htVals20 <- raster::values(chm20)
-  
-  # 2017 to 2018
-  totalHt17 <- density(htVals17[!is.na(d17to18@data@values)])
-  totalHt18 <- density(htVals18[!is.na(d17to18@data@values)])
-  gapStartHt17 <-  density(htVals17[!is.na(gapVals18)])
-  gapEndHt18 <-  density(htVals18[!is.na(gapVals18)])
-  
-plot(totalHt17, lwd=3, col=adjustcolor("black",alpha.f = 0.6),
-     ylim=c(0,0.07),
-     xlab = "Height (m)",
-     main=NA)
-lines(totalHt18, lwd=3, col=adjustcolor("black",alpha.f = 0.6), lty=2)
-lines(gapStartHt17, lwd=3, col=adjustcolor("blue",alpha.f = 0.6))
-lines(gapEndHt18, lwd=3, col=adjustcolor("red",alpha.f = 0.6))
-legend(x=25,y=0.075,
-       c("2017 Landscape", "2018 Landscape",
-         "New gaps--initial height",
-         "New gaps--final height"),
-       col=adjustcolor(c("black","black","blue","red"),alpha.f =0.6),
-       lty=c(1,2,1,1),
-       lwd=3,
-       bty="n")
-
-# 2018 to 2019
-totalHt18 <- density(htVals18[!is.na(d18to19@data@values)])
-totalHt19 <- density(htVals19[!is.na(d18to19@data@values)])
-gapStartHt18 <-  density(htVals18[!is.na(gapVals19)])
-gapEndHt19 <-  density(htVals19[!is.na(gapVals19)])
-
-plot(totalHt18, lwd=3, col=adjustcolor("black",alpha.f = 0.6),
-     ylim=c(0,0.07),
-     xlab = "Height (m)",
-     main=NA)
-lines(totalHt19, lwd=3, col=adjustcolor("black",alpha.f = 0.6), lty=2)
-lines(gapStartHt18, lwd=3, col=adjustcolor("blue",alpha.f = 0.6))
-lines(gapEndHt19, lwd=3, col=adjustcolor("red",alpha.f = 0.6))
-legend(x=25,y=0.075,
-       c("2018 Landscape", "2019 Landscape",
-         "New gaps--initial height",
-         "New gaps--final height"),
-       col=adjustcolor(c("black","black","blue","red"),alpha.f =0.6),
-       lty=c(1,2,1,1),
-       lwd=3,
-       bty="n")
-
-# 2019 to 2020
-totalHt19 <- density(htVals19[!is.na(d18to19@data@values)])
-totalHt20 <- density(htVals20[!is.na(d18to19@data@values)])
-gapStartHt19 <-  density(htVals19[!is.na(gapVals20)])
-gapEndHt20 <-  density(htVals20[!is.na(gapVals20)])
-
-plot(totalHt19, lwd=3, col=adjustcolor("black",alpha.f = 0.6),
-     ylim=c(0,0.07),
-     xlab = "Height (m)",
-     main=NA)
-lines(totalHt20, lwd=3, col=adjustcolor("black",alpha.f = 0.6), lty=2)
-lines(gapStartHt19, lwd=3, col=adjustcolor("blue",alpha.f = 0.6))
-lines(gapEndHt20, lwd=3, col=adjustcolor("red",alpha.f = 0.6))
-legend(x=25,y=0.075,
-       c("2019 Landscape", "2020 Landscape",
-         "New gaps--initial height",
-         "New gaps--final height"),
-       col=adjustcolor(c("black","black","blue","red"),alpha.f =0.6),
-       lty=c(1,2,1,1),
-       lwd=3,
-       bty="n")
-
-  
-  
+  #   fitSim <- runMCMC(startvalue = fitdp$maximum, iterations = 5000, data = gapSims)
+  #   hist(fitSim[[1]][1001:5000]);abline(v=lambda,col="red")
+  #   sum(fitSim[[2]]);mean(fitSim[[1]][1001:5000])-lambda
+        
+  # Get vector of gap sizes for each interval
+    gapSz18 <- gaps17to18sp$area[gaps17to18sp$ratio > areaPerimThresh]
+    gapSz19 <- gaps18to19sp$area[gaps18to19sp$ratio > areaPerimThresh]
+    gapSz20 <- gaps19to20sp$area[gaps19to20sp$ratio > areaPerimThresh]
+    
+  # Run MCMC routine to estimate lambda  
+    # Set seed so "random" results are repeatable
+      set.seed(1)
+    # Set number of simulations  
+      sims <- 100000
+    # Run MCMC function for each year
+      lambda18MC <- runMCMC(startvalue = optimize(dpl, 
+                                                  data=gapSz18, 
+                                                  lower = 1.0001, upper = 20, 
+                                                  maximum = T)$maximum, 
+                            iterations = sims, 
+                            data = gapSz18)
+      
+      lambda19MC <- runMCMC(startvalue = optimize(dpl, 
+                                                  data=gapSz19, 
+                                                  lower = 1.0001, upper = 20, 
+                                                  maximum = T)$maximum, 
+                            iterations = sims, 
+                            data = gapSz19)
+      
+      lambda20MC <- runMCMC(startvalue = optimize(dpl, 
+                                                  data=gapSz20, 
+                                                  lower = 1.0001, upper = 20, 
+                                                  maximum = T)$maximum, 
+                            iterations = sims, 
+                            data = gapSz20)
+      
+    # Summarize results for each year
+      # Define parameters for sampling chain
+      burnIn <- 5001
+      skipN <- 25
+      
+      # 2017-2018  
+        lambdaMin18 <- round(quantile(lambda18MC[[1]][seq(burnIn,sims,skipN)], 0.025),3)
+        lambdaMed18 <- round(quantile(lambda18MC[[1]][seq(burnIn,sims,skipN)], 0.50),3)
+        lambdaMax18 <- round(quantile(lambda18MC[[1]][seq(burnIn,sims,skipN)], 0.975),3)
+      # 2018-2019  
+        lambdaMin19 <- round(quantile(lambda19MC[[1]][seq(burnIn,sims,skipN)], 0.025),3)
+        lambdaMed19 <- round(quantile(lambda19MC[[1]][seq(burnIn,sims,skipN)], 0.50),3)
+        lambdaMax19 <- round(quantile(lambda19MC[[1]][seq(burnIn,sims,skipN)], 0.975),3)
+      # 2019-2020  
+        lambdaMin20 <- round(quantile(lambda20MC[[1]][seq(burnIn,sims,skipN)], 0.025),3)
+        lambdaMed20 <- round(quantile(lambda20MC[[1]][seq(burnIn,sims,skipN)], 0.50),3)
+        lambdaMax20 <- round(quantile(lambda20MC[[1]][seq(burnIn,sims,skipN)], 0.975),3)
+        
