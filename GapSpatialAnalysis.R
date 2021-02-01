@@ -1,60 +1,31 @@
 #### Read data ####
-
-  # Read grid info
-  gridInfo <- read.csv("gridInfo_QAQC.csv")
+  
+  # Read canopy height change rasters
+    dchm17to18 <- raster::raster("dCHM17to18.tif")
+    dchm18to19 <- raster::raster("dCHM18to19.tif")
+    dchm19to20 <- raster::raster("dCHM19to20.tif")
+    
+    allLayerList <- list(dchm17to18,dchm18to19,dchm19to20)
+  
+  # Read new gap rasters
+    gaps17to18 <- raster::raster("newGaps17to18.tif")
+    gaps18to19 <- raster::raster("newGaps18to19.tif")
+    gaps19to20 <- raster::raster("newGaps19to20.tif")
+    
+    gapLayerList <- list(gaps17to18, gaps18to19, gaps19to20)
   
   # Read in forest age
-  age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
-  ageUse <- age[!(age$TYPE=="Clearings"),]
-  
-  # Canopy height models for all years
-  chm17 <- raster::raster("CHM_2017_QAQC.tif")
-  chm18 <- raster::raster("CHM_2018_QAQC.tif")
-  chm19 <- raster::raster("CHM_2019_QAQC.tif")
-  chm20 <- raster::raster("CHM_2020_QAQC.tif")
-  
-    # Mask all layers to exclude clearings
-    chm17 <- raster::mask(chm17, ageUse)
-    chm18 <- raster::mask(chm18, ageUse)
-    chm19 <- raster::mask(chm19, ageUse)
-    chm20 <- raster::mask(chm20, ageUse)
-  
-  # Make canopy height change rasters
-  dchm17to18 <- chm18-chm17
-  dchm18to19 <- chm19-chm18
-  dchm19to20 <- chm20-chm19
-  
-  allLayerList <- list(dchm17to18,dchm18to19,dchm19to20)
-  
-  # # Gap rasters
-  # gaps17to18 <- raster::raster("newGaps17to18.tif")
-  # gaps18to19 <- raster::raster("newGaps18to19.tif")
-  # gaps19to20 <- raster::raster("newGaps19to20.tif")
-  
-  # Gap rasters
-  gaps17to18 <- raster::raster("newGaps17to18a.tif")
-  gaps18to19 <- raster::raster("newGaps18to19a.tif")
-  gaps19to20 <- raster::raster("newGaps19to20a.tif")
-  
-    # Mask gap layers to exclude clearings
-    gaps17to18 <- raster::mask(gaps17to18, ageUse)
-    gaps18to19 <- raster::mask(gaps18to19, ageUse)
-    gaps19to20 <- raster::mask(gaps19to20, ageUse)
+    age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+    ageUse <- age[!(age$TYPE=="Clearings"),]
     
-  gapLayerList <- list(gaps17to18, gaps18to19, gaps19to20)
-  
   # Read polygon buffer 25 m inland from lake
-  buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
-  buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
-  buffer <- raster::intersect(buffer, ageUse)
+    buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+    buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
+    buffer <- raster::intersect(buffer, ageUse)
   
   # Low and high forest area from 2009
-  
   lo09 <- raster::raster("binaryLoCanopy.tif")
-  hi09 <- raster::raster("binaryHiCanopy.tif")
-  
   lo09 <- raster::mask(lo09, buffer)
-  hi09 <- raster::mask(hi09, buffer)
   
   # DEM
   dem09 <- raster::raster("D:/BCI_Spatial/BCI_Topo/LidarDEM_BCI.tif")
@@ -63,17 +34,7 @@
   
   # Read soil type polygons
   soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
-  soil <- sp::spTransform(soil,raster::crs(chm17))
-  
-  # Basic stats for each year
-  gapPct17to18 <- length(raster::values(gaps17to18)[!is.na(raster::values(gaps17to18))])/
-    length(raster::values(dchm17to18)[!is.na(raster::values(dchm17to18))])
-  
-  gapPct18to19 <- length(raster::values(gaps18to19)[!is.na(raster::values(gaps18to19))])/
-    length(raster::values(dchm18to19)[!is.na(raster::values(dchm18to19))])
-  
-  gapPct19to20 <- (12/13)*length(raster::values(gaps19to20)[!is.na(raster::values(gaps19to20))])/
-    length(raster::values(dchm19to20)[!is.na(raster::values(dchm19to20))])
+  soil <- sp::spTransform(soil,raster::crs(dchm17to18))
   
 #### Make polygons for 10% blocked LOO samples ####
   
@@ -178,14 +139,6 @@
     allData <- raster::values(allLayer)
     gapData <- raster::values(gapLayer)
     
-    # # Make masked rasters of topographic values
-    # allRaster <- topoRaster
-    # allRaster@data@values[is.na(allData)] <- NA
-    # 
-    # gapRaster <- topoRaster
-    # gapRaster@data@values[is.na(gapData)] <- NA
-    
-  
     # Do Kolmogorov-Smirnov or Watson-Williams test test
     nIter <- length(list.files(sampleDir))
     results <- data.frame(D=rep(NA,nIter),
@@ -218,7 +171,7 @@
         results$p[i] <- WW$p.value
       }
       
-      #print(i)
+      print(i)
     }
     
     return(results)
@@ -305,8 +258,8 @@
   }
   
 #### Test for variation with slope at different smoothing scales ####
-  #smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
-  smoothScales <- c(3,9,15,21,27,33,39,45,51)
+  smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
+
   endYrs <- c("2018","2019","2020")
   
   for(i in 1:length(smoothScales)){
@@ -331,13 +284,12 @@
       }
       print(paste0(i,"_",j))
     }
-    
   }
   
 #### Test for variation with curvature at different smoothing scales ####
-  #smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
-  smoothScales <- c(3,9,15,21,27,33,39,45,51)
   
+  smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
+
   for(i in 1:length(smoothScales)){
     
     for(j in 1:length(gapLayerList)){
@@ -366,8 +318,7 @@
 
   
 #### Test for variation with aspect at different smoothing scales ####
-  #smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
-  smoothScales <- c(3,15,27,39,51)
+  smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
   endYrs <- c("2018","2019","2020")
   
   for(i in 1:length(smoothScales)){
@@ -396,41 +347,9 @@
     
   }  
   
-  
-  
-#### Test for variation with Laplacian convexity at different smoothing scales ####
-  #smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
-  smoothScales <- c(3,15,27,39,51)
-  endYrs <- c("2018","2019","2020")
-  
-  for(i in 1:length(smoothScales)){
-    
-    for(j in 1:length(gapLayerList)){
-      results_ij <- topoTest(topoLayer = paste0("D:/BCI_Spatial/BCI_Topo/Convex_smooth_",
-                                                smoothScales[i],".tif"),
-                             gapLayer = gapLayerList[[j]],
-                             allLayer = allLayerList[[j]],
-                             sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                             mask = buffer)
-      results_ij$Var <- "Convexity"
-      results_ij$Scale <- smoothScales[i]
-      results_ij$Year <- endYrs[j]
-      
-      if(j==1 & i==1){
-        resultsConvex <- results_ij
-      }
-      
-      if(j>1|i>1){
-        resultsConvex <- rbind(resultsConvex, results_ij)
-      }
-      print(paste0(i,"_",j))
-    }
-    
-  }  
-  
 #### Summarize topographic results ####
-  #smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
-  smoothScales <- c(3,15,27,39,51)
+  smoothScales <- c(0,3,9,15,21,27,33,39,45,51,57,63)
+
   endYrs <- c("2018","2019","2020")
   
   summaryAspect <- data.frame(Scale = rep(smoothScales, length(endYrs)),
@@ -517,176 +436,132 @@
     
   }
   
-  summaryConvex <- data.frame(Scale = rep(smoothScales, length(endYrs)),
-                            Year = rep(endYrs, each = length(smoothScales)),
-                            minD = NA,
-                            maxD = NA,
-                            meanD = NA,
-                            minP = NA,
-                            maxP = NA,
-                            meanP = NA)
-  for(i in 1:dim(summaryConvex)[1]){
-    summaryConvex$minD[i] <- quantile(resultsConvex[resultsConvex$Year==summaryConvex$Year[i] & 
-                                                  resultsConvex$Scale==summaryConvex$Scale[i], "D"],
-                                    probs = 0.025)
-    summaryConvex$maxD[i] <- quantile(resultsConvex[resultsConvex$Year==summaryConvex$Year[i] & 
-                                                  resultsConvex$Scale==summaryConvex$Scale[i], "D"],
-                                    probs = 0.975)
-    summaryConvex$meanD[i] <- mean(resultsConvex[resultsConvex$Year==summaryConvex$Year[i] & 
-                                               resultsConvex$Scale==summaryConvex$Scale[i], "D"])
-    summaryConvex$minP[i] <- quantile(resultsConvex[resultsConvex$Year==summaryConvex$Year[i] & 
-                                                  resultsConvex$Scale==summaryConvex$Scale[i], "p"],
-                                    probs = 0.025)
-    summaryConvex$maxP[i] <- quantile(resultsConvex[resultsConvex$Year==summaryConvex$Year[i] & 
-                                                  resultsConvex$Scale==summaryConvex$Scale[i], "p"],
-                                    probs = 0.975)
-    summaryConvex$meanP[i] <- mean(resultsConvex[resultsConvex$Year==summaryConvex$Year[i] & 
-                                               resultsConvex$Scale==summaryConvex$Scale[i], "p"])
+
+  # Make figure
+  
+  par(mfrow=c(1,3),las=1, mar=c(3,5,1,1), oma=c(2,2,0,0))
+  
+  # Relative importance--Slope
+    plot(meanD~Scale, data=summarySlope[summarySlope$Year=="2018",],
+         type="l",
+         ylim=c(0.00,0.10),
+         xlab=NA,
+         ylab=NA,
+         cex.axis=1.5)
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summarySlope[summarySlope$Year=="2018","minD"],
+                rev(summarySlope[summarySlope$Year=="2018","maxD"])),
+            border=NA, col=adjustcolor("black",0.2))
+    points(meanD~Scale, data=summarySlope[summarySlope$Year=="2018",],
+           pch=19)
+  
     
-  }
+    lines(meanD~Scale, data=summarySlope[summarySlope$Year=="2019",],
+          type="l", col="blue")
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summarySlope[summarySlope$Year=="2019","minD"],
+                rev(summarySlope[summarySlope$Year=="2019","maxD"])),
+            border=NA, col=adjustcolor("blue",0.2))
+    points(meanD~Scale, data=summarySlope[summarySlope$Year=="2019",],
+           pch=19, col="blue")
+    
+    lines(meanD~Scale, data=summarySlope[summarySlope$Year=="2020",],
+          type="l", col="red")
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summarySlope[summarySlope$Year=="2020","minD"],
+                rev(summarySlope[summarySlope$Year=="2020","maxD"])),
+            border=NA, col=adjustcolor("red",0.2))
+    points(meanD~Scale, data=summarySlope[summarySlope$Year=="2020",],
+           pch=19, col="red")
+    
+    abline(v=15, lty=2, lwd=2)
+    text(x=0,y=0.10,"a",cex=2)
+    
+    legend(x=25,y=0.025,
+           c("2018","2019","2020"),
+           pch=19,
+           cex=1.2,
+           pt.cex=1.2,
+           y.intersp = 1.5,
+           col=c("black","blue","red"),
+           bty="n")
+  
+  # Relative importance--curvature
+    plot(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2018",],
+         type="l",
+         ylim=c(0.00,0.10),
+         xlab=NA,
+         ylab=NA,
+         cex.axis=1.5)
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summaryCurv[summaryCurv$Year=="2018","minD"],
+                rev(summaryCurv[summaryCurv$Year=="2018","maxD"])),
+            border=NA, col=adjustcolor("black",0.2))
+    points(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2018",],
+           pch=19)
+    
+    
+    lines(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2019",],
+          type="l", col="blue")
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summaryCurv[summaryCurv$Year=="2019","minD"],
+                rev(summaryCurv[summaryCurv$Year=="2019","maxD"])),
+            border=NA, col=adjustcolor("blue",0.2))
+    points(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2019",],
+           pch=19, col="blue")
+    
+    lines(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2020",],
+          type="l", col="red")
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summaryCurv[summaryCurv$Year=="2020","minD"],
+                rev(summaryCurv[summaryCurv$Year=="2020","maxD"])),
+            border=NA, col=adjustcolor("red",0.2))
+    points(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2020",],
+           pch=19, col="red")
+    
+    abline(v=21, lty=2, lwd=2)
+    text(x=0,y=0.10,"b",cex=2)
+  
+  # Relative importance--aspect
+    plot(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2018",],
+         type="l",
+         ylim=c(0.00,20500),
+         xlab=NA,
+         ylab=NA,
+         cex.axis=1.5)
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summaryAspect[summaryAspect$Year=="2018","minD"],
+                rev(summaryAspect[summaryAspect$Year=="2018","maxD"])),
+            border=NA, col=adjustcolor("black",0.2))
+    points(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2018",],
+           pch=19)
+    
+    lines(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2019",],
+          type="l", col="blue")
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summaryAspect[summaryAspect$Year=="2019","minD"],
+                rev(summaryAspect[summaryAspect$Year=="2019","maxD"])),
+            border=NA, col=adjustcolor("blue",0.2))
+    points(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2019",],
+           pch=19, col="blue")
+    
+    lines(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2020",],
+          type="l", col="red")
+    polygon(x=c(smoothScales,rev(smoothScales)),
+            y=c(summaryAspect[summaryAspect$Year=="2020","minD"],
+                rev(summaryAspect[summaryAspect$Year=="2020","maxD"])),
+            border=NA, col=adjustcolor("red",0.2))
+    points(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2020",],
+           pch=19, col="red")
+    
+    abline(v=21, lty=2, lwd=2)
+    text(x=0,y=20500,"c",cex=2)
+    
+  mtext(expression("Smoothing scale ("~sigma~")"),side=1,outer=T,cex=1.5,line=1.2)
+  par(las=0)
+  mtext(expression("Relative importance"), side=2, outer = T, cex = 1.5)
   
   
-
-  par(mfrow=c(1,1),las=1, mar=c(3,5,1,1))
-  # 2018 relative importance
-  plot(meanD~Scale, data=summarySlope[summarySlope$Year=="2018",],
-       type="l",
-       ylim=c(0.02,0.14),
-       xlab=NA,
-       ylab=NA,
-       cex.axis=1.5)
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summarySlope[summarySlope$Year=="2018","minD"],
-              rev(summarySlope[summarySlope$Year=="2018","maxD"])),
-          border=NA, col=adjustcolor("black",0.2))
-  points(meanD~Scale, data=summarySlope[summarySlope$Year=="2018",],
-         pch=19)
-
-  
-  lines(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2018",],
-        type="l", col="blue")
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryCurv[summaryCurv$Year=="2018","minD"],
-              rev(summaryCurv[summaryCurv$Year=="2018","maxD"])),
-          border=NA, col=adjustcolor("blue",0.2))
-  points(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2018",],
-         pch=19, col="blue")
-  
-  lines(meanD~Scale, data=summaryConvex[summaryConvex$Year=="2018",],
-        type="l", col="red")
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryConvex[summaryConvex$Year=="2018","minD"],
-              rev(summaryConvex[summaryConvex$Year=="2018","maxD"])),
-          border=NA, col=adjustcolor("red",0.2))
-  points(meanD~Scale, data=summaryConvex[summaryConvex$Year=="2018",],
-         pch=19, col="red")
-  
-  
-  
-  # 2019 relative importance
-  plot(meanD~Scale, data=summarySlope[summarySlope$Year=="2019",],
-       type="l",
-       ylim=c(0.02,0.14),
-       xlab=NA,
-       ylab=NA,
-       cex.axis=1.5)
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summarySlope[summarySlope$Year=="2019","minD"],
-              rev(summarySlope[summarySlope$Year=="2019","maxD"])),
-          border=NA, col=adjustcolor("black",0.2))
-  points(meanD~Scale, data=summarySlope[summarySlope$Year=="2019",],
-         pch=19)
-  
-  
-  lines(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2019",],
-        type="l", col="blue")
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryCurv[summaryCurv$Year=="2019","minD"],
-              rev(summaryCurv[summaryCurv$Year=="2019","maxD"])),
-          border=NA, col=adjustcolor("blue",0.2))
-  points(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2019",],
-         pch=19, col="blue")
-  
-  lines(meanD~Scale, data=summaryConvex[summaryConvex$Year=="2019",],
-        type="l", col="red")
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryConvex[summaryConvex$Year=="2019","minD"],
-              rev(summaryConvex[summaryConvex$Year=="2019","maxD"])),
-          border=NA, col=adjustcolor("red",0.2))
-  points(meanD~Scale, data=summaryConvex[summaryConvex$Year=="2019",],
-         pch=19, col="red")
-  
-  # 2020 relative importance
-  plot(meanD~Scale, data=summarySlope[summarySlope$Year=="2020",],
-       type="l",
-       ylim=c(0.02,0.14),
-       xlab=NA,
-       ylab=NA,
-       cex.axis=1.5)
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summarySlope[summarySlope$Year=="2020","minD"],
-              rev(summarySlope[summarySlope$Year=="2020","maxD"])),
-          border=NA, col=adjustcolor("black",0.2))
-  points(meanD~Scale, data=summarySlope[summarySlope$Year=="2020",],
-         pch=19)
-  
-  
-  lines(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2020",],
-        type="l", col="blue")
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryCurv[summaryCurv$Year=="2020","minD"],
-              rev(summaryCurv[summaryCurv$Year=="2020","maxD"])),
-          border=NA, col=adjustcolor("blue",0.2))
-  points(meanD~Scale, data=summaryCurv[summaryCurv$Year=="2020",],
-         pch=19, col="blue")
-  
-  lines(meanD~Scale, data=summaryConvex[summaryConvex$Year=="2020",],
-        type="l", col="red")
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryConvex[summaryConvex$Year=="2020","minD"],
-              rev(summaryConvex[summaryConvex$Year=="2020","maxD"])),
-          border=NA, col=adjustcolor("red",0.2))
-  points(meanD~Scale, data=summaryConvex[summaryConvex$Year=="2020",],
-         pch=19, col="red")
-  
-  
-  
-  # Separate aspect plots
-  plot(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2018",],
-       type="l",
-       xlab=NA,
-       ylab=NA,
-       cex.axis=1.5)
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryAspect[summaryAspect$Year=="2018","minD"],
-              rev(summaryAspect[summaryAspect$Year=="2018","maxD"])),
-          border=NA, col=adjustcolor("black",0.2))
-  points(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2018",],
-         pch=19)
-  
-  plot(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2019",],
-       type="l",
-       xlab=NA,
-       ylab=NA,
-       cex.axis=1.5)
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryAspect[summaryAspect$Year=="2019","minD"],
-              rev(summaryAspect[summaryAspect$Year=="2019","maxD"])),
-          border=NA, col=adjustcolor("black",0.2))
-  points(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2019",],
-         pch=19)
-  
-  plot(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2020",],
-       type="l",
-       xlab=NA,
-       ylab=NA,
-       cex.axis=1.5)
-  polygon(x=c(smoothScales,rev(smoothScales)),
-          y=c(summaryAspect[summaryAspect$Year=="2020","minD"],
-              rev(summaryAspect[summaryAspect$Year=="2020","maxD"])),
-          border=NA, col=adjustcolor("black",0.2))
-  points(meanD~Scale, data=summaryAspect[summaryAspect$Year=="2020",],
-         pch=19)
   
 #### Distribution in gaps vs non gaps for best smoothing scale: slope ####
 
@@ -711,22 +586,6 @@
                            nBins = 50,
                            mask = buffer)
   
-  slopeCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryLoCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer)
-  
-  slopeCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryHiCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer)
-  
-  #load("prelimSlopeComp.RData")
-  
   slope18_mean <- apply(slopeComp18[-1,], MARGIN = 2, mean)
   slope18_min <- apply(slopeComp18[-1,], MARGIN = 2, min)
   slope18_max <- apply(slopeComp18[-1,], MARGIN = 2, max)
@@ -738,59 +597,6 @@
   slope20_mean <- apply(slopeComp20[-1,], MARGIN = 2, mean)*(12/13)
   slope20_min <- apply(slopeComp20[-1,], MARGIN = 2, min)*(12/13)
   slope20_max <- apply(slopeComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  slopeLo_mean <- apply(slopeCompLo[-1,], MARGIN = 2, mean)
-  slopeLo_min <- apply(slopeCompLo[-1,], MARGIN = 2, min)
-  slopeLo_max <- apply(slopeCompLo[-1,], MARGIN = 2, max)
-  
-  slopeHi_mean <- apply(slopeCompHi[-1,], MARGIN = 2, mean)
-  slopeHi_min <- apply(slopeCompHi[-1,], MARGIN = 2, min)
-  slopeHi_max <- apply(slopeCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=slopeComp18[1,], y=slope18_mean,
-       ylab=NA, cex.axis = 1.5,
-       type="l", lwd=2,
-       ylim=c(1e-2,0.04),
-       log="y")
-  polygon(x=c(slopeComp18[1,],rev(slopeComp18[1,])),
-          y=c(slope18_min,
-              rev(slope18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-
-  lines(x=slopeComp19[1,], y=slope19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(slopeComp19[1,],rev(slopeComp19[1,])),
-          y=c(slope19_min,
-              rev(slope19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-
-  lines(x=slopeComp20[1,], y=slope20_mean,
-       lwd=2,
-       col="red")
-  polygon(x=c(slopeComp20[1,],rev(slopeComp20[1,])),
-          y=c(slope20_min,
-              rev(slope20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  
-
-  
-  
-  lines(x=slopeCompLo[1,], y=slopeLo_mean,
-        lwd=2,
-        col="orange")
-  polygon(x=c(slopeCompLo[1,],rev(slopeCompLo[1,])),
-          y=c(slopeLo_min,
-              rev(slopeLo_max)),
-          border=NA, col=adjustcolor("orange",0.2))
-
-  lines(x=slopeCompHi[1,], y=slopeHi_mean,
-        lwd=2,
-        col="green")
-  polygon(x=c(slopeCompHi[1,],rev(slopeCompHi[1,])),
-          y=c(slopeHi_min,
-              rev(slopeHi_max)),
-          border=NA, col=adjustcolor("green",0.2))
   
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif")
@@ -820,42 +626,26 @@
 #### Distribution in gaps vs non gaps for best smoothing scale: curvature ####
   endYrs <- c("2019","2019","2020")
   
-  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                           gapLayer = gapLayerList[[1]],
                           allLayer = allLayerList[[1]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = buffer)
   
-  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                            gapLayer = gapLayerList[[2]],
                            allLayer = allLayerList[[2]],
                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
                            nBins = 50,
                            mask = buffer)
   
-  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                            gapLayer = gapLayerList[[3]],
                            allLayer = allLayerList[[3]],
                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
                            nBins = 50,
                            mask = buffer)
-  
-  curvCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                           gapLayer = raster::raster("binaryLoCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer)
-  
-  curvCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                           gapLayer = raster::raster("binaryHiCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer)
-  
-  #load("prelimCurvComp.RData")
   
   curv18_mean <- apply(curvComp18[-1,], MARGIN = 2, FUN=mean)
   curv18_min <- apply(curvComp18[-1,], MARGIN = 2, min)
@@ -868,59 +658,9 @@
   curv20_mean <- apply(curvComp20[-1,], MARGIN = 2, FUN=mean)*(12/13)
   curv20_min <- apply(curvComp20[-1,], MARGIN = 2, min)*(12/13)
   curv20_max <- apply(curvComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  curvLo_mean <- apply(curvCompLo[-1,], MARGIN = 2, FUN=mean)
-  curvLo_min <- apply(curvCompLo[-1,], MARGIN = 2, min)
-  curvLo_max <- apply(curvCompLo[-1,], MARGIN = 2, max)
-  
-  curvHi_mean <- apply(curvCompHi[-1,], MARGIN = 2, FUN=mean)
-  curvHi_min <- apply(curvCompHi[-1,], MARGIN = 2, min)
-  curvHi_max <- apply(curvCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=curvComp18[1,], y=curv18_mean,
-       ylab=NA, cex.axis = 1.5,
-       type="l", lwd=2,
-       ylim=c(1e-2,0.04),
-       log="y")
-  
-  polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
-          y=c(curv18_min,
-              rev(curv18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=curvComp19[1,], y=curv19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(curvComp19[1,],rev(curvComp19[1,])),
-          y=c(curv19_min,
-              rev(curv19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=curvComp20[1,], y=curv20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(curvComp20[1,],rev(curvComp20[1,])),
-          y=c(curv20_min,
-              rev(curv20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  abline(h=1,lty=2)
-  
-  lines(x=curvCompLo[1,], y=curvLo_mean,
-        lwd=2,
-        col="orange")
-  polygon(x=c(curvCompLo[1,],rev(curvCompLo[1,])),
-          y=c(curvLo_min,
-              rev(curvLo_max)),
-          border=NA, col=adjustcolor("orange",0.2))
 
-  lines(x=curvCompHi[1,], y=curvHi_mean,
-        lwd=2,
-        col="green")
-  polygon(x=c(curvCompHi[1,],rev(curvCompHi[1,])),
-          y=c(curvHi_min,
-              rev(curvHi_max)),
-          border=NA, col=adjustcolor("green",0.2))
   
+ 
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif")
   topoVals <- raster::crop(topoVals, allLayerList[[1]])
@@ -948,42 +688,26 @@
 #### Distribution in gaps vs non gaps for best smoothing scale: aspect ####
   endYrs <- c("2019","2019","2020")
   
-  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                           gapLayer = gapLayerList[[1]],
                           allLayer = allLayerList[[1]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = buffer)
   
-  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                           gapLayer = gapLayerList[[2]],
                           allLayer = allLayerList[[2]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = buffer)
   
-  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                           gapLayer = gapLayerList[[3]],
                           allLayer = allLayerList[[3]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = buffer)
-  
-  aspectCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
-                          gapLayer = raster::raster("binaryLoCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer)
-  
-  aspectCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
-                          gapLayer = raster::raster("binaryHiCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer)
-  
-  #load("prelimAspectComp.RData")
   
   aspect18_mean <- apply(aspectComp18[-1,], MARGIN = 2, FUN=mean)
   aspect18_min <- apply(aspectComp18[-1,], MARGIN = 2, min)
@@ -996,59 +720,7 @@
   aspect20_mean <- apply(aspectComp20[-1,], MARGIN = 2, FUN=mean)*(12/13)
   aspect20_min <- apply(aspectComp20[-1,], MARGIN = 2, min)*(12/13)
   aspect20_max <- apply(aspectComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  aspectLo_mean <- apply(aspectCompLo[-1,], MARGIN = 2, FUN=mean)
-  aspectLo_min <- apply(aspectCompLo[-1,], MARGIN = 2, min)
-  aspectLo_max <- apply(aspectCompLo[-1,], MARGIN = 2, max)
-  
-  aspectHi_mean <- apply(aspectCompHi[-1,], MARGIN = 2, FUN=mean)
-  aspectHi_min <- apply(aspectCompHi[-1,], MARGIN = 2, min)
-  aspectHi_max <- apply(aspectCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=aspectComp18[1,], y=aspect18_mean,
-       ylab=NA, cex.axis = 1.5,
-       type="l", lwd=2,
-       ylim=c(0.9e-2,0.05),
-       log="y")
-  polygon(x=c(aspectComp18[1,],rev(aspectComp18[1,])),
-          y=c(aspect18_min,
-              rev(aspect18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=aspectComp19[1,], y=aspect19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(aspectComp19[1,],rev(aspectComp19[1,])),
-          y=c(aspect19_min,
-              rev(aspect19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=aspectComp20[1,], y=aspect20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(aspectComp20[1,],rev(aspectComp20[1,])),
-          y=c(aspect20_min,
-              rev(aspect20_max)),
-          border=NA, col=adjustcolor("red",0.2))
 
-  abline(v=c(0,90,180,270,360), lty=2)
-  
-  # lines(x=aspectCompLo[1,], y=aspectLo_mean,
-  #       lwd=2,
-  #       col="orange")
-  # polygon(x=c(aspectCompLo[1,],rev(aspectCompLo[1,])),
-  #         y=c(aspectLo_min,
-  #             rev(aspectLo_max)),
-  #         border=NA, col=adjustcolor("orange",0.2))
-  # 
-  # lines(x=aspectCompHi[1,], y=aspectHi_mean,
-  #       lwd=2,
-  #       col="green")
-  # polygon(x=c(aspectCompHi[1,],rev(aspectCompHi[1,])),
-  #         y=c(aspectHi_min,
-  #             rev(aspectHi_max)),
-  #         border=NA, col=adjustcolor("green",0.2))
-  
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif")
   topoVals <- raster::crop(topoVals, allLayerList[[1]])
@@ -1072,6 +744,121 @@
   
   
   #save(aspectComp18, aspectComp19, aspectComp20, aspectCompLo, aspectCompHi, file="prelimAspectComp.RData")
+  
+#### Make a plot of area in new gaps for each topographic metric ####
+  par(mar=c(3,5,1,1),oma=c(2,2,0,0),las=1,mfrow=c(1,3))
+  
+  # Slope
+    plot(x=slopeComp18[1,], y=slope18_mean,
+         ylab=NA, cex.axis = 1.5,
+         type="l", lwd=2,
+         ylim=c(0.9e-2,0.045),
+         log="y")
+    polygon(x=c(slopeComp18[1,],rev(slopeComp18[1,])),
+            y=c(slope18_min,
+                rev(slope18_max)),
+            border=NA, col=adjustcolor("black",0.2))
+    
+    lines(x=slopeComp19[1,], y=slope19_mean,
+          lwd=2, col = "blue")
+    polygon(x=c(slopeComp19[1,],rev(slopeComp19[1,])),
+            y=c(slope19_min,
+                rev(slope19_max)),
+            border=NA, col=adjustcolor("blue",0.2))
+    
+    lines(x=slopeComp20[1,], y=slope20_mean,
+          lwd=2,
+          col="red")
+    polygon(x=c(slopeComp20[1,],rev(slopeComp20[1,])),
+            y=c(slope20_min,
+                rev(slope20_max)),
+            border=NA, col=adjustcolor("red",0.2))
+    
+    mtext("Slope (degrees)", side=1, outer = F, line=2.5)
+    text("a", x=2, y=0.045, cex=2)
+    
+    legend(x=10,y=0.012,
+           c("2018","2019","2020"),
+           lwd=2,
+           cex=1.2,
+           y.intersp = 1.5,
+           col=c("black","blue","red"),
+           bty="n")
+    
+  # Curvature
+  
+    plot(x=curvComp18[1,], y=curv18_mean,
+         xlim=c(-2,2),
+         ylab=NA, cex.axis = 1.5,
+         type="l", lwd=2,
+         ylim=c(0.9e-2,0.045),
+         log="y")
+    
+    polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
+            y=c(curv18_min,
+                rev(curv18_max)),
+            border=NA, col=adjustcolor("black",0.2))
+    
+    lines(x=curvComp19[1,], y=curv19_mean,
+          lwd=2, col = "blue")
+    polygon(x=c(curvComp19[1,],rev(curvComp19[1,])),
+            y=c(curv19_min,
+                rev(curv19_max)),
+            border=NA, col=adjustcolor("blue",0.2))
+    
+    lines(x=curvComp20[1,], y=curv20_mean,
+          lwd=2,
+          col="red")
+    polygon(x=c(curvComp20[1,],rev(curvComp20[1,])),
+            y=c(curv20_min,
+                rev(curv20_max)),
+            border=NA, col=adjustcolor("red",0.2))
+    
+    mtext("Curvature",side=1,outer=F, line=2.5)
+    text("b", x=-2, y=0.045, cex=2)
+    
+  # Aspect
+    plot(x=aspectComp18[1,], y=aspect18_mean,
+         ylab=NA, cex.axis = 1.5,
+         type="l", lwd=2,
+         ylim=c(0.9e-2,0.045),
+         log="y")
+    polygon(x=c(aspectComp18[1,],rev(aspectComp18[1,])),
+            y=c(aspect18_min,
+                rev(aspect18_max)),
+            border=NA, col=adjustcolor("black",0.2))
+    
+    lines(x=aspectComp19[1,], y=aspect19_mean,
+          lwd=2, col = "blue")
+    polygon(x=c(aspectComp19[1,],rev(aspectComp19[1,])),
+            y=c(aspect19_min,
+                rev(aspect19_max)),
+            border=NA, col=adjustcolor("blue",0.2))
+    
+    lines(x=aspectComp20[1,], y=aspect20_mean,
+          lwd=2,
+          col="red")
+    polygon(x=c(aspectComp20[1,],rev(aspectComp20[1,])),
+            y=c(aspect20_min,
+                rev(aspect20_max)),
+            border=NA, col=adjustcolor("red",0.2))
+  
+    abline(v=c(0,90,180,270,360), lty=2)
+    text("N",x=8,y=0.009, cex=1.5)
+    text("E",x=98,y=0.009, cex=1.5)
+    text("S",x=188,y=0.009, cex=1.5)
+    text("W",x=278,y=0.009, cex=1.5)
+    text("N",x=352,y=0.009, cex=1.5)
+    
+    mtext("Aspect (degrees from N)", side = 1, line = 2.5)
+    text("c", x=10, y=0.045, cex=2)
+    
+  par(las = 0)
+  mtext("Proportion of area in new gaps (%)",side=2,outer=T)
+  
+  
+  
+  
   
 #### Soil type by year ####
   
@@ -1116,78 +903,65 @@
     soilTypes$AreaSampled[i] <-length(values_areai[!is.na(values_areai)])/(10000)
   }
   soilTypes19to20 <- soilTypes
+  
   # correct for longer sampling interval
   soilTypes19to20$PropGap <- soilTypes19to20$PropGap/(13/12)
   
   # Make a vector of unique soil types
   soilTypes <- data.frame(Soil = as.character(unique(soil@data$SOIL)),
-                          PropLo = NA,
-                          PropHi = NA)
+                          PropLo = NA)
   
   # 2009 lo and hi height areas
   for(i in 1:dim(soilTypes)[1]){
     areai <- raster::mask(dem09,soil[soil$SOIL==soilTypes$Soil[i],])
     lo_i <- raster::mask(lo09,soil[soil$SOIL==soilTypes$Soil[i],])
-    hi_i <- raster::mask(hi09,soil[soil$SOIL==soilTypes$Soil[i],])
-    
+  
     values_areai <- raster::getValues(areai)
     values_loi <- raster::getValues(lo_i)
-    values_hii <- raster::getValues(hi_i)
+
     soilTypes$PropLo[i] <-  length(values_loi[!is.na(values_loi)])/length(values_areai[!is.na(values_areai)])
-    soilTypes$PropHi[i] <-  length(values_hii[!is.na(values_hii)])/length(values_areai[!is.na(values_areai)])
-    
+
   }
-  PropLoHi_All <- soilTypes
+  PropLo_All <- soilTypes
   
   # 2009 lo and hi height areas -- Old Growth
   soilTypes <- data.frame(Soil = as.character(unique(soil@data$SOIL)),
                           PropLo_Old = NA,
-                          PropHi_Old = NA,
                           Area_Old = NA)
   for(i in 1:dim(soilTypes)[1]){
     areai <- raster::mask(dem09,soil[soil$SOIL==soilTypes$Soil[i],])
     lo_i <- raster::mask(lo09,soil[soil$SOIL==soilTypes$Soil[i],])
-    hi_i <- raster::mask(hi09,soil[soil$SOIL==soilTypes$Soil[i],])
-    
+
     areai <- raster::mask(areai,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
     lo_i <- raster::mask(lo_i,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-    hi_i <- raster::mask(hi_i,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-    
+
     values_areai <- raster::getValues(areai)
     values_loi <- raster::getValues(lo_i)
-    values_hii <- raster::getValues(hi_i)
     soilTypes$PropLo_Old[i] <-  length(values_loi[!is.na(values_loi)])/length(values_areai[!is.na(values_areai)])
-    soilTypes$PropHi_Old[i] <-  length(values_hii[!is.na(values_hii)])/length(values_areai[!is.na(values_areai)])
-    
+
     soilTypes$Area_Old[i] <- length(values_areai[!is.na(values_areai)])/(10000)
   }
-  PropLoHi_Old <- soilTypes
+  PropLo_Old <- soilTypes
   
   # 2009 lo and hi height areas -- Secondary
   soilTypes <- data.frame(Soil = as.character(unique(soil@data$SOIL)),
                           PropLo_Sec = NA,
-                          PropHi_Sec = NA,
                           Area_Sec = NA)
   for(i in 1:dim(soilTypes)[1]){
     areai <- raster::mask(dem09,soil[soil$SOIL==soilTypes$Soil[i],])
     lo_i <- raster::mask(lo09,soil[soil$SOIL==soilTypes$Soil[i],])
-    hi_i <- raster::mask(hi09,soil[soil$SOIL==soilTypes$Soil[i],])
-    
+
     areai <- raster::mask(areai,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
     lo_i <- raster::mask(lo_i,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-    hi_i <- raster::mask(hi_i,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-    
+
     values_areai <- raster::getValues(areai)
     values_loi <- raster::getValues(lo_i)
-    values_hii <- raster::getValues(hi_i)
     soilTypes$PropLo_Sec[i] <-  length(values_loi[!is.na(values_loi)])/length(values_areai[!is.na(values_areai)])
-    soilTypes$PropHi_Sec[i] <-  length(values_hii[!is.na(values_hii)])/length(values_areai[!is.na(values_areai)])
-    
+
     soilTypes$Area_Sec[i] <- length(values_areai[!is.na(values_areai)])/(10000)
     
   }
-  PropLoHi_Sec <- soilTypes
-  
+  PropLo_Sec <- soilTypes
   
   names(soilTypes17to18) <- c("Soil","PropGap17to18","nGap17to18","Area17to18")
   names(soilTypes18to19) <- c("Soil","PropGap18to19","nGap18to19","Area18to19")
@@ -1195,9 +969,9 @@
   
   soilTypes <- merge(soilTypes17to18,soilTypes18to19)
   soilTypes <- merge(soilTypes, soilTypes19to20)
-  soilTypes <- merge(soilTypes, PropLoHi_All)
-  soilTypes <- merge(soilTypes, PropLoHi_Old)
-  soilTypes <- merge(soilTypes, PropLoHi_Sec)
+  soilTypes <- merge(soilTypes, PropLo_All)
+  soilTypes <- merge(soilTypes, PropLo_Old)
+  soilTypes <- merge(soilTypes, PropLo_Sec)
   
   minSz <- 50
   
@@ -1209,44 +983,66 @@
   soilTypes[soilTypes$Area19to20>minSz,"Good20"] <- T
 
   
+  lm1 <- lm(PropGap18to19~PropGap17to18,
+                    data=soilTypes[soilTypes$Good18==T & soilTypes$Good19==T,],)
   
-
-  par(mfrow=c(1,2),
-      mar=c(4,4,1,1))
+  lm2 <- lm(PropGap19to20~PropGap17to18,
+                    data=soilTypes[soilTypes$Good18==T & soilTypes$Good20==T,])
+  
+  lm3 <- lm(PropGap19to20~PropGap18to19,
+            data=soilTypes[soilTypes$Good19==T & soilTypes$Good20==T,])
+  
+  CI3 <- predict(lm3, 
+                 newdata=data.frame(PropGap18to19=seq(0.01,0.06,0.0001)), 
+                                    interval="confidence",
+                                    level = 0.95)
+  par(mfrow=c(1,3),
+      mar=c(4,5,1,1), oma=c(1,1,0,0))
   plot(PropGap18to19~PropGap17to18,
        data=soilTypes[soilTypes$Good18==T & soilTypes$Good19==T,],
        pch=20,
-       xlim=c(0.01,0.04),
-       ylim=c(0.01,0.04),
+       xlim=c(0.01,0.05),
+       ylim=c(0.01,0.05),
        ylab="2018-2019",
-       xlab="2017-2018")
-  abline(a=0,b=1)
-  summary(lm(PropGap18to19~PropGap17to18,
-             data=soilTypes[soilTypes$Good18==T & soilTypes$Good19==T,],))
+       xlab="2017-2018",
+       cex = 2.2,
+       cex.lab = 1.4,
+       cex.axis=1.2)
+  abline(a=0, b=1, lty=2)
 
+  text("a", x = 0.011, y = 0.05, cex=2)
+
+  plot(PropGap19to20~PropGap17to18, data=soilTypes[soilTypes$Good18==T & soilTypes$Good20==T,],
+       pch=20,
+       xlim=c(0.01,0.05),
+       ylim=c(0.01,0.05),
+       ylab="2019-2020",
+       xlab="2017-2018",
+       cex = 2.2,
+       cex.lab = 1.4,
+       cex.axis=1.2)
+  abline(a=0, b=1, lty=2)
+
+  text("b", x = 0.011, y = 0.05, cex=2)
   
   plot(PropGap19to20~PropGap18to19,
        data=soilTypes[soilTypes$Good19==T & soilTypes$Good20==T,],
        pch=20,
-       xlim=c(0.01,0.04),
-       ylim=c(0.01,0.04),
+       xlim=c(0.01,0.05),
+       ylim=c(0.01,0.05),
        ylab="2019-2020",
-       xlab="2018-2019")
-  abline(a=0,b=1)
-  summary(lm(PropGap19to20~PropGap18to19,
-             data=soilTypes[soilTypes$Good19==T & soilTypes$Good20==T,]))
+       xlab="2018-2019",
+       cex = 2.2,
+       cex.lab = 1.4,
+       cex.axis=1.2)
+  abline(a=0, b=1, lty=2)
+  abline(lm3)
+  polygon(x=c(seq(0.01,0.06,0.0001),rev(seq(0.01,0.06,0.0001))),
+          y=c(CI3[,2],rev(CI3[,3])),
+          col=adjustcolor("black",0.2),
+          border=NA)
+  text("c", x = 0.011, y = 0.05, cex=2)
 
-  
-  plot(PropGap19to20~PropGap17to18, data=soilTypes[soilTypes$Good==T,],
-       pch=20,
-       xlim=c(0.01,0.04),
-       ylim=c(0.01,0.04),
-       ylab="2019-2020",
-       xlab="2017-2018")
-  abline(a=0,b=1)
-  summary(lm(PropGap19to20~PropGap17to18,data=soilTypes[soilTypes$Good==T,]))
-  summary(lm(nGap19to20~nGap17to18,data=soilTypes[soilTypes$Good==T,]))
-  
   
 #### Fairchild soil: distribution in gaps vs non gaps for best smoothing scale: slope ####
   endYrs <- c("2018","2019","2020")
@@ -1271,23 +1067,7 @@
                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
                            nBins = 50,
                            mask = soil[soil$SOIL=="Fairchild",])
-  
-  slopeCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryLoCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = soil[soil$SOIL=="Fairchild",])
-  
-  slopeCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryHiCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = soil[soil$SOIL=="Fairchild",])
-  
-  #load("prelimSlopeComp_Fairchild.RData")
-  
+
   slope18_mean <- apply(slopeComp18[-1,], MARGIN = 2, mean)
   slope18_min <- apply(slopeComp18[-1,], MARGIN = 2, min)
   slope18_max <- apply(slopeComp18[-1,], MARGIN = 2, max)
@@ -1299,57 +1079,6 @@
   slope20_mean <- apply(slopeComp20[-1,], MARGIN = 2, mean)*(12/13)
   slope20_min <- apply(slopeComp20[-1,], MARGIN = 2, min)*(12/13)
   slope20_max <- apply(slopeComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  slopeLo_mean <- apply(slopeCompLo[-1,], MARGIN = 2, mean)
-  slopeLo_min <- apply(slopeCompLo[-1,], MARGIN = 2, min)
-  slopeLo_max <- apply(slopeCompLo[-1,], MARGIN = 2, max)
-  
-  slopeHi_mean <- apply(slopeCompHi[-1,], MARGIN = 2, mean)
-  slopeHi_min <- apply(slopeCompHi[-1,], MARGIN = 2, min)
-  slopeHi_max <- apply(slopeCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=slopeComp18[1,], y=slope18_mean,
-       ylab=NA,cex.axis=1.5,
-       type="l", lwd=2,
-       ylim=c(0.7e-2,0.04),
-       log="y")
-  polygon(x=c(slopeComp18[1,],rev(slopeComp18[1,])),
-          y=c(slope18_min,
-              rev(slope18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=slopeComp19[1,], y=slope19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(slopeComp19[1,],rev(slopeComp19[1,])),
-          y=c(slope19_min,
-              rev(slope19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=slopeComp20[1,], y=slope20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(slopeComp20[1,],rev(slopeComp20[1,])),
-          y=c(slope20_min,
-              rev(slope20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-
-  
-  lines(x=slopeCompLo[1,], y=slopeLo_mean,
-        lwd=2,
-        col="orange")
-  polygon(x=c(slopeCompLo[1,],rev(slopeCompLo[1,])),
-          y=c(slopeLo_min,
-              rev(slopeLo_max)),
-          border=NA, col=adjustcolor("orange",0.2))
-
-  lines(x=slopeCompHi[1,], y=slopeHi_mean,
-        lwd=2,
-        col="green")
-  polygon(x=c(slopeCompHi[1,],rev(slopeCompHi[1,])),
-          y=c(slopeHi_min,
-              rev(slopeHi_max)),
-          border=NA, col=adjustcolor("green",0.2))
   
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif")
@@ -1388,49 +1117,30 @@
   lines(dens20b, col = adjustcolor("green",0.5), lwd = 3)
   
   
-  
-  
-  
-  #save(slopeComp18, slopeComp19, slopeComp20, slopeCompLo, slopeCompHi, file="prelimSlopeComp_Fairchild.RData")
-  
 #### Fairchild soil: distribution in gaps vs non gaps for best smoothing scale: curvature ####
 
-  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                           gapLayer = gapLayerList[[1]],
                           allLayer = allLayerList[[1]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = soil[soil$SOIL=="Fairchild",])
   
-  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                           gapLayer = gapLayerList[[2]],
                           allLayer = allLayerList[[2]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = soil[soil$SOIL=="Fairchild",])
   
-  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                           gapLayer = gapLayerList[[3]],
                           allLayer = allLayerList[[3]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = soil[soil$SOIL=="Fairchild",])
   
-  curvCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryLoCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = soil[soil$SOIL=="Fairchild",])
-  
-  curvCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryHiCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = soil[soil$SOIL=="Fairchild",])
-  
-  #load("prelimCurvComp_Fairchild.RData")
+ 
   
   curv18_mean <- apply(curvComp18[-1,], MARGIN = 2, FUN=mean)
   curv18_min <- apply(curvComp18[-1,], MARGIN = 2, min)
@@ -1444,42 +1154,7 @@
   curv20_min <- apply(curvComp20[-1,], MARGIN = 2, min)*(12/13)
   curv20_max <- apply(curvComp20[-1,], MARGIN = 2, max)*(12/13)
   
-  curvLo_mean <- apply(curvCompLo[-1,], MARGIN = 2, FUN=mean)
-  curvLo_min <- apply(curvCompLo[-1,], MARGIN = 2, min)
-  curvLo_max <- apply(curvCompLo[-1,], MARGIN = 2, max)
-  
-  curvHi_mean <- apply(curvCompHi[-1,], MARGIN = 2, FUN=mean)
-  curvHi_min <- apply(curvCompHi[-1,], MARGIN = 2, min)
-  curvHi_max <- apply(curvCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=curvComp18[1,], y=curv18_mean,
-       ylab=NA, cex.axis = 1.5,
-       type="l", lwd=2,
-       ylim=c(0.5e-2,0.04),
-       log="y")
-  
-  polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
-          y=c(curv18_min,
-              rev(curv18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=curvComp19[1,], y=curv19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(curvComp19[1,],rev(curvComp19[1,])),
-          y=c(curv19_min,
-              rev(curv19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=curvComp20[1,], y=curv20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(curvComp20[1,],rev(curvComp20[1,])),
-          y=c(curv20_min,
-              rev(curv20_max)),
-          border=NA, col=adjustcolor("red",0.2))
 
-  
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif")
   topoVals <- raster::crop(topoVals, allLayerList[[1]])
@@ -1516,49 +1191,28 @@
   lines(dens19b, col = adjustcolor("green",0.5), lwd = 3)
   lines(dens20b, col = adjustcolor("green",0.5), lwd = 3)
   
-  
-  
-  #save(curvComp18, curvComp19, curvComp20, curvCompLo, curvCompHi, file="prelimCurvComp_Fairchild.RData")
-  
 #### Fairchild soil: distribution in gaps vs non gaps for best smoothing scale: aspect ####
-  endYrs <- c("2019","2019","2020")
-  
-  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+
+  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                             gapLayer = gapLayerList[[1]],
                             allLayer = allLayerList[[1]],
                             sampleDir = "D:/BCI_Spatial/BlockSamples/",
                             nBins = 50,
                             mask = soil[soil$SOIL=="Fairchild",])
   
-  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                             gapLayer = gapLayerList[[2]],
                             allLayer = allLayerList[[2]],
                             sampleDir = "D:/BCI_Spatial/BlockSamples/",
                             nBins = 50,
                             mask = soil[soil$SOIL=="Fairchild",])
   
-  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                             gapLayer = gapLayerList[[3]],
                             allLayer = allLayerList[[3]],
                             sampleDir = "D:/BCI_Spatial/BlockSamples/",
                             nBins = 50,
                             mask = soil[soil$SOIL=="Fairchild",])
-  
-  aspectCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
-                            gapLayer = raster::raster("binaryLoCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_39.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = soil[soil$SOIL=="Fairchild",])
-  
-  aspectCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
-                            gapLayer = raster::raster("binaryHiCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_39.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = soil[soil$SOIL=="Fairchild",])
-  
-  #load("prelimAspectComp_Fairchild.RData")
   
   aspect18_mean <- apply(aspectComp18[-1,], MARGIN = 2, FUN=mean)
   aspect18_min <- apply(aspectComp18[-1,], MARGIN = 2, min)
@@ -1572,41 +1226,6 @@
   aspect20_min <- apply(aspectComp20[-1,], MARGIN = 2, min)*(12/13)
   aspect20_max <- apply(aspectComp20[-1,], MARGIN = 2, max)*(12/13)
   
-  aspectLo_mean <- apply(aspectCompLo[-1,], MARGIN = 2, FUN=mean)
-  aspectLo_min <- apply(aspectCompLo[-1,], MARGIN = 2, min)
-  aspectLo_max <- apply(aspectCompLo[-1,], MARGIN = 2, max)
-  
-  aspectHi_mean <- apply(aspectCompHi[-1,], MARGIN = 2, FUN=mean)
-  aspectHi_min <- apply(aspectCompHi[-1,], MARGIN = 2, min)
-  aspectHi_max <- apply(aspectCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=aspectComp18[1,], y=aspect18_mean,
-       ylab=NA, cex.axis = 1.5,
-       type="l", lwd=2,
-       ylim=c(0.5e-2,0.05),
-       log="y")
-  polygon(x=c(aspectComp18[1,],rev(aspectComp18[1,])),
-          y=c(aspect18_min,
-              rev(aspect18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=aspectComp19[1,], y=aspect19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(aspectComp19[1,],rev(aspectComp19[1,])),
-          y=c(aspect19_min,
-              rev(aspect19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=aspectComp20[1,], y=aspect20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(aspectComp20[1,],rev(aspectComp20[1,])),
-          y=c(aspect20_min,
-              rev(aspect20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  
-  abline(v=c(0,90,180,270,360), lty=2)
   
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif")
@@ -1645,8 +1264,119 @@
   lines(dens19b, col = adjustcolor("green",0.5), lwd = 3)
   lines(dens20b, col = adjustcolor("green",0.5), lwd = 3)
   
-  #save(aspectComp18, aspectComp19, aspectComp20, aspectCompLo, aspectCompHi, file="prelimAspectComp_Fairchild.RData")
+#### Make a plot of area in new gaps for each topographic metric for Fairchild soils ####
+ 
+   par(mar=c(3,5,1,1),oma=c(2,2,0,0),las=1,mfrow=c(1,3))
   
+  # Slope
+  plot(x=slopeComp18[1,], y=slope18_mean,
+       ylab=NA, cex.axis = 1.5,
+       type="l", lwd=2,
+       ylim=c(0.9e-2,0.045),
+       log="y")
+  polygon(x=c(slopeComp18[1,],rev(slopeComp18[1,])),
+          y=c(slope18_min,
+              rev(slope18_max)),
+          border=NA, col=adjustcolor("black",0.2))
+  
+  lines(x=slopeComp19[1,], y=slope19_mean,
+        lwd=2, col = "blue")
+  polygon(x=c(slopeComp19[1,],rev(slopeComp19[1,])),
+          y=c(slope19_min,
+              rev(slope19_max)),
+          border=NA, col=adjustcolor("blue",0.2))
+  
+  lines(x=slopeComp20[1,], y=slope20_mean,
+        lwd=2,
+        col="red")
+  polygon(x=c(slopeComp20[1,],rev(slopeComp20[1,])),
+          y=c(slope20_min,
+              rev(slope20_max)),
+          border=NA, col=adjustcolor("red",0.2))
+  
+  mtext("Slope (degrees)", side=1, outer = F, line=2.5)
+  text("a", x=2, y=0.045, cex=2)
+  
+  legend(x=10,y=0.012,
+         c("2018","2019","2020"),
+         lwd=2,
+         cex=1.2,
+         y.intersp = 1.5,
+         col=c("black","blue","red"),
+         bty="n")
+  
+  # Curvature
+  
+  plot(x=curvComp18[1,], y=curv18_mean,
+       xlim=c(-2,2),
+       ylab=NA, cex.axis = 1.5,
+       type="l", lwd=2,
+       ylim=c(0.9e-2,0.045),
+       log="y")
+  
+  polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
+          y=c(curv18_min,
+              rev(curv18_max)),
+          border=NA, col=adjustcolor("black",0.2))
+  
+  lines(x=curvComp19[1,], y=curv19_mean,
+        lwd=2, col = "blue")
+  polygon(x=c(curvComp19[1,],rev(curvComp19[1,])),
+          y=c(curv19_min,
+              rev(curv19_max)),
+          border=NA, col=adjustcolor("blue",0.2))
+  
+  lines(x=curvComp20[1,], y=curv20_mean,
+        lwd=2,
+        col="red")
+  polygon(x=c(curvComp20[1,],rev(curvComp20[1,])),
+          y=c(curv20_min,
+              rev(curv20_max)),
+          border=NA, col=adjustcolor("red",0.2))
+  
+  mtext("Curvature",side=1,outer=F, line=2.5)
+  text("b", x=-2, y=0.045, cex=2)
+  
+  # Aspect
+  plot(x=aspectComp18[1,], y=aspect18_mean,
+       ylab=NA, cex.axis = 1.5,
+       type="l", lwd=2,
+       ylim=c(0.9e-2,0.045),
+       log="y")
+  polygon(x=c(aspectComp18[1,],rev(aspectComp18[1,])),
+          y=c(aspect18_min,
+              rev(aspect18_max)),
+          border=NA, col=adjustcolor("black",0.2))
+  
+  lines(x=aspectComp19[1,], y=aspect19_mean,
+        lwd=2, col = "blue")
+  polygon(x=c(aspectComp19[1,],rev(aspectComp19[1,])),
+          y=c(aspect19_min,
+              rev(aspect19_max)),
+          border=NA, col=adjustcolor("blue",0.2))
+  
+  lines(x=aspectComp20[1,], y=aspect20_mean,
+        lwd=2,
+        col="red")
+  polygon(x=c(aspectComp20[1,],rev(aspectComp20[1,])),
+          y=c(aspect20_min,
+              rev(aspect20_max)),
+          border=NA, col=adjustcolor("red",0.2))
+  
+  abline(v=c(0,90,180,270,360), lty=2)
+  text("N",x=8,y=0.009, cex=1.5)
+  text("E",x=98,y=0.009, cex=1.5)
+  text("S",x=188,y=0.009, cex=1.5)
+  text("W",x=278,y=0.009, cex=1.5)
+  text("N",x=352,y=0.009, cex=1.5)
+  
+  mtext("Aspect (degrees from N)", side = 1, line = 2.5)
+  text("c", x=10, y=0.045, cex=2)
+  
+  par(las = 0)
+  mtext("Proportion of area in new gaps (%)",side=2,outer=T)
+  
+
 #### Zetek soil: distribution in gaps vs non gaps for best smoothing scale: slope ####
 
   slopeComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
@@ -1670,22 +1400,6 @@
                            nBins = 50,
                            mask = soil[soil$SOIL=="Zetek",])
   
-  slopeCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryLoCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = soil[soil$SOIL=="Zetek",])
-  
-  slopeCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryHiCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = soil[soil$SOIL=="Zetek",])
-  
-  #load("prelimSlopeComp_Zetek.RData")
-  
   slope18_mean <- apply(slopeComp18[-1,], MARGIN = 2, mean)
   slope18_min <- apply(slopeComp18[-1,], MARGIN = 2, min)
   slope18_max <- apply(slopeComp18[-1,], MARGIN = 2, max)
@@ -1698,59 +1412,7 @@
   slope20_min <- apply(slopeComp20[-1,], MARGIN = 2, min)*(12/13)
   slope20_max <- apply(slopeComp20[-1,], MARGIN = 2, max)*(12/13)
   
-  slopeLo_mean <- apply(slopeCompLo[-1,], MARGIN = 2, mean)
-  slopeLo_min <- apply(slopeCompLo[-1,], MARGIN = 2, min)
-  slopeLo_max <- apply(slopeCompLo[-1,], MARGIN = 2, max)
-  
-  slopeHi_mean <- apply(slopeCompHi[-1,], MARGIN = 2, mean)
-  slopeHi_min <- apply(slopeCompHi[-1,], MARGIN = 2, min)
-  slopeHi_max <- apply(slopeCompHi[-1,], MARGIN = 2, max)
-  
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=slopeComp18[1,], y=slope18_mean,
-       ylab=NA,cex.axis=1.5,
-       xlim=c(0,32),
-       type="l", lwd=2,
-       ylim=c(0.7e-2,0.051),
-       log="y")
-  polygon(x=c(slopeComp18[1,],rev(slopeComp18[1,])),
-          y=c(slope18_min,
-              rev(slope18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=slopeComp19[1,], y=slope19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(slopeComp19[1,],rev(slopeComp19[1,])),
-          y=c(slope19_min,
-              rev(slope19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=slopeComp20[1,], y=slope20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(slopeComp20[1,],rev(slopeComp20[1,])),
-          y=c(slope20_min,
-              rev(slope20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  
-  
-  lines(x=slopeCompLo[1,], y=slopeLo_mean,
-        lwd=2,
-        col="orange")
-  polygon(x=c(slopeCompLo[1,],rev(slopeCompLo[1,])),
-          y=c(slopeLo_min,
-              rev(slopeLo_max)),
-          border=NA, col=adjustcolor("orange",0.2))
-  
-  lines(x=slopeCompHi[1,], y=slopeHi_mean,
-        lwd=2,
-        col="green")
-  polygon(x=c(slopeCompHi[1,],rev(slopeCompHi[1,])),
-          y=c(slopeHi_min,
-              rev(slopeHi_max)),
-          border=NA, col=adjustcolor("green",0.2))
-  
+ 
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif")
   topoVals <- raster::crop(topoVals, allLayerList[[1]])
@@ -1793,42 +1455,27 @@
   
 #### Zetek soil: distribution in gaps vs non gaps for best smoothing scale: curvature ####
   
-  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                           gapLayer = gapLayerList[[1]],
                           allLayer = allLayerList[[1]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = soil[soil$SOIL=="Zetek",])
   
-  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                           gapLayer = gapLayerList[[2]],
                           allLayer = allLayerList[[2]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = soil[soil$SOIL=="Zetek",])
   
-  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
+  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif",
                           gapLayer = gapLayerList[[3]],
                           allLayer = allLayerList[[3]],
                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
                           nBins = 50,
                           mask = soil[soil$SOIL=="Zetek",])
-  
-  curvCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryLoCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = soil[soil$SOIL=="Zetek",])
-  
-  curvCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryHiCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = soil[soil$SOIL=="Zetek",])
-  
-  #load("prelimCurvComp_Zetek.RData")
+
   
   curv18_mean <- apply(curvComp18[-1,], MARGIN = 2, FUN=mean)
   curv18_min <- apply(curvComp18[-1,], MARGIN = 2, min)
@@ -1841,42 +1488,6 @@
   curv20_mean <- apply(curvComp20[-1,], MARGIN = 2, FUN=mean)*(12/13)
   curv20_min <- apply(curvComp20[-1,], MARGIN = 2, min)*(12/13)
   curv20_max <- apply(curvComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  curvLo_mean <- apply(curvCompLo[-1,], MARGIN = 2, FUN=mean)
-  curvLo_min <- apply(curvCompLo[-1,], MARGIN = 2, min)
-  curvLo_max <- apply(curvCompLo[-1,], MARGIN = 2, max)
-  
-  curvHi_mean <- apply(curvCompHi[-1,], MARGIN = 2, FUN=mean)
-  curvHi_min <- apply(curvCompHi[-1,], MARGIN = 2, min)
-  curvHi_max <- apply(curvCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=curvComp18[1,], y=curv18_mean,
-       ylab=NA, cex.axis = 1.5,
-       xlim=c(-2.7,3),
-       type="l", lwd=2,
-       ylim=c(0.6e-2,0.05),
-       log="y")
-  
-  polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
-          y=c(curv18_min,
-              rev(curv18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=curvComp19[1,], y=curv19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(curvComp19[1,],rev(curvComp19[1,])),
-          y=c(curv19_min,
-              rev(curv19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=curvComp20[1,], y=curv20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(curvComp20[1,],rev(curvComp20[1,])),
-          y=c(curv20_min,
-              rev(curv20_max)),
-          border=NA, col=adjustcolor("red",0.2))
   
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif")
@@ -1918,43 +1529,28 @@
   #save(curvComp18, curvComp19, curvComp20, curvCompLo, curvCompHi, file="prelimCurvComp_Zetek.RData")
 
 #### Zetek soil: distribution in gaps vs non gaps for best smoothing scale: aspect ####
-  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                             gapLayer = gapLayerList[[1]],
                             allLayer = allLayerList[[1]],
                             sampleDir = "D:/BCI_Spatial/BlockSamples/",
                             nBins = 50,
                             mask = soil[soil$SOIL=="Zetek",])
   
-  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                             gapLayer = gapLayerList[[2]],
                             allLayer = allLayerList[[2]],
                             sampleDir = "D:/BCI_Spatial/BlockSamples/",
                             nBins = 50,
                             mask = soil[soil$SOIL=="Zetek",])
   
-  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
+  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif",
                             gapLayer = gapLayerList[[3]],
                             allLayer = allLayerList[[3]],
                             sampleDir = "D:/BCI_Spatial/BlockSamples/",
                             nBins = 50,
                             mask = soil[soil$SOIL=="Zetek",])
   
-  aspectCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
-                            gapLayer = raster::raster("binaryLoCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_39.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = soil[soil$SOIL=="Zetek",])
-  
-  aspectCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif",
-                            gapLayer = raster::raster("binaryHiCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_39.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = soil[soil$SOIL=="Zetek",])
-  
-  #load("prelimAspectComp_Zetek.RData")
-  
+
   aspect18_mean <- apply(aspectComp18[-1,], MARGIN = 2, FUN=mean)
   aspect18_min <- apply(aspectComp18[-1,], MARGIN = 2, min)
   aspect18_max <- apply(aspectComp18[-1,], MARGIN = 2, max)
@@ -1966,42 +1562,6 @@
   aspect20_mean <- apply(aspectComp20[-1,], MARGIN = 2, FUN=mean)*(12/13)
   aspect20_min <- apply(aspectComp20[-1,], MARGIN = 2, min)*(12/13)
   aspect20_max <- apply(aspectComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  aspectLo_mean <- apply(aspectCompLo[-1,], MARGIN = 2, FUN=mean)
-  aspectLo_min <- apply(aspectCompLo[-1,], MARGIN = 2, min)
-  aspectLo_max <- apply(aspectCompLo[-1,], MARGIN = 2, max)
-  
-  aspectHi_mean <- apply(aspectCompHi[-1,], MARGIN = 2, FUN=mean)
-  aspectHi_min <- apply(aspectCompHi[-1,], MARGIN = 2, min)
-  aspectHi_max <- apply(aspectCompHi[-1,], MARGIN = 2, max)
-  
-  par(mar=c(3,5,1,1),oma=c(0,0,0,0),las=1)
-  plot(x=aspectComp18[1,], y=aspect18_mean,
-       ylab=NA, cex.axis = 1.5,
-       type="l", lwd=2,
-       ylim=c(0.3e-2,0.11),
-       log="y")
-  polygon(x=c(aspectComp18[1,],rev(aspectComp18[1,])),
-          y=c(aspect18_min,
-              rev(aspect18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=aspectComp19[1,], y=aspect19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(aspectComp19[1,],rev(aspectComp19[1,])),
-          y=c(aspect19_min,
-              rev(aspect19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=aspectComp20[1,], y=aspect20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(aspectComp20[1,],rev(aspectComp20[1,])),
-          y=c(aspect20_min,
-              rev(aspect20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  
-  abline(v=c(0,90,180,270,360), lty=2)
   
   # Make topography density plot
   topoVals <- raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_39.tif")
@@ -2043,69 +1603,15 @@
   
   #save(aspectComp18, aspectComp19, aspectComp20, aspectCompLo, aspectCompHi, file="prelimAspectComp_Zetek.RData")
   
-#### Young forest: distribution in gaps vs non gaps for best smoothing scale: slope ####
+#### Make a plot of area in new gaps for each topographic metric for Zetek soils ####
   
-  slopeComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = gapLayerList[[1]],
-                           allLayer = allLayerList[[1]],
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
+  par(mar=c(3,5,1,1),oma=c(2,2,0,0),las=1,mfrow=c(1,3))
   
-  slopeComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = gapLayerList[[2]],
-                           allLayer = allLayerList[[2]],
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  slopeComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = gapLayerList[[3]],
-                           allLayer = allLayerList[[3]],
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  slopeCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryLoCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  slopeCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryHiCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  #load("prelimSlopeComp_Secondary.RData")
-  
-  slope18_mean <- apply(slopeComp18[-1,], MARGIN = 2, mean)
-  slope18_min <- apply(slopeComp18[-1,], MARGIN = 2, min)
-  slope18_max <- apply(slopeComp18[-1,], MARGIN = 2, max)
-  
-  slope19_mean <- apply(slopeComp19[-1,], MARGIN = 2, mean)
-  slope19_min <- apply(slopeComp19[-1,], MARGIN = 2, min)
-  slope19_max <- apply(slopeComp19[-1,], MARGIN = 2, max)
-  
-  slope20_mean <- apply(slopeComp20[-1,], MARGIN = 2, mean)
-  slope20_min <- apply(slopeComp20[-1,], MARGIN = 2, min)
-  slope20_max <- apply(slopeComp20[-1,], MARGIN = 2, max)
-  
-  slopeLo_mean <- apply(slopeCompLo[-1,], MARGIN = 2, mean)
-  slopeLo_min <- apply(slopeCompLo[-1,], MARGIN = 2, min)
-  slopeLo_max <- apply(slopeCompLo[-1,], MARGIN = 2, max)
-  
-  slopeHi_mean <- apply(slopeCompHi[-1,], MARGIN = 2, mean)
-  slopeHi_min <- apply(slopeCompHi[-1,], MARGIN = 2, min)
-  slopeHi_max <- apply(slopeCompHi[-1,], MARGIN = 2, max)
-  
-  
+  # Slope
   plot(x=slopeComp18[1,], y=slope18_mean,
+       ylab=NA, cex.axis = 1.5,
        type="l", lwd=2,
-       ylim=c(1e-2,0.06),
+       ylim=c(0.6e-2,0.09),
        log="y")
   polygon(x=c(slopeComp18[1,],rev(slopeComp18[1,])),
           y=c(slope18_min,
@@ -2126,90 +1632,27 @@
           y=c(slope20_min,
               rev(slope20_max)),
           border=NA, col=adjustcolor("red",0.2))
-  abline(h=gapPct17to18, col="black", lty=2, lwd=2)
-  abline(h=gapPct18to19, col="blue", lty=2, lwd=2)
-  abline(h=gapPct19to20, col="red", lty=2, lwd=2)
   
-  lines(x=slopeCompLo[1,], y=slopeLo_mean,
-        lwd=2,
-        col="orange")
-  polygon(x=c(slopeCompLo[1,],rev(slopeCompLo[1,])),
-          y=c(slopeLo_min,
-              rev(slopeLo_max)),
-          border=NA, col=adjustcolor("orange",0.2))
+  mtext("Slope (degrees)", side=1, outer = F, line=2.5)
+  text("a", x=2, y=0.09, cex=2)
   
-  lines(x=slopeCompHi[1,], y=slopeHi_mean,
-        lwd=2,
-        col="green")
-  polygon(x=c(slopeCompHi[1,],rev(slopeCompHi[1,])),
-          y=c(slopeHi_min,
-              rev(slopeHi_max)),
-          border=NA, col=adjustcolor("green",0.2))
+  legend(x=10,y=0.012,
+         c("2018","2019","2020"),
+         lwd=2,
+         cex=1.2,
+         y.intersp = 1.5,
+         col=c("black","blue","red"),
+         bty="n")
   
-  #save(slopeComp18, slopeComp19, slopeComp20, slopeCompLo, slopeCompHi, file="prelimSlopeComp_Secondary.RData")
-  
-#### Young forest: distribution in gaps vs non gaps for best smoothing scale: curvature ####
-  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = gapLayerList[[1]],
-                          allLayer = allLayerList[[1]],
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = gapLayerList[[2]],
-                          allLayer = allLayerList[[2]],
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = gapLayerList[[3]],
-                          allLayer = allLayerList[[3]],
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryLoCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryHiCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  #load("prelimCurvComp_OldGrowth.RData")
-  
-  curv18_mean <- apply(curvComp18[-1,], MARGIN = 2, FUN=mean)
-  curv18_min <- apply(curvComp18[-1,], MARGIN = 2, min)
-  curv18_max <- apply(curvComp18[-1,], MARGIN = 2, max)
-  
-  curv19_mean <- apply(curvComp19[-1,], MARGIN = 2, FUN=mean)
-  curv19_min <- apply(curvComp19[-1,], MARGIN = 2, min)
-  curv19_max <- apply(curvComp19[-1,], MARGIN = 2, max)
-  
-  curv20_mean <- apply(curvComp20[-1,], MARGIN = 2, FUN=mean)
-  curv20_min <- apply(curvComp20[-1,], MARGIN = 2, min)
-  curv20_max <- apply(curvComp20[-1,], MARGIN = 2, max)
-  
-  curvLo_mean <- apply(curvCompLo[-1,], MARGIN = 2, FUN=mean)
-  curvLo_min <- apply(curvCompLo[-1,], MARGIN = 2, min)
-  curvLo_max <- apply(curvCompLo[-1,], MARGIN = 2, max)
-  
-  curvHi_mean <- apply(curvCompHi[-1,], MARGIN = 2, FUN=mean)
-  curvHi_min <- apply(curvCompHi[-1,], MARGIN = 2, min)
-  curvHi_max <- apply(curvCompHi[-1,], MARGIN = 2, max)
+  # Curvature
   
   plot(x=curvComp18[1,], y=curv18_mean,
+       xlim=c(-2,2),
+       ylab=NA, cex.axis = 1.5,
        type="l", lwd=2,
-       ylim=c(1e-2,0.05),
+       ylim=c(0.6e-2,0.09),
        log="y")
+  
   polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
           y=c(curv18_min,
               rev(curv18_max)),
@@ -2229,118 +1672,15 @@
           y=c(curv20_min,
               rev(curv20_max)),
           border=NA, col=adjustcolor("red",0.2))
-  abline(h=1,lty=2)
   
-  #load("prelimCurvComp_Secondary.RData")
+  mtext("Curvature",side=1,outer=F, line=2.5)
+  text("b", x=-2, y=0.09, cex=2)
   
-  curv18_mean <- apply(curvComp18[-1,], MARGIN = 2, FUN=mean)
-  curv18_min <- apply(curvComp18[-1,], MARGIN = 2, min)
-  curv18_max <- apply(curvComp18[-1,], MARGIN = 2, max)
-  
-  curv19_mean <- apply(curvComp19[-1,], MARGIN = 2, FUN=mean)
-  curv19_min <- apply(curvComp19[-1,], MARGIN = 2, min)
-  curv19_max <- apply(curvComp19[-1,], MARGIN = 2, max)
-  
-  curv20_mean <- apply(curvComp20[-1,], MARGIN = 2, FUN=mean)
-  curv20_min <- apply(curvComp20[-1,], MARGIN = 2, min)
-  curv20_max <- apply(curvComp20[-1,], MARGIN = 2, max)
-  
-  curvLo_mean <- apply(curvCompLo[-1,], MARGIN = 2, FUN=mean)
-  curvLo_min <- apply(curvCompLo[-1,], MARGIN = 2, min)
-  curvLo_max <- apply(curvCompLo[-1,], MARGIN = 2, max)
-  
-  curvHi_mean <- apply(curvCompHi[-1,], MARGIN = 2, FUN=mean)
-  curvHi_min <- apply(curvCompHi[-1,], MARGIN = 2, min)
-  curvHi_max <- apply(curvCompHi[-1,], MARGIN = 2, max)
-  
-  plot(x=curvComp18[1,], y=curv18_mean,
-       type="l", lwd=2,
-       ylim=c(0,0.1))
-  polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
-          y=c(curv18_min,
-              rev(curv18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=curvComp19[1,], y=curv19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(curvComp19[1,],rev(curvComp19[1,])),
-          y=c(curv19_min,
-              rev(curv19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=curvComp20[1,], y=curv20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(curvComp20[1,],rev(curvComp20[1,])),
-          y=c(curv20_min,
-              rev(curv20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  abline(h=1,lty=2)
-  
-  
-  #save(curvComp18, curvComp19, curvComp20, curvCompLo, curvCompHi, file="prelimCurvComp_Secondary.RData")
-  
-#### Young forest: distribution in gaps vs non gaps for best smoothing scale: aspect ####
-  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = gapLayerList[[1]],
-                            allLayer = allLayerList[[1]],
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = gapLayerList[[2]],
-                            allLayer = allLayerList[[2]],
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = gapLayerList[[3]],
-                            allLayer = allLayerList[[3]],
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = raster::raster("binaryLoCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = raster::raster("binaryHiCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  #load("prelimAspectComp_Secondary.RData")
-  
-  aspect18_mean <- apply(aspectComp18[-1,], MARGIN = 2, FUN=mean)
-  aspect18_min <- apply(aspectComp18[-1,], MARGIN = 2, min)
-  aspect18_max <- apply(aspectComp18[-1,], MARGIN = 2, max)
-  
-  aspect19_mean <- apply(aspectComp19[-1,], MARGIN = 2, FUN=mean)
-  aspect19_min <- apply(aspectComp19[-1,], MARGIN = 2, min)
-  aspect19_max <- apply(aspectComp19[-1,], MARGIN = 2, max)
-  
-  aspect20_mean <- apply(aspectComp20[-1,], MARGIN = 2, FUN=mean)
-  aspect20_min <- apply(aspectComp20[-1,], MARGIN = 2, min)
-  aspect20_max <- apply(aspectComp20[-1,], MARGIN = 2, max)
-  
-  aspectLo_mean <- apply(aspectCompLo[-1,], MARGIN = 2, FUN=mean)
-  aspectLo_min <- apply(aspectCompLo[-1,], MARGIN = 2, min)
-  aspectLo_max <- apply(aspectCompLo[-1,], MARGIN = 2, max)
-  
-  aspectHi_mean <- apply(aspectCompHi[-1,], MARGIN = 2, FUN=mean)
-  aspectHi_min <- apply(aspectCompHi[-1,], MARGIN = 2, min)
-  aspectHi_max <- apply(aspectCompHi[-1,], MARGIN = 2, max)
-  
+  # Aspect
   plot(x=aspectComp18[1,], y=aspect18_mean,
+       ylab=NA, cex.axis = 1.5,
        type="l", lwd=2,
-       ylim=c(0.7e-2,0.04),
+       ylim=c(0.6e-2,0.09),
        log="y")
   polygon(x=c(aspectComp18[1,],rev(aspectComp18[1,])),
           y=c(aspect18_min,
@@ -2361,348 +1701,66 @@
           y=c(aspect20_min,
               rev(aspect20_max)),
           border=NA, col=adjustcolor("red",0.2))
-  abline(h=1,lty=2)
+  
   abline(v=c(0,90,180,270,360), lty=2)
+  text("N",x=8,y=0.006, cex=1.5)
+  text("E",x=98,y=0.006, cex=1.5)
+  text("S",x=188,y=0.006, cex=1.5)
+  text("W",x=278,y=0.006, cex=1.5)
+  text("N",x=352,y=0.006, cex=1.5)
   
-  #save(aspectComp18, aspectComp19, aspectComp20, aspectCompLo, aspectCompHi, file="prelimAspectComp_Secondary.RData")
+  mtext("Aspect (degrees from N)", side = 1, line = 2.5)
+  text("c", x=10, y=0.09, cex=2)
   
-#### Old growth forest: distribution in gaps vs non gaps for best smoothing scale: slope ####
-  
-  slopeComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = gapLayerList[[1]],
-                           allLayer = allLayerList[[1]],
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  slopeComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = gapLayerList[[2]],
-                           allLayer = allLayerList[[2]],
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  slopeComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = gapLayerList[[3]],
-                           allLayer = allLayerList[[3]],
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  slopeCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryLoCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  slopeCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif",
-                           gapLayer = raster::raster("binaryHiCanopy.tif"),
-                           allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif"),
-                           sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                           nBins = 50,
-                           mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  #load("prelimSlopeComp_OldGrowth.RData")
-  
-  slope18_mean <- apply(slopeComp18[-1,], MARGIN = 2, mean)
-  slope18_min <- apply(slopeComp18[-1,], MARGIN = 2, min)
-  slope18_max <- apply(slopeComp18[-1,], MARGIN = 2, max)
-  
-  slope19_mean <- apply(slopeComp19[-1,], MARGIN = 2, mean)
-  slope19_min <- apply(slopeComp19[-1,], MARGIN = 2, min)
-  slope19_max <- apply(slopeComp19[-1,], MARGIN = 2, max)
-  
-  slope20_mean <- apply(slopeComp20[-1,], MARGIN = 2, mean)*(12/13)
-  slope20_min <- apply(slopeComp20[-1,], MARGIN = 2, min)*(12/13)
-  slope20_max <- apply(slopeComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  slopeLo_mean <- apply(slopeCompLo[-1,], MARGIN = 2, mean)
-  slopeLo_min <- apply(slopeCompLo[-1,], MARGIN = 2, min)
-  slopeLo_max <- apply(slopeCompLo[-1,], MARGIN = 2, max)
-  
-  slopeHi_mean <- apply(slopeCompHi[-1,], MARGIN = 2, mean)
-  slopeHi_min <- apply(slopeCompHi[-1,], MARGIN = 2, min)
-  slopeHi_max <- apply(slopeCompHi[-1,], MARGIN = 2, max)
-  
-  
-  plot(x=slopeComp18[1,], y=slope18_mean,
-       type="l", lwd=2,
-       ylim=c(1e-2,0.06),
-       log="y")
-  polygon(x=c(slopeComp18[1,],rev(slopeComp18[1,])),
-          y=c(slope18_min,
-              rev(slope18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=slopeComp19[1,], y=slope19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(slopeComp19[1,],rev(slopeComp19[1,])),
-          y=c(slope19_min,
-              rev(slope19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=slopeComp20[1,], y=slope20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(slopeComp20[1,],rev(slopeComp20[1,])),
-          y=c(slope20_min,
-              rev(slope20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  abline(h=gapPct17to18, col="black", lty=2, lwd=2)
-  abline(h=gapPct18to19, col="blue", lty=2, lwd=2)
-  abline(h=gapPct19to20, col="red", lty=2, lwd=2)
-  
-  lines(x=slopeCompLo[1,], y=slopeLo_mean,
-        lwd=2,
-        col="orange")
-  polygon(x=c(slopeCompLo[1,],rev(slopeCompLo[1,])),
-          y=c(slopeLo_min,
-              rev(slopeLo_max)),
-          border=NA, col=adjustcolor("orange",0.2))
-  
-  lines(x=slopeCompHi[1,], y=slopeHi_mean,
-        lwd=2,
-        col="green")
-  polygon(x=c(slopeCompHi[1,],rev(slopeCompHi[1,])),
-          y=c(slopeHi_min,
-              rev(slopeHi_max)),
-          border=NA, col=adjustcolor("green",0.2))
-  
-  #save(slopeComp18, slopeComp19, slopeComp20, slopeCompLo, slopeCompHi, file="prelimSlopeComp_OldGrowth.RData")
-  
-#### Old growth forest: distribution in gaps vs non gaps for best smoothing scale: curvature ####
-  curvComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = gapLayerList[[1]],
-                          allLayer = allLayerList[[1]],
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = gapLayerList[[2]],
-                          allLayer = allLayerList[[2]],
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = gapLayerList[[3]],
-                          allLayer = allLayerList[[3]],
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryLoCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  curvCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif",
-                          gapLayer = raster::raster("binaryHiCanopy.tif"),
-                          allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                          sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                          nBins = 50,
-                          mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  #load("prelimCurvComp_OldGrowth.RData")
-  
-  curv18_mean <- apply(curvComp18[-1,], MARGIN = 2, FUN=mean)
-  curv18_min <- apply(curvComp18[-1,], MARGIN = 2, min)
-  curv18_max <- apply(curvComp18[-1,], MARGIN = 2, max)
-  
-  curv19_mean <- apply(curvComp19[-1,], MARGIN = 2, FUN=mean)
-  curv19_min <- apply(curvComp19[-1,], MARGIN = 2, min)
-  curv19_max <- apply(curvComp19[-1,], MARGIN = 2, max)
-  
-  curv20_mean <- apply(curvComp20[-1,], MARGIN = 2, FUN=mean)*(12/13)
-  curv20_min <- apply(curvComp20[-1,], MARGIN = 2, min)*(12/13)
-  curv20_max <- apply(curvComp20[-1,], MARGIN = 2, max)*(12/13)
-  
-  curvLo_mean <- apply(curvCompLo[-1,], MARGIN = 2, FUN=mean)
-  curvLo_min <- apply(curvCompLo[-1,], MARGIN = 2, min)
-  curvLo_max <- apply(curvCompLo[-1,], MARGIN = 2, max)
-  
-  curvHi_mean <- apply(curvCompHi[-1,], MARGIN = 2, FUN=mean)
-  curvHi_min <- apply(curvCompHi[-1,], MARGIN = 2, min)
-  curvHi_max <- apply(curvCompHi[-1,], MARGIN = 2, max)
-  
-  plot(x=curvComp18[1,], y=curv18_mean,
-       type="l", lwd=2,
-       ylim=c(1e-2,0.05),
-       log="y")
-  polygon(x=c(curvComp18[1,],rev(curvComp18[1,])),
-          y=c(curv18_min,
-              rev(curv18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=curvComp19[1,], y=curv19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(curvComp19[1,],rev(curvComp19[1,])),
-          y=c(curv19_min,
-              rev(curv19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=curvComp20[1,], y=curv20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(curvComp20[1,],rev(curvComp20[1,])),
-          y=c(curv20_min,
-              rev(curv20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  abline(h=1,lty=2)
-  
-  
-  #save(curvComp18, curvComp19, curvComp20, curvCompLo, curvCompHi, file="prelimCurvComp_OldGrowth.RData")
-  
-#### Old growth forest: distribution in gaps vs non gaps for best smoothing scale: aspect ####
-  aspectComp18 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = gapLayerList[[1]],
-                            allLayer = allLayerList[[1]],
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectComp19 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = gapLayerList[[2]],
-                            allLayer = allLayerList[[2]],
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectComp20 <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = gapLayerList[[3]],
-                            allLayer = allLayerList[[3]],
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectCompLo <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = raster::raster("binaryLoCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  aspectCompHi <- ratioCalc(topoLayer = "D:/BCI_Spatial/BCI_Topo/Aspect_smooth_15.tif",
-                            gapLayer = raster::raster("binaryHiCanopy.tif"),
-                            allLayer = raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_15.tif"),
-                            sampleDir = "D:/BCI_Spatial/BlockSamples/",
-                            nBins = 50,
-                            mask = buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  
-  #load("prelimAspectComp_OldGrowth.RData")
-  
-  aspect18_mean <- apply(aspectComp18[-1,], MARGIN = 2, FUN=mean)
-  aspect18_min <- apply(aspectComp18[-1,], MARGIN = 2, min)
-  aspect18_max <- apply(aspectComp18[-1,], MARGIN = 2, max)
-  
-  aspect19_mean <- apply(aspectComp19[-1,], MARGIN = 2, FUN=mean)
-  aspect19_min <- apply(aspectComp19[-1,], MARGIN = 2, min)
-  aspect19_max <- apply(aspectComp19[-1,], MARGIN = 2, max)
-  
-  aspect20_mean <- apply(aspectComp20[-1,], MARGIN = 2, FUN=mean)
-  aspect20_min <- apply(aspectComp20[-1,], MARGIN = 2, min)
-  aspect20_max <- apply(aspectComp20[-1,], MARGIN = 2, max)
-  
-  aspectLo_mean <- apply(aspectCompLo[-1,], MARGIN = 2, FUN=mean)
-  aspectLo_min <- apply(aspectCompLo[-1,], MARGIN = 2, min)
-  aspectLo_max <- apply(aspectCompLo[-1,], MARGIN = 2, max)
-  
-  aspectHi_mean <- apply(aspectCompHi[-1,], MARGIN = 2, FUN=mean)
-  aspectHi_min <- apply(aspectCompHi[-1,], MARGIN = 2, min)
-  aspectHi_max <- apply(aspectCompHi[-1,], MARGIN = 2, max)
-  
-  plot(x=aspectComp18[1,], y=aspect18_mean,
-       type="l", lwd=2,
-       ylim=c(1e-2,0.06),
-       log="y")
-  polygon(x=c(aspectComp18[1,],rev(aspectComp18[1,])),
-          y=c(aspect18_min,
-              rev(aspect18_max)),
-          border=NA, col=adjustcolor("black",0.2))
-  
-  lines(x=aspectComp19[1,], y=aspect19_mean,
-        lwd=2, col = "blue")
-  polygon(x=c(aspectComp19[1,],rev(aspectComp19[1,])),
-          y=c(aspect19_min,
-              rev(aspect19_max)),
-          border=NA, col=adjustcolor("blue",0.2))
-  
-  lines(x=aspectComp20[1,], y=aspect20_mean,
-        lwd=2,
-        col="red")
-  polygon(x=c(aspectComp20[1,],rev(aspectComp20[1,])),
-          y=c(aspect20_min,
-              rev(aspect20_max)),
-          border=NA, col=adjustcolor("red",0.2))
-  abline(h=1,lty=2)
-  abline(v=c(0,90,180,270,360), lty=2)
-  
-  
-  
-  #save(aspectComp18, aspectComp19, aspectComp20, aspectCompLo, aspectCompHi, file="prelimAspectComp_OldGrowth.RData")
+  par(las = 0)
+  mtext("Proportion of area in new gaps (%)",side=2,outer=T)
   
 #### Average gap formation rates in space ####
+  
+  # Option one
   soilTypes$avgRate <- (1/2)*(soilTypes$PropGap18to19+soilTypes$PropGap19to20)
+  
+  # Option two
+  soilTypes$avgRate <- NA
+  for(i in 1:length(soilTypes$Soil)){
+    
+    val1 <- ifelse(soilTypes$Good18[i]==T,
+                   soilTypes$PropGap17to18[i],
+                   NA)
+    val2 <- ifelse(soilTypes$Good19[i]==T,
+                   soilTypes$PropGap18to19[i],
+                   NA)
+    val3 <- ifelse(soilTypes$Good20[i]==T,
+                   soilTypes$PropGap19to20[i],
+                   NA)
+    soilTypes$avgRate[i] <- mean(c(val1,val2,val3),na.rm=T)
+    
+  }
 
   manual.col <- colorRampPalette(c("#b5b5b5","#57471d"))
   soilTypes$col <- manual.col(length(unique(soilTypes$avgRate)))
   
-  soil$plotCol <- "pink"
-  soil$avgRate <- NA
-  for(i in 1:dim(soilTypes)[1]){
-    if(soilTypes$Good19[i]==T & soilTypes$Good18[i]==T){
-      soil[soil$SOIL==soilTypes$Soil[i],"plotCol"] <- soilTypes$col[i]
-      soil[soil$SOIL==soilTypes$Soil[i],"avgRate"] <- soilTypes$avgRate[i]
-      
-    }
-  }
   
-  soilRaster <- raster::rasterize(x=soil, y=chm17, field="avgRate")
+  par(mfrow=c(1,1), oma=c(0,0,0,0))
+  soilRaster <- raster::rasterize(x=soil, y=dchm17to18, field="avgRate")
   raster::plot(soilRaster,
                col= manual.col(length(unique(soilTypes$avgRate))),
                box = F, axes=F)
+  raster::plot(soil,add=T, lwd=2)
   
 
   
   # Do soil type patterns match low and hi forest patterns?
-  par(las=1,mar=c(3,5,1,1),oma=c(0,0,0,0))
+  par(las=1,mar=c(5,6,1,1),oma=c(0,0,0,0), mfrow=c(1,1))
   plot(PropLo~avgRate, data = soilTypes[soilTypes$Good19==T,],
        pch=20,cex=2,
-       xlab=NA,ylab=NA,cex.axis=1.5)
+       xlab=NA,ylab=NA,cex.axis=1.2)
+  mtext("Proportion of area in new gaps (%)",
+        side=1, line=2.5, cex=1.5)
+  par(las=0)
+  mtext("Proportion of low canopy area (%)",
+        side=2, line=4.5, cex=1.5)
   summary(lm(PropLo~avgRate, data = soilTypes[soilTypes$Good19==T,]))
-  
-  plot(PropHi~avgRate, data = soilTypes[soilTypes$Good19==T,],
-       pch=20,cex=2,
-       xlab=NA,ylab=NA,cex.axis=1.5)
-  summary(lm(PropHi~avgRate, data = soilTypes[soilTypes$Good19==T,]))
-  
-  # Only old growth
-  par(las=1,mar=c(3,5,1,1),oma=c(0,0,0,0))
-  plot(PropLo_Old~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Old>minSz,],
-       pch=20,
-       xlab=NA,ylab=NA,cex.axis=1.5)
-  summary(lm(PropLo_Old~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Old>minSz,],))
-  
-  plot(PropHi_Old~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Old>minSz,],
-       pch=20, cex = 2,
-       xlab=NA,ylab=NA,cex.axis=1.5)
-  summary(lm(PropHi_Old~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Old>minSz,],))
-  
-  # Only secondary
-  par(las=1,mar=c(3,5,1,1),oma=c(0,0,0,0))
-  plot(PropLo_Sec~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Sec>minSz,],
-       pch=20,
-       xlab=NA,ylab=NA,cex.axis=1.5)
-  summary(lm(PropLo_Sec~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Sec>minSz,],))
-  
-  plot(PropHi_Sec~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Sec>minSz,],
-       pch=20,
-       xlab=NA,ylab=NA,cex.axis=1.5)
-  summary(lm(PropHi_Sec~avgRate, data = soilTypes[soilTypes$Good19==T & soilTypes$Area_Sec>minSz,],))
   
   
 #### Correlations between average formation rates and topography ####
@@ -3156,57 +2214,6 @@
   if (save_res == TRUE) {
     write.csv(res,file="northing_MCMC.csv")
   }
-  
-#### Forest age ####
-  age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
-  
-  # Make new age class
-  age@data$AgeClass <- "Other"
-  age@data$AgeClass[age@data$Mascaro_Co == "> 400"] <- "OldGrowth"
-  age@data$AgeClass[age@data$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
-  
-  oldGrowth <- raster::aggregate(age[age@data$AgeClass=="OldGrowth",])
-  secondary <- raster::aggregate(age[age@data$AgeClass=="Secondary",])
-  
-  # 2017-2018
-  areaOld <- raster::crop(dchm17to18,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  gapsOld <- raster::crop(gaps17to18,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  values_areaOld <- raster::getValues(areaOld)
-  values_gapsOld <- raster::getValues(gapsOld)
-  length(values_gapsOld[!is.na(values_gapsOld)])/length(values_areaOld[!is.na(values_areaOld)])
-  
-  areaSec <- raster::crop(dchm17to18,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  gapsSec <- raster::crop(gaps17to18,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  values_areaSec <- raster::getValues(areaSec)
-  values_gapsSec <- raster::getValues(gapsSec)
-  length(values_gapsSec[!is.na(values_gapsSec)])/length(values_areaSec[!is.na(values_areaSec)])
-  
-  # 2018-2019
-  areaOld <- raster::crop(dchm18to19,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  gapsOld <- raster::crop(gaps18to19,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  values_areaOld <- raster::getValues(areaOld)
-  values_gapsOld <- raster::getValues(gapsOld)
-  length(values_gapsOld[!is.na(values_gapsOld)])/length(values_areaOld[!is.na(values_areaOld)])
-  
-  areaSec <- raster::crop(dchm18to19,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  gapsSec <- raster::crop(gaps18to19,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  values_areaSec <- raster::getValues(areaSec)
-  values_gapsSec <- raster::getValues(gapsSec)
-  length(values_gapsSec[!is.na(values_gapsSec)])/length(values_areaSec[!is.na(values_areaSec)])
-  
-  # 2019-2020
-  areaOld <- raster::crop(dchm19to20,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  gapsOld <- raster::crop(gaps19to20,buffer[buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  values_areaOld <- raster::getValues(areaOld)
-  values_gapsOld <- raster::getValues(gapsOld)
-  (12/13)*length(values_gapsOld[!is.na(values_gapsOld)])/length(values_areaOld[!is.na(values_areaOld)])
-  
-  areaSec <- raster::crop(dchm19to20,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  gapsSec <- raster::crop(gaps19to20,buffer[!buffer$Mascaro_Co=="> 400" & !is.na(buffer$Mascaro_Co),])
-  values_areaSec <- raster::getValues(areaSec)
-  values_gapsSec <- raster::getValues(gapsSec)
-  (12/13)*length(values_gapsSec[!is.na(values_gapsSec)])/length(values_areaSec[!is.na(values_areaSec)])
-  
   
 #### GRAVEYARD ####    
   # Get soil type grap frequency from lidar
