@@ -77,7 +77,7 @@
     if(qaqc$Use20[i]==F){
       chm20 <- raster::mask(chm20, extent_i, inverse = T)
     }
-      print(i)
+
   }
 
 # Make sure all years have the same extent
@@ -119,14 +119,45 @@
     chm18 <- raster::raster("CHM_2018_QAQC.tif")
     chm19 <- raster::raster("CHM_2019_QAQC.tif")
     chm20 <- raster::raster("CHM_2020_QAQC.tif")
-    
-  
-#### BINARY NEW GAPS #### 
   
   # Calculate the change in canopy height for each interval  
     d17to18 <- chm18-chm17
     d18to19 <- chm19-chm18
     d19to20 <- chm20-chm19
+    
+  # Mask out areas that are initially < 5 m in height and decrease between two years
+    
+    # 2017 - 2018
+      short17 <- rep(0, length(raster::values(chm17)))
+        short17[raster::values(chm17)<5 & !is.na(raster::values(chm17))] <- 1
+      
+      omit17to18 <- rep(0, length(raster::values(d17to18)))
+        omit17to18[raster::values(d17to18) < 0 & !is.na(raster::values(d17to18))] <- 1
+        omit17to18[short17==0] <- 0
+        
+      d17to18@data@values[omit17to18==1] <- NA  
+
+    # 2018 - 2019
+      short18 <- rep(0, length(raster::values(chm18)))
+      short18[raster::values(chm18)<5 & !is.na(raster::values(chm18))] <- 1
+      
+      omit18to19 <- rep(0, length(raster::values(d18to19)))
+      omit18to19[raster::values(d18to19) < 0 & !is.na(raster::values(d18to19))] <- 1
+      omit18to19[short18==0] <- 0
+      
+      d18to19@data@values[omit18to19==1] <- NA  
+    
+    # 2018 - 2019
+      short19 <- rep(0, length(raster::values(chm19)))
+      short19[raster::values(chm19)<5 & !is.na(raster::values(chm19))] <- 1
+      
+      omit19to20 <- rep(0, length(raster::values(d19to20)))
+      omit19to20[raster::values(d19to20) < 0 & !is.na(raster::values(d19to20))] <- 1
+      omit19to20[short19==0] <- 0
+      
+      d19to20@data@values[omit19to20==1] <- NA  
+      
+#### BINARY NEW GAPS #### 
   
   # Use ForestGapR package to delineate new gaps
     
