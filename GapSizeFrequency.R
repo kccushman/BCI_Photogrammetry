@@ -330,17 +330,73 @@
                       layer = "gaps19to20sp", 
                       driver = "ESRI Shapefile")
   
-  # Save rasters of new gap pixels
-      raster::writeRaster(gaps17to18, file="newGaps17to18.tif")
-      raster::writeRaster(gaps18to19, file="newGaps18to19.tif")
-      raster::writeRaster(gaps19to20, file="newGaps19to20.tif")
+  # # Save rasters of new gap pixels
+  #     raster::writeRaster(gaps17to18, file="newGaps17to18.tif", overwrite = T)
+  #     raster::writeRaster(gaps18to19, file="newGaps18to19.tif", overwrite = T)
+  #     raster::writeRaster(gaps19to20, file="newGaps19to20.tif", overwrite = T)
       
       
-  # Save rasters of canopy height change
-      raster::writeRaster(d17to18, file="dCHM17to18.tif")
-      raster::writeRaster(d18to19, file="dCHM18to19.tif")
-      raster::writeRaster(d19to20, file="dCHM19to20.tif")
+  # # Save rasters of canopy height change
+  #     raster::writeRaster(d17to18, file="dCHM17to18.tif", overwrite = T)
+  #     raster::writeRaster(d18to19, file="dCHM18to19.tif", overwrite = T)
+  #     raster::writeRaster(d19to20, file="dCHM19to20.tif", overwrite = T)
+
+#### GAPS NEIGHBORING NA CELLS ####
       
+  # 2017 to 2018 
+      
+    gaps17to18sp <- rgdal::readOGR("gaps17to18_shapefile/gaps17to18sp.shp")    
+    d17to18 <- raster::raster("dCHM17to18.tif")    
+    
+    gaps17to18sp$borderNAs <- NA
+    
+    for(i in 1:length(gaps17to18sp)){
+      # create a 1 m buffer (one cell) around gap polygon
+        polyBuff <- raster::buffer(gaps17to18sp[i,], 1)
+      # find raster cells within that polygon
+        cells <- raster::cellFromPolygon(object = d17to18,
+                                         p = polyBuff)[[1]]
+      # count NA cells within buffered gap polygon
+        gaps17to18sp$borderNAs[i] <- length(d17to18[cells][is.na(d17to18[cells])])
+  
+    }
+
+  # 2018 to 2019 
+    
+    gaps18to19sp <- rgdal::readOGR("gaps18to19_shapefile/gaps18to19sp.shp")    
+    d18to19 <- raster::raster("dCHM18to19.tif")    
+    
+    gaps18to19sp$borderNAs <- NA
+    
+    for(i in 1:length(gaps18to19sp)){
+      # create a 1 m buffer (one cell) around gap polygon
+      polyBuff <- raster::buffer(gaps18to19sp[i,], 1)
+      # find raster cells within that polygon
+      cells <- raster::cellFromPolygon(object = d18to19,
+                                       p = polyBuff)[[1]]
+      # count NA cells within buffered gap polygon
+      gaps18to19sp$borderNAs[i] <- length(d18to19[cells][is.na(d18to19[cells])])
+      
+    }  
+    
+  # 2019 to 2020 
+    
+    gaps19to20sp <- rgdal::readOGR("gaps19to20_shapefile/gaps19to20sp.shp")    
+    d19to20 <- raster::raster("dCHM19to20.tif")    
+    
+    gaps19to20sp$borderNAs <- NA
+    
+    for(i in 1:length(gaps19to20sp)){
+      # create a 1 m buffer (one cell) around gap polygon
+      polyBuff <- raster::buffer(gaps19to20sp[i,], 1)
+      # find raster cells within that polygon
+      cells <- raster::cellFromPolygon(object = d19to20,
+                                       p = polyBuff)[[1]]
+      # count NA cells within buffered gap polygon
+      gaps19to20sp$borderNAs[i] <- length(d19to20[cells][is.na(d19to20[cells])])
+      
+    }  
+    
 #### SUMMARY GAP STATS PER YEAR ####
 
       # Make vectors of all sampled values in each interval, and of gap values
