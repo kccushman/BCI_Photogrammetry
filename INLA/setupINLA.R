@@ -232,67 +232,78 @@ library("INLA")
       bci.gaps20$aspectMean <- aspectQuant$meanVal
       bci.gaps20$aspectMed <- aspectQuant$medVal
       
-    # Combine into a single data frame  
-      bci.gaps18$Year <- "2018"
-      bci.gaps19$Year <- "2019"
-      bci.gaps20$Year <- "2020"
-      
-      bci.gapsAll <- rbind(as.data.frame(bci.gaps18),
-                           as.data.frame(bci.gaps19),
-                           as.data.frame(bci.gaps20))
-      
 #### Calculate expected gaps per cell from area measured ####
   # Calculate mean gaps/ha across the whole island
-    avgRate <- length(gapsPts19to20)/(length(raster::values(d19to20tall)[!is.na(raster::values(d19to20tall))])/10000)
+    allGapsSum <-   length(gapsPts17to18) + length(gapsPts18to19) + length(gapsPts19to20)
+    allAreaSum <-   (length(raster::values(d17to18tall)[!is.na(raster::values(d17to18tall))]) + 
+                       length(raster::values(d18to19tall)[!is.na(raster::values(d18to19tall))]) + 
+                       length(raster::values(d19to20tall)[!is.na(raster::values(d19to20tall))]))/10000
+    avgRateAll <- allGapsSum/allAreaSum
     
+    # avgRate18 <- length(gapsPts17to18)/(length(raster::values(d17to18tall)[!is.na(raster::values(d17to18tall))])/10000)
+    # avgRate19 <- length(gapsPts18to19)/(length(raster::values(d18to19tall)[!is.na(raster::values(d18to19tall))])/10000)
+    # avgRate20 <- length(gapsPts19to20)/(length(raster::values(d19to20tall)[!is.na(raster::values(d19to20tall))])/10000)
+      
   # Caclulate expect gaps for each cell based on area measured
-    bci.gaps2$expectedGaps <- round(bci.gaps2$areaObs*avgRate)
+    bci.gaps18$expectedGaps <- round(bci.gaps18$areaObs*avgRateAll,2)
+    bci.gaps19$expectedGaps <- round(bci.gaps19$areaObs*avgRateAll,2)
+    bci.gaps20$expectedGaps <- round(bci.gaps20$areaObs*avgRateAll,2)
     
-  # Make any rows NA where the expected value is 0
-    bci.gaps2[bci.gaps2$expectedGaps==0,"Ngaps"] <- NA
 
+#### Combine three years into a single data frame and save ####
+
+    bci.gaps18$Year <- "2018"
+    bci.gaps19$Year <- "2019"
+    bci.gaps20$Year <- "2020"
+    
+    bci.gapsAll <- rbind(as.data.frame(bci.gaps18),
+                         as.data.frame(bci.gaps19),
+                         as.data.frame(bci.gaps20))
+    
+    save(bci.gaps18, bci.gaps19, bci.gaps20, bci.gapsAll, file="INLA_prelim.RData")
+    
 #### Very preliminary models ####
     
+    # Make any rows NA where the expected value is 0
+    bci.gapsAll[bci.gapsAll$expectedGaps<0.5,"Ngaps"] <- NA
+    
     # Look at summary topo values
-    hist(bci.gaps2@data$curvMed)
-    hist(bci.gaps2@data$slopeMed)
-    hist(log(bci.gaps2@data$slopeMed))
-    hist(bci.gaps2@data$aspectMed)
+    hist(bci.gapsAll$curvMed)
+    hist(bci.gapsAll$slopeMed)
+    hist(log(bci.gapsAll$slopeMed))
+    hist(bci.gapsAll$aspectMed)
     
-    bci.gaps2$logSlopeMed <- log(bci.gaps2@data$slopeMed)
-    
-    plot(Ngaps~curvMed, data=bci.gaps2@data, pch=19, col=adjustcolor("black",0.1))
-    plot(Ngaps~slopeMed, data=bci.gaps2@data, pch=19, col=adjustcolor("black",0.1))
-    plot(Ngaps~aspectMed, data=bci.gaps2@data, pch=19, col=adjustcolor("black",0.1))
-    
+    bci.gapsAll$logSlopeMed <- log(bci.gapsAll$slopeMed)
     
     #Log-Poisson regression
-    m0 <- inla(Ngaps ~ curvMed + logSlopeMed, family = "poisson",
-               data = as.data.frame(bci.gaps2),
+    m0 <- inla(Ngaps ~ curvMed + logSlopeMed + soil + Year, family = "poisson",
+               data = bci.gapsAll,
                E = expectedGaps,
                control.compute = list(dic = TRUE))
     summary(m0)
     
     #Log-Poisson regression with random effects
-    bci.gaps2$ID <- 1:length(bci.gaps2)
-    m0.re <- inla(Ngaps ~ curvMed + logSlopeMed + f(ID), family = "poisson",
-                  data = as.data.frame(bci.gaps2),
+    bci.gapsAll$ID <- rep(1:(nCellX*nCellY),3)
+    m0.re <- inla(Ngaps ~ curvMed + logSlopeMed + soil + Year + f(ID),
+                  family = "poisson",
+                  data = bci.gapsAll,
                   control.compute = list(dic = TRUE))
     summary(m0.re)
     
     #RW2d
-    m0.rw2d <- inla(Ngaps ~ curvMed + logSlopeMed +
+    m0.rw2d <- inla(Ngaps ~ curvMed + logSlopeMed + soil + Year + 
                       f(ID, model = "rw2d", nrow = nCellY, ncol = nCellX),
-                    family = "poisson", data = as.data.frame(bci.gaps2),
+                    family = "poisson", 
+                    data = bci.gapsAll,
                     control.predictor = list(compute = TRUE),
-                    control.compute = list(dic = TRUE) )
+                    control.compute = list(dic = TRUE))
     
     summary(m0.rw2d)
     
     #Matern2D
-    m0.m2d <- inla(Ngaps ~ curvMed + logSlopeMed +
+    m0.m2d <- inla(Ngaps ~ curvMed + logSlopeMed + soil + Year +
                      f(ID, model = "matern2d", nrow = nCellY, ncol = nCellX),
-                   family = "poisson", data = as.data.frame(bci.gaps2),
+                   family = "poisson", data = bci.gapsAll,
                    control.predictor = list(compute = TRUE),
                    control.compute = list(dic = TRUE))
     summary(m0.m2d)
@@ -302,4 +313,3 @@ library("INLA")
     m0.rw2d$dic$dic
     m0.m2d$dic$dic
     
-    save(bci.gaps2, file="INLA_prelim.RData")
