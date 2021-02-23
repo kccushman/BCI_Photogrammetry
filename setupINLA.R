@@ -18,8 +18,12 @@ library("INLA")
     slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif")
     curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_21.tif")
     aspectRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif")
-  
-#### Create SpatialPolygonsDataFrame across BCI ####
+    
+  # Soil type polygon  
+    soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+    soil <- sp::spTransform(soil,raster::crs(d17to18tall))
+    
+#### Create SpatialPolygonsDataFrame across BCI with proper order for R-INLA ####
     
     # Define cell size (in m)
     cellSize <- 100
@@ -43,22 +47,57 @@ library("INLA")
     gapsPts18to19 <- sp::SpatialPoints(coords = gaps18to19sp@data[gaps18to19sp$use==T,c("X1","X2")])
     gapsPts19to20 <- sp::SpatialPoints(coords = gaps19to20sp@data[gaps19to20sp$use==T,c("X1","X2")])
     
-    #Number of gap observations per cell
-    idx <- over(gapsPts19to20, bci.poly)
-    tab.idx <- table(idx)
     
-    #Add number of gaps
-    d <- data.frame(Ngaps = rep(0, length(bci.poly)))
-    row.names(d) <- paste0("g", 1:length(bci.poly))
-    d$Ngaps[as.integer(names(tab.idx))] <- tab.idx
+    # 2017 - 2018
+      #Number of gap observations per cell
+      idx <- over(gapsPts17to18, bci.poly)
+      tab.idx <- table(idx)
+      
+      #Add number of gaps
+      d <- data.frame(Ngaps = rep(0, length(bci.poly)))
+      row.names(d) <- paste0("g", 1:length(bci.poly))
+      d$Ngaps[as.integer(names(tab.idx))] <- tab.idx
+      
+      #SpatialPolygonsDataFrame
+      bci.gaps <- SpatialPolygonsDataFrame(bci.poly, d)
+      
+      ## Correct INLA mapping (assumes that data are sorted top-to-bottom by column)    
+      idx.mapping <- as.vector(t(matrix(1:(nCellX*nCellY), nrow = nCellX, ncol = nCellY)))
+      bci.gaps18 <- bci.gaps[idx.mapping, ]
     
-    #SpatialPolygonsDataFrame
-    bci.gaps <- SpatialPolygonsDataFrame(bci.poly, d)
+    # 2018 - 2019
+      #Number of gap observations per cell
+      idx <- over(gapsPts18to19, bci.poly)
+      tab.idx <- table(idx)
+      
+      #Add number of gaps
+      d <- data.frame(Ngaps = rep(0, length(bci.poly)))
+      row.names(d) <- paste0("g", 1:length(bci.poly))
+      d$Ngaps[as.integer(names(tab.idx))] <- tab.idx
+      
+      #SpatialPolygonsDataFrame
+      bci.gaps <- SpatialPolygonsDataFrame(bci.poly, d)
+      
+      ## Correct INLA mapping (assumes that data are sorted top-to-bottom by column)    
+      idx.mapping <- as.vector(t(matrix(1:(nCellX*nCellY), nrow = nCellX, ncol = nCellY)))
+      bci.gaps19 <- bci.gaps[idx.mapping, ]
     
-    ## Correct INLA mapping (assumes that data are sorted top-to-bottom by column)    
-    #Mapping
-    idx.mapping <- as.vector(t(matrix(1:(nCellX*nCellY), nrow = nCellX, ncol = nCellY)))
-    bci.gaps2 <- bci.gaps[idx.mapping, ]
+    # 2019 - 2020
+      #Number of gap observations per cell
+      idx <- over(gapsPts19to20, bci.poly)
+      tab.idx <- table(idx)
+      
+      #Add number of gaps
+      d <- data.frame(Ngaps = rep(0, length(bci.poly)))
+      row.names(d) <- paste0("g", 1:length(bci.poly))
+      d$Ngaps[as.integer(names(tab.idx))] <- tab.idx
+      
+      #SpatialPolygonsDataFrame
+      bci.gaps <- SpatialPolygonsDataFrame(bci.poly, d)
+      
+      ## Correct INLA mapping (assumes that data are sorted top-to-bottom by column)    
+      idx.mapping <- as.vector(t(matrix(1:(nCellX*nCellY), nrow = nCellX, ncol = nCellY)))
+      bci.gaps20 <- bci.gaps[idx.mapping, ]
 
 #### Quantify topographic covariates in each cell ####
     
@@ -92,27 +131,116 @@ library("INLA")
       return(topoVals)
     }  
     
-    # ~ 15 mins for 1 ha pixels
-    bci.gaps2$areaObs <- countPix(gapPoly = bci.gaps2,
-                                  baseLayer = d19to20tall)
-    # ~ 27 mins each for 1 ha pixels
-    system.time(curvQuant <- quantTopo(gapPoly = bci.gaps2,
-                                       baseLayer = d19to20tall,
-                                       topoLayer = curvRaster))
-    system.time(slopeQuant <- quantTopo(gapPoly = bci.gaps2,
-                                       baseLayer = d19to20tall,
-                                       topoLayer = slopeRaster))
-    system.time(aspectQuant <- quantTopo(gapPoly = bci.gaps2,
-                                       baseLayer = d19to20tall,
-                                       topoLayer = aspectRaster))
+  # Define a function to assign a cell a categorical value from a polygon 
+    assignCat <- function(gapPoly, polyLayer){
+      
+      polyVals <- rep(NA, length(gapPoly))
+      
+      for(i in 1:length(gapPoly)){
+        cat_i <- raster::crop(polyLayer, raster::extent(gapPoly[i,]))
+        
+        # Find polygon with highest area
+        if(length(cat_i) > 0){
+          
+          cat_areas <- rep(NA, length(cat_i))
+          
+          for(j in 1:length(cat_i)){
+            cat_areas[j] <- cat_i@polygons[[j]]@area
+          }
+        
+          polyVals[i] <- as.character(cat_i@data$SOIL[which(cat_areas==max(cat_areas))])
+        }
+      }
+      return(polyVals)
+    }  
     
-    bci.gaps2$curvMean <- curvQuant$meanVal
-    bci.gaps2$curvMed <- curvQuant$medVal
-    bci.gaps2$slopeMean <- slopeQuant$meanVal
-    bci.gaps2$slopeMed <- slopeQuant$medVal
-    bci.gaps2$aspectMean <- aspectQuant$meanVal
-    bci.gaps2$aspectMed <- aspectQuant$medVal
-    
+    # 2017-2018
+      
+      # < 1 min for 1 ha pixels
+      bci.gaps18$soil <- assignCat(gapPoly = bci.gaps18,
+                                   polyLayer = soil)
+      # ~ 15 mins for 1 ha pixels
+      bci.gaps18$areaObs <- countPix(gapPoly = bci.gaps18,
+                                     baseLayer = d17to18tall)
+      # ~ 27 mins each for 1 ha pixels
+      curvQuant <- quantTopo(gapPoly = bci.gaps18,
+                             baseLayer = d17to18tall,
+                             topoLayer = curvRaster)
+      slopeQuant <- quantTopo(gapPoly = bci.gaps18,
+                              baseLayer = d17to18tall,
+                              topoLayer = slopeRaster)
+      aspectQuant <- quantTopo(gapPoly = bci.gaps18,
+                               baseLayer = d17to18tall,
+                               topoLayer = aspectRaster)
+      
+      bci.gaps18$curvMean <- curvQuant$meanVal
+      bci.gaps18$curvMed <- curvQuant$medVal
+      bci.gaps18$slopeMean <- slopeQuant$meanVal
+      bci.gaps18$slopeMed <- slopeQuant$medVal
+      bci.gaps18$aspectMean <- aspectQuant$meanVal
+      bci.gaps18$aspectMed <- aspectQuant$medVal
+      
+    # 2018-2019
+      
+      # < 1 min for 1 ha pixels
+      bci.gaps19$soil <- assignCat(gapPoly = bci.gaps19,
+                                   polyLayer = soil)
+      # ~ 15 mins for 1 ha pixels
+      bci.gaps19$areaObs <- countPix(gapPoly = bci.gaps19,
+                                     baseLayer = d18to19tall)
+      # ~ 27 mins each for 1 ha pixels
+      curvQuant <- quantTopo(gapPoly = bci.gaps19,
+                             baseLayer = d18to19tall,
+                             topoLayer = curvRaster)
+      slopeQuant <- quantTopo(gapPoly = bci.gaps19,
+                              baseLayer = d18to19tall,
+                              topoLayer = slopeRaster)
+      aspectQuant <- quantTopo(gapPoly = bci.gaps19,
+                               baseLayer = d18to19tall,
+                               topoLayer = aspectRaster)
+      
+      bci.gaps19$curvMean <- curvQuant$meanVal
+      bci.gaps19$curvMed <- curvQuant$medVal
+      bci.gaps19$slopeMean <- slopeQuant$meanVal
+      bci.gaps19$slopeMed <- slopeQuant$medVal
+      bci.gaps19$aspectMean <- aspectQuant$meanVal
+      bci.gaps19$aspectMed <- aspectQuant$medVal
+      
+    # 2019-2020
+      
+      # < 1 min for 1 ha pixels
+      bci.gaps20$soil <- assignCat(gapPoly = bci.gaps20,
+                                   polyLayer = soil)
+      # ~ 15 mins for 1 ha pixels
+      bci.gaps20$areaObs <- countPix(gapPoly = bci.gaps20,
+                                     baseLayer = d19to20tall)
+      # ~ 27 mins each for 1 ha pixels
+      curvQuant <- quantTopo(gapPoly = bci.gaps20,
+                             baseLayer = d19to20tall,
+                             topoLayer = curvRaster)
+      slopeQuant <- quantTopo(gapPoly = bci.gaps20,
+                              baseLayer = d19to20tall,
+                              topoLayer = slopeRaster)
+      aspectQuant <- quantTopo(gapPoly = bci.gaps20,
+                               baseLayer = d19to20tall,
+                               topoLayer = aspectRaster)
+      
+      bci.gaps20$curvMean <- curvQuant$meanVal
+      bci.gaps20$curvMed <- curvQuant$medVal
+      bci.gaps20$slopeMean <- slopeQuant$meanVal
+      bci.gaps20$slopeMed <- slopeQuant$medVal
+      bci.gaps20$aspectMean <- aspectQuant$meanVal
+      bci.gaps20$aspectMed <- aspectQuant$medVal
+      
+    # Combine into a single data frame  
+      bci.gaps18$Year <- "2018"
+      bci.gaps19$Year <- "2019"
+      bci.gaps20$Year <- "2020"
+      
+      bci.gapsAll <- rbind(as.data.frame(bci.gaps18),
+                           as.data.frame(bci.gaps19),
+                           as.data.frame(bci.gaps20))
+      
 #### Calculate expected gaps per cell from area measured ####
   # Calculate mean gaps/ha across the whole island
     avgRate <- length(gapsPts19to20)/(length(raster::values(d19to20tall)[!is.na(raster::values(d19to20tall))])/10000)
