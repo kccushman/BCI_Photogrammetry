@@ -3,21 +3,25 @@
 #### READ DATA ####
     
 # Canopy height change rasters
+  d15to17 <- raster::raster("dCHM15to17.tif")
   d17to18 <- raster::raster("dCHM17to18.tif")
   d18to19 <- raster::raster("dCHM18to19.tif")
   d19to20 <- raster::raster("dCHM19to20.tif")
   
 # Canopy height change rastes where only possible gap values (> 5 m initially) are included  
+  d15to17tall <- raster::raster("dCHM15to17tall.tif")
   d17to18tall <- raster::raster("dCHM17to18tall.tif")
   d18to19tall <- raster::raster("dCHM18to19tall.tif")
   d19to20tall <- raster::raster("dCHM19to20tall.tif")
   
 # Gap rasters
+  gaps15to17 <- raster::raster("newGaps15to17.tif")
   gaps17to18 <- raster::raster("newGaps17to18.tif")
   gaps18to19 <- raster::raster("newGaps18to19.tif")
   gaps19to20 <- raster::raster("newGaps19to20.tif")
   
 # Gap polygons
+  gaps15to17sp <- rgdal::readOGR("gaps15to17_shapefile/gaps15to17sp.shp")
   gaps17to18sp <- rgdal::readOGR("gaps17to18_shapefile/gaps17to18sp.shp")
   gaps18to19sp <- rgdal::readOGR("gaps18to19_shapefile/gaps18to19sp.shp")
   gaps19to20sp <- rgdal::readOGR("gaps19to20_shapefile/gaps19to20sp.shp")
@@ -28,6 +32,9 @@
 #### AREA SAMPLED EACH YEAR ####
   
 # All area
+  allVals15to17 <- raster::values(d15to17)
+  areaSampled15to17 <- length(allVals15to17[!is.na(allVals15to17)])/10000
+  
   allVals17to18 <- raster::values(d17to18)
   areaSampled17to18 <- length(allVals17to18[!is.na(allVals17to18)])/10000
   
@@ -37,7 +44,10 @@
   allVals19to20 <- raster::values(d19to20)
   areaSampled19to20 <- length(allVals19to20[!is.na(allVals19to20)])/10000  
   
-# Only area greater than 5 m height initially  
+# Only area greater than 5 m height initially
+  allVals15to17tall <- raster::values(d15to17tall)
+  areaSampled15to17tall <- length(allVals15to17tall[!is.na(allVals15to17tall)])/10000
+  
   allVals17to18tall <- raster::values(d17to18tall)
   areaSampled17to18tall <- length(allVals17to18tall[!is.na(allVals17to18tall)])/10000
   
@@ -102,6 +112,11 @@
       return(results)
   }
   
+  gapSummary15to17 <- getGapSummary(gapLayer = gaps15to17,
+                                    allLayer = d15to17tall,
+                                    bootBlocks = blockData,
+                                    nBoot = 1000)
+  
   gapSummary17to18 <- getGapSummary(gapLayer = gaps17to18,
                                     allLayer = d17to18tall,
                                     bootBlocks = blockData,
@@ -117,16 +132,20 @@
                                     bootBlocks = blockData,
                                     nBoot = 1000)
   
+  round(mean(gapSummary15to17$gapsPerHa),2)/2
   round(mean(gapSummary17to18$gapsPerHa),2)
   round(mean(gapSummary18to19$gapsPerHa),2)
   round(mean(gapSummary19to20$gapsPerHa),2)
+  round(quantile(gapSummary15to17$gapsPerHa,probs = c(0.025,0.975)),2)/2
   round(quantile(gapSummary17to18$gapsPerHa,probs = c(0.025,0.975)),2)
   round(quantile(gapSummary18to19$gapsPerHa,probs = c(0.025,0.975)),2)
   round(quantile(gapSummary19to20$gapsPerHa,probs = c(0.025,0.975)),2)
   
+  round(mean(gapSummary15to17$percentGap),2)/2
   round(mean(gapSummary17to18$percentGap),2)
   round(mean(gapSummary18to19$percentGap),2)
   round(mean(gapSummary19to20$percentGap),2)
+  round(quantile(gapSummary15to17$percentGap,probs = c(0.025,0.975)),2)/2
   round(quantile(gapSummary17to18$percentGap,probs = c(0.025,0.975)),2)
   round(quantile(gapSummary18to19$percentGap,probs = c(0.025,0.975)),2)
   round(quantile(gapSummary19to20$percentGap,probs = c(0.025,0.975)),2)
@@ -136,8 +155,27 @@
   source("fitsizedistforRaquel.R")
   source("sizedistpart3forRaquel.R")
   
-  allData17to18 <- data.frame(dbh = gaps17to18sp[gaps17to18sp$use==T,]$area,
-                              quadnum = gaps17to18sp[gaps17to18sp$use==T,]$block)
+  # find max gap size
+  mxSz <- max(c(gaps15to17sp[gaps15to17sp$use==T,]$area,
+              gaps17to18sp[gaps17to18sp$use==T,]$area,
+              gaps18to19sp[gaps18to19sp$use==T,]$area,
+              gaps19to20sp[gaps19to20sp$use==T,]$area))
+  
+  
+  allData15to17 <- data.frame(dbh = gaps15to17sp[gaps15to17sp$use==T,]$area,
+                              quadnum = gaps15to17sp[gaps15to17sp$use==T,]$block)
+  
+  i <- 1
+  datadir <- "SizeFreqResults/"
+  site <- "BCI"
+  census <- "15to17"
+  szFreq15to17 <- doallbootstrapdbhfits(alldata = allData15to17,
+                                        nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                        alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                        fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                        # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                        filestem="gaps15to17", # this is the beginning of the names of the output files
+                                        ddiv=seq(9.5,(mxSz + 0.5),by=1))
   
   i <- 1
   datadir <- "SizeFreqResults/"
@@ -149,7 +187,7 @@
                                         fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
                                         # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                         filestem="gaps17to18", # this is the beginning of the names of the output files
-                                        ddiv=seq(9.5,1000.5,by=1))
+                                        ddiv=seq(9.5,(mxSz + 0.5),by=1))
   
   
   allData18to19 <- data.frame(dbh = gaps18to19sp[gaps18to19sp$use==T,]$area,
@@ -165,7 +203,7 @@
                                         fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
                                         # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                         filestem="gaps18to19", # this is the beginning of the names of the output files
-                                        ddiv=seq(9.5,1000.5,by=1))
+                                        ddiv=seq(9.5,(mxSz + 0.5),by=1))
   
   
   allData19to20 <- data.frame(dbh = gaps19to20sp[gaps19to20sp$use==T,]$area,
@@ -180,7 +218,7 @@
                                         fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
                                         # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                         filestem="gaps19to20", # this is the beginning of the names of the output files
-                                        ddiv=seq(9.5,1000.5,by=1))
+                                        ddiv=seq(9.5,(mxSz + 0.5),by=1))
   
 #### READ AND PLOT BOOTSTRAPPED RESULTS ####
   
@@ -258,6 +296,8 @@
        xlab = "Gap area (m2)")
   
   xVals <- seq(gapAreaRange[1],gapAreaRange[2],length.out = 1000)
+  
+  # use pweibull to correct for truncation mutliply by 1/(pwebmax - pweibwin)
   
   yValsWeib <- dweibull(xVals,
                         shape= szFreq17to18$weibpar1est,

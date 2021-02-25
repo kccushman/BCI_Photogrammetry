@@ -3,6 +3,7 @@
 #### READ RAW DATA ####
 
 # Read in canopy height rasters:
+  dsm15 <- raster::raster("DSM_2015_corrected.tif")
   dsm17 <- raster::raster("DSM_2017_corrected.tif")
   dsm18 <- raster::raster("DSM_2018_corrected.tif")
   dsm19 <- raster::raster("DSM_2019_corrected.tif")
@@ -27,24 +28,28 @@
 #### PROCESS AND SAVE CANOPY HEIGHT DATA ####
   
 # Remove raster areas outside BCI perimeter (exclude within 25 m of lake)
+  dsm15 <- raster::mask(dsm15, buffer)  
   dsm17 <- raster::mask(dsm17, buffer)  
   dsm18 <- raster::mask(dsm18, buffer)  
   dsm19 <- raster::mask(dsm19, buffer)  
   dsm20 <- raster::mask(dsm20, buffer)
 
 # Remove raster areas in clearings
+  dsm15 <- raster::mask(dsm15, ageUse)  
   dsm17 <- raster::mask(dsm17, ageUse)  
   dsm18 <- raster::mask(dsm18, ageUse)  
   dsm19 <- raster::mask(dsm19, ageUse)  
   dsm20 <- raster::mask(dsm20, ageUse)
 
 # Crop to ensure each raster has same extent
+  dsm15 <- raster::crop(dsm15, raster::extent(ageUse))  
   dsm17 <- raster::crop(dsm17, raster::extent(ageUse))  
   dsm18 <- raster::crop(dsm18, raster::extent(ageUse))  
   dsm19 <- raster::crop(dsm19, raster::extent(ageUse))  
   dsm20 <- raster::crop(dsm20, raster::extent(ageUse))    
   
 # Subtract ground elevation
+  chm15 <- dsm15-dem
   chm17 <- dsm17-dem
   chm18 <- dsm18-dem
   chm19 <- dsm19-dem
@@ -62,6 +67,10 @@
       extent_i <- as(extent_i, 'SpatialPolygons')
     
     # set values within failed tiles to NA  
+    if(qaqc$Use15[i]==F){
+      chm15 <- raster::mask(chm15, extent_i, inverse = T)
+    }  
+    
     if(qaqc$Use17[i]==F){
       chm17 <- raster::mask(chm17, extent_i, inverse = T)
     }
@@ -81,31 +90,35 @@
   }
 
 # Make sure all years have the same extent
-
-  chm18 <- raster::crop(chm18, raster::extent(chm17))
-  chm19 <- raster::crop(chm19, raster::extent(chm17))
-  chm20 <- raster::crop(chm20, raster::extent(chm17))
+  chm17 <- raster::crop(chm17, raster::extent(chm15))
+  chm18 <- raster::crop(chm18, raster::extent(chm15))
+  chm19 <- raster::crop(chm19, raster::extent(chm15))
+  chm20 <- raster::crop(chm20, raster::extent(chm15))
   
   
 # Cloud masks for 2017-2020
+  mask15 <- raster::raster("CloudMask_2015.tif")
   mask17 <- raster::raster("CloudMask_2017.tif")
   mask18 <- raster::raster("CloudMask_2018.tif")
   mask19 <- raster::raster("CloudMask_2019.tif")
   mask20 <- raster::raster("CloudMask_2020.tif")
   
   # Resample to extent and resolution of CHMs
+  mask15 <- raster::resample(mask15, chm15)
   mask17 <- raster::resample(mask17, chm17)
   mask18 <- raster::resample(mask18, chm18)
   mask19 <- raster::resample(mask19, chm19)
   mask20 <- raster::resample(mask20, chm20)
   
   # Remove cloud pixels
+  chm15[!(mask15==1)] <- NA
   chm17[!(mask17==1)] <- NA
   chm18[!(mask18==1)] <- NA
   chm19[!(mask19==1)] <- NA
   chm20[!(mask20==1)] <- NA
     
 # # Save
+#   raster::writeRaster(chm15, "CHM_2015_QAQC.tif", overwrite=T)
 #   raster::writeRaster(chm17, "CHM_2017_QAQC.tif", overwrite=T)
 #   raster::writeRaster(chm18, "CHM_2018_QAQC.tif", overwrite=T)
 #   raster::writeRaster(chm19, "CHM_2019_QAQC.tif", overwrite=T)
@@ -115,23 +128,31 @@
 #### MAKE AND SAVE CANOPY HEIGHT CHANGE RASTERS ####  
   
   # Canopy height models for all years
+    chm15 <- raster::raster("CHM_2015_QAQC.tif")
     chm17 <- raster::raster("CHM_2017_QAQC.tif")
     chm18 <- raster::raster("CHM_2018_QAQC.tif")
     chm19 <- raster::raster("CHM_2019_QAQC.tif")
     chm20 <- raster::raster("CHM_2020_QAQC.tif")
   
   # Calculate the change in canopy height for each interval  
+    d15to17 <- chm17-chm15
     d17to18 <- chm18-chm17
     d18to19 <- chm19-chm18
     d19to20 <- chm20-chm19
     
   # Make additional rasters where values below and initial height threshold are
   # omitted 
+    d15to17tall <- d15to17
     d17to18tall <- d17to18
     d18to19tall <- d18to19
     d19to20tall <- d19to20
     
   # Mask out areas that are initially < 5 m in height and decrease between two years
+    # 2015 - 2017
+      short15 <- rep(0, length(raster::values(chm15)))
+      short15[raster::values(chm15)<5 & !is.na(raster::values(chm15))] <- 1
+      
+      d15to17tall@data@values[short15==1] <- NA
     
     # 2017 - 2018
       short17 <- rep(0, length(raster::values(chm17)))
@@ -152,10 +173,13 @@
         d19to20tall@data@values[short19==1] <- NA
       
   # Save rasters of canopy height change, with and without 5 m initial height mask
+     
+      # raster::writeRaster(d15to17, file="dCHM15to17.tif", overwrite = T)
       # raster::writeRaster(d17to18, file="dCHM17to18.tif", overwrite = T)
       # raster::writeRaster(d18to19, file="dCHM18to19.tif", overwrite = T)
       # raster::writeRaster(d19to20, file="dCHM19to20.tif", overwrite = T)
-      # 
+        
+      # raster::writeRaster(d15to17tall, file="dCHM15to17tall.tif", overwrite = T)
       # raster::writeRaster(d17to18tall, file="dCHM17to18tall.tif", overwrite = T)
       # raster::writeRaster(d18to19tall, file="dCHM18to19tall.tif", overwrite = T)
       # raster::writeRaster(d19to20tall, file="dCHM19to20tall.tif", overwrite = T)  
@@ -170,6 +194,53 @@
       gapSzMin <- 10
       gapSzMax <- 10^6
       areaPerimThresh <- 0.6
+      
+      # 2015 - 2017
+      
+      # Identify gaps  
+      gaps15to17 <- ForestGapR::getForestGaps(d15to17,
+                                              threshold = gapHtThresh ,
+                                              size=c(gapSzMin,gapSzMax))
+      
+      # Create a Spatial Polygon Data Frame object, where each polygon is a gap
+      gaps15to17sp <- ForestGapR::GapSPDF(gaps15to17)
+      
+      # Calculate the area and perimeter from each gap object
+      gaps15to17sp@data$area <- NA
+      gaps15to17sp@data$perimeter <- NA
+      for(i in 1:length(gaps15to17sp)){
+        gaps15to17sp[gaps15to17sp$gap_id==i,"area"] <- raster::area(gaps15to17sp[gaps15to17sp$gap_id==i,])
+        
+        perims_j <- c()
+        for(j in 1:length(gaps15to17sp[gaps15to17sp$gap_id==i,]@polygons[[1]]@Polygons)){
+          
+          coordsj <- gaps15to17sp[gaps15to17sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
+          
+          lengths_k <- c()
+          for(k in 2:dim(coordsj)[1]){
+            lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
+            
+          }
+          perims_j[j] <- sum(lengths_k)
+          
+          if(gaps15to17sp[gaps15to17sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
+            perims_j[j] <- 0
+          }
+          
+        }
+        gaps15to17sp[gaps15to17sp$gap_id==i,"perimeter"] <- sum(perims_j)
+        
+      }
+      
+      # Calculate the ratio of area to perimeter
+      gaps15to17sp@data$ratio <- gaps15to17sp@data$area/gaps15to17sp@data$perimeter
+      
+      # Remove gaps that don't meet a minimum area/perimeter threshold
+      for(i in 1:length(gaps15to17sp@data$ratio)){
+        if(gaps15to17sp@data$ratio[i] < areaPerimThresh){
+          gaps15to17[gaps15to17==gaps15to17sp@data$gap_id[i]] <- NA
+        }
+      }
       
     # 2017 - 2018
         
@@ -313,12 +384,31 @@
         }
         
   # # Save rasters of new gap pixels
+  #     raster::writeRaster(gaps15to17, file="newGaps15to17.tif", overwrite = T)
   #     raster::writeRaster(gaps17to18, file="newGaps17to18.tif", overwrite = T)
   #     raster::writeRaster(gaps18to19, file="newGaps18to19.tif", overwrite = T)
   #     raster::writeRaster(gaps19to20, file="newGaps19to20.tif", overwrite = T)
       
 #### GAPS NEIGHBORING NA CELLS ####
+        
+  # 2015 to 2017 
+    
+    gaps15to17sp <- rgdal::readOGR("gaps15to17_shapefile/gaps15to17sp.shp")    
+    d15to17 <- raster::raster("dCHM15to17.tif")    
+    
+    gaps15to17sp$borderNAs <- NA
+    
+    for(i in 1:length(gaps15to17sp)){
+      # create a 1 m buffer (one cell) around gap polygon
+      polyBuff <- raster::buffer(gaps15to17sp[i,], 1)
+      # find raster cells within that polygon
+      cells <- raster::cellFromPolygon(object = d15to17,
+                                       p = polyBuff)[[1]]
+      # count NA cells within buffered gap polygon
+      gaps15to17sp$borderNAs[i] <- length(d15to17[cells][is.na(d15to17[cells])])
       
+    }
+        
   # 2017 to 2018 
       
     gaps17to18sp <- rgdal::readOGR("gaps17to18_shapefile/gaps17to18sp.shp")    
@@ -374,16 +464,19 @@
     }  
   
   # Calculate NA cells as a proportion of total gap perimeter
+    gaps15to17sp$pctNAs <- gaps15to17sp$borderNAs/gaps15to17sp$perimeter
     gaps17to18sp$pctNAs <- gaps17to18sp$borderNAs/gaps17to18sp$perimeter
     gaps18to19sp$pctNAs <- gaps18to19sp$borderNAs/gaps18to19sp$perimeter
     gaps19to20sp$pctNAs <- gaps19to20sp$borderNAs/gaps19to20sp$perimeter
       
   # What proportion of gaps neighbor NA cells?
+    pct15to17 <- 100*round(length(gaps15to17sp[gaps15to17sp$use==T & gaps15to17sp$borderNAs>0,])/length(gaps15to17sp[gaps15to17sp$use==T,]),3)
     pct17to18 <- 100*round(length(gaps17to18sp[gaps17to18sp$use==T & gaps17to18sp$borderNAs>0,])/length(gaps17to18sp[gaps17to18sp$use==T,]),3)
     pct18to19 <- 100*round(length(gaps18to19sp[gaps18to19sp$use==T & gaps18to19sp$borderNAs>0,])/length(gaps18to19sp[gaps18to19sp$use==T,]),3)    
     pct19to20 <- 100*round(length(gaps19to20sp[gaps19to20sp$use==T & gaps19to20sp$borderNAs>0,])/length(gaps19to20sp[gaps19to20sp$use==T,]),3)
   
   # What proportion of gaps have 10% or more of perimeter
+    length(gaps15to17sp[gaps15to17sp$use==T & gaps15to17sp$pctNAs>0.1,])/length(gaps15to17sp[gaps15to17sp$use==T,])
     length(gaps17to18sp[gaps17to18sp$use==T & gaps17to18sp$pctNAs>0.1,])/length(gaps17to18sp[gaps17to18sp$use==T,])
     length(gaps18to19sp[gaps18to19sp$use==T & gaps18to19sp$pctNAs>0.1,])/length(gaps18to19sp[gaps18to19sp$use==T,])
     length(gaps19to20sp[gaps19to20sp$use==T & gaps19to20sp$pctNAs>0.1,])/length(gaps19to20sp[gaps19to20sp$use==T,])
@@ -391,9 +484,15 @@
     
     
   # Histograms of pct of perimeter in NA cells
-    par(mfrow=c(1,3))
+    par(mfrow=c(2,2))
+    hist(gaps15to17sp[gaps15to17sp$use==T & gaps15to17sp$pctNAs>0,]$pctNAs,
+         main = paste0(pct15to17, "% in15to17"),
+         xlab = NA,
+         breaks=seq(0,1,.02),
+         xlim=c(0.001,0.6),
+         col="black",border="white")
     hist(gaps17to18sp[gaps17to18sp$use==T & gaps17to18sp$pctNAs>0,]$pctNAs,
-         main = paste0(pct17to18, "% in18to19"),
+         main = paste0(pct17to18, "% in17to18"),
          xlab = NA,
          breaks=seq(0,1,.02),
          xlim=c(0.001,0.6),
@@ -414,7 +513,15 @@
     
 
     # Relationship between gap size and NA cells
-    par(mfrow=c(1,3))
+    par(mfrow=c(2,2))
+    plot(x = gaps15to17sp[gaps15to17sp$use==T,]$area,
+         y = gaps15to17sp[gaps15to17sp$use==T,]$borderNAs,
+         xlim=c(10,1200),
+         ylim=c(0,60),
+         xlab = NA,
+         ylab = NA,
+         pch=19,
+         col = adjustcolor("black",0.05))
     plot(x = gaps17to18sp[gaps17to18sp$use==T,]$area,
          y = gaps17to18sp[gaps17to18sp$use==T,]$borderNAs,
          xlim=c(10,1200),
@@ -445,11 +552,14 @@
     
 #### ASSIGN GAP POLYGONS TO BOOTSTRAP GROUPS ####
   blocks <- read.csv("bootstrapBlocks.csv")
-  
+    
+  gaps15to17sp$block <- NA 
   gaps17to18sp$block <- NA 
   gaps18to19sp$block <- NA 
   gaps19to20sp$block <- NA
   for(i in 1:dim(blocks)[1]){
+    gaps15to17sp@data[gaps15to17sp@data[,1]>=blocks$xmin[i] & gaps15to17sp@data[,1] < blocks$xmax[i]
+                      & gaps15to17sp@data[,2]>=blocks$ymin[i] & gaps15to17sp@data[,2] < blocks$ymax[i],"block"] <- i
     gaps17to18sp@data[gaps17to18sp$X1>=blocks$xmin[i] & gaps17to18sp$X1 < blocks$xmax[i]
                       & gaps17to18sp$X2>=blocks$ymin[i] & gaps17to18sp$X2 < blocks$ymax[i],"block"] <- i
     gaps18to19sp@data[gaps18to19sp$X1>=blocks$xmin[i] & gaps18to19sp$X1 < blocks$xmax[i]
@@ -462,6 +572,14 @@
 #### SAVE GAP POLYGONS ####
     
     # Save gap shapefiles
+  
+    gaps15to17sp$use <- ifelse(gaps15to17sp$ratio<areaPerimThresh,
+                               F,T)
+    rgdal::writeOGR(gaps15to17sp,
+                    dsn = "gaps15to17_shapefile",
+                    layer = "gaps15to17sp", 
+                    driver = "ESRI Shapefile")
+  
     gaps17to18sp$use <- ifelse(gaps17to18sp$ratio<areaPerimThresh,
                                F,T)
     rgdal::writeOGR(gaps17to18sp,
@@ -484,6 +602,7 @@
                     driver = "ESRI Shapefile")
     
     # Load gap shapefiles
+    gaps15to17sp <- rgdal::readOGR("gaps15to17_shapefile/gaps15to17sp.shp")
     gaps17to18sp <- rgdal::readOGR("gaps17to18_shapefile/gaps17to18sp.shp")
     gaps18to19sp <- rgdal::readOGR("gaps18to19_shapefile/gaps18to19sp.shp")
     gaps19to20sp <- rgdal::readOGR("gaps19to20_shapefile/gaps19to20sp.shp")

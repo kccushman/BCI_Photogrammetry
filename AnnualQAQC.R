@@ -74,7 +74,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use15 <- ifelse(gridInfo$QAQC15_A < 0.3 & gridInfo$QAQC15_B < 0.5,
+    gridInfo$Use15 <- ifelse(gridInfo$QAQC15_A < 0.05 & gridInfo$QAQC15_B < 1.5,
                              T,
                              F)
     
@@ -182,7 +182,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
                  main = "Corrected 2015 to 2017 height change")
     
     for(i in 1:dim(gridInfo)[1]){
-      if(gridInfo$Use17[i]==F){
+      if(gridInfo$Use17[i]==F | gridInfo$Use15[i]==F){
         
         x1 <- gridInfo[i, "xmin"] 
         x2 <- gridInfo[i, "xmax"]
@@ -462,6 +462,26 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     ID <- gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
     
     gridInfo[ID,c("QAQC17_A","QAQC17_B")]
+    
+#### Cloud mask 2015 ####
+
+# Read albedo (because clouds are bright)
+albedo15 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2015.tif")
+albedo15 <- raster::mask(albedo15,buffer)
+
+# Read red-blue difference (because clouds tend to be blue)
+redblu15 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2015.tif")
+redblu15 <- raster::mask(redblu15,buffer)
+
+
+thresh_albedo <- 475
+thresh_redblu <- 20
+mask15 <- albedo15
+mask15@data@values[albedo15@data@values >= thresh_albedo & redblu15@data@values <= thresh_redblu] <- 0
+mask15@data@values[albedo15@data@values < thresh_albedo | redblu15@data@values > thresh_redblu] <- 1
+raster::plot(mask15)
+
+raster::writeRaster(mask15, "CloudMask_2015.tif")
     
 #### Cloud mask 2017 ####
     
