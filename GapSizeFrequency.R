@@ -177,7 +177,8 @@
                                         filestem="gaps15to17", # this is the beginning of the names of the output files
                                         ddiv=seq(9.5,(mxSz + 0.5),by=1))
   
-  i <- 1
+  allData17to18 <- data.frame(dbh = gaps15to17sp[gaps15to17sp$use==T,]$area,
+                              quadnum = gaps15to17sp[gaps15to17sp$use==T,]$block)
   datadir <- "SizeFreqResults/"
   site <- "BCI"
   census <- "17to18"
@@ -192,8 +193,6 @@
   
   allData18to19 <- data.frame(dbh = gaps18to19sp[gaps18to19sp$use==T,]$area,
                               quadnum = gaps18to19sp[gaps18to19sp$use==T,]$block)
-  
-  i <- 1
   datadir <- "SizeFreqResults/"
   site <- "BCI"
   census <- "18to19"
@@ -223,12 +222,13 @@
 #### READ AND PLOT BOOTSTRAPPED RESULTS ####
   
   # Read distribution results
+  szFreq15to17 <- read.table("SizeFreqResults/gaps15to17sizedistbsfit.txt", header = T)
   szFreq17to18 <- read.table("SizeFreqResults/gaps17to18sizedistbsfit.txt", header = T)
   szFreq18to19 <- read.table("SizeFreqResults/gaps18to19sizedistbsfit.txt", header = T)
   szFreq19to20 <- read.table("SizeFreqResults/gaps19to20sizedistbsfit.txt", header = T)
   
   # Divide intervals for plotting
-  gapAreaRange <- c(10,1000)
+  gapAreaRange <- c(10,mxSz)
   logRange <- log(gapAreaRange)
   brksRange_log <- seq(logRange[1],logRange[2],length.out = 20)
   brksRange <- floor(exp(brksRange_log))
@@ -241,12 +241,16 @@
   makeGapVectors <- function(gapAreaVector, minarea, maxarea){
     nArea <- rep(NA,length(minarea))
     for(i in 1:length(minarea)){
-      nGaps <- length(gapAreaVector[gapAreaVector>minarea[i] & gapAreaVector<maxarea[i]])
+      nGaps <- length(gapAreaVector[gapAreaVector>=minarea[i] & gapAreaVector<maxarea[i]])
       szRange <- maxarea[i]-minarea[i]
       nArea[i] <-nGaps/szRange
     }
     return(nArea)
   }
+  
+  gapSizes15to17 <- makeGapVectors(gapAreaVector = gaps15to17sp[gaps15to17sp$use==T,]$area,
+                                   minarea = brksMins,
+                                   maxarea = brksMaxs)
   
   gapSizes17to18 <- makeGapVectors(gapAreaVector = gaps17to18sp[gaps17to18sp$use==T,]$area,
                                    minarea = brksMins,
@@ -263,33 +267,48 @@
   logOption <- "xy"
   #logOption <- ""
   
+  yRange <- range(c(gapSizes15to17,gapSizes17to18,gapSizes18to19,gapSizes19to20)) + c(1e-4,0)
   
+  #Define colors
+  col17 <- "black"
+  col18 <- "#1b9e77"
+  col19 <- "#d95f02"
+  col20 <- "#7570b3"
+    
 # All years together  
-  plot(x = brksMids, y = gapSizes17to18,
+  plot(x = brksMids, y = gapSizes15to17*0.5,
        xlim=gapAreaRange,
-       ylim=range(c(gapSizes17to18,gapSizes18to19,gapSizes19to20)),
-       col = adjustcolor("black",0.5),
+       ylim=yRange,
+       col = adjustcolor(col17,0.6),
        log = logOption,
        pch=19,
        ylab = "n Gaps (#/m2)",
        xlab = "Gap area (m2)")
   
+  points(x = brksMids, y = gapSizes17to18,
+         col = adjustcolor(col18,0.6), pch=19)
   points(x = brksMids, y = gapSizes18to19,
-         col = adjustcolor("blue",0.5), pch=19)
-  points(x = brksMids, y = gapSizes19to20,
-         col = adjustcolor("red",0.5), pch=19)
+         col = adjustcolor(col19,0.6), pch=19)
+  points(x = brksMids, y = gapSizes19to20*(12/13),
+         col = adjustcolor(col20,0.6), pch=19)
+  
+  legend(x=10,y=0.01,
+         c("'15-'17","'17-'18","'18-19","'19-'20"),
+         col=adjustcolor(c(col17,col18,col19,col20),0.6),
+         pch=19, cex=1,
+         bty="n")
   
 # Look at fits of different distributions
   
-  # 2017 to 2018
-  szFreq17to18$weibloglike
-  szFreq17to18$powloglike
-  szFreq17to18$exploglike
+  # 2015 to 2017
+  szFreq15to17$weibloglike
+  szFreq15to17$powloglike
+  szFreq15to17$exploglike
   
-  plot(x = brksMids, y = gapSizes17to18,
+  plot(x = brksMids, y = gapSizes15to17,
        xlim=gapAreaRange,
-       ylim=range(c(gapSizes17to18,gapSizes18to19,gapSizes19to20)),
-       col = adjustcolor("black",0.5),
+       ylim=yRange,
+       col = adjustcolor(col17,0.8),
        log = logOption,
        pch=19,
        ylab = "n Gaps (#/m2)",
@@ -299,15 +318,136 @@
   
   # use pweibull to correct for truncation mutliply by 1/(pwebmax - pweibwin)
   
-  yValsWeib <- dweibull(xVals,
-                        shape= szFreq17to18$weibpar1est,
-                        scale = szFreq17to18$weibpar2est)*sum(gapSizes17to18)
+  scaleWeib <- 1/(pweibull(mxSz,
+                           shape= szFreq15to17$weibpar1est,
+                           scale = szFreq15to17$weibpar2est) -
+                    pweibull(10,
+                             shape= szFreq15to17$weibpar1est,
+                             scale = szFreq15to17$weibpar2est))
+  
+  yValsWeib <- scaleWeib*dweibull(xVals,
+                                 shape= szFreq15to17$weibpar1est,
+                                 scale = szFreq15to17$weibpar2est)*nrow(gaps15to17sp[gaps15to17sp$use==T,])
   lines(x = xVals, y = yValsWeib, lwd=2)
   
-  yValsExp <- dexp(xVals, rate = szFreq17to18$exppar1est)*sum(gapSizes17to18)
+  scaleExp <- 1/(pexp(mxSz,rate = szFreq15to17$exppar1est) -
+                    pexp(10, rate = szFreq15to17$exppar1est))
+  yValsExp <- scaleExp * dexp(xVals, rate = szFreq15to17$exppar1est)*nrow(gaps15to17sp[gaps15to17sp$use==T,])
   lines(x = xVals, y = yValsExp, lwd=2, lty=2)
   
-  yValsPow <- xVals^(1-szFreq17to18$powpar1est)*sum(gapSizes17to18)
+  yValsPow <- xVals^(1-szFreq15to17$powpar1est)
   lines(x = xVals, y = yValsPow, lwd=2, lty=3)
   
+  # 2017 to 2018
+  szFreq17to18$weibloglike
+  szFreq17to18$powloglike
+  szFreq17to18$exploglike
   
+  plot(x = brksMids, y = gapSizes17to18,
+       xlim=gapAreaRange,
+       ylim=yRange,
+       col = adjustcolor(col17,0.8),
+       log = logOption,
+       pch=19,
+       ylab = "n Gaps (#/m2)",
+       xlab = "Gap area (m2)")
+  
+  xVals <- seq(gapAreaRange[1],gapAreaRange[2],length.out = 1000)
+  
+  # use pweibull to correct for truncation mutliply by 1/(pwebmax - pweibwin)
+  
+  scaleWeib <- 1/(pweibull(mxSz,
+                           shape= szFreq17to18$weibpar1est,
+                           scale = szFreq17to18$weibpar2est) -
+                    pweibull(10,
+                             shape= szFreq17to18$weibpar1est,
+                             scale = szFreq17to18$weibpar2est))
+  
+  yValsWeib <- scaleWeib*dweibull(xVals,
+                                  shape= szFreq17to18$weibpar1est,
+                                  scale = szFreq17to18$weibpar2est)*nrow(gaps17to18sp[gaps17to18sp$use==T,])
+  lines(x = xVals, y = yValsWeib, lwd=2)
+  
+  scaleExp <- 1/(pexp(mxSz,rate = szFreq17to18$exppar1est) -
+                   pexp(10, rate = szFreq17to18$exppar1est))
+  yValsExp <- scaleExp * dexp(xVals, rate = szFreq17to18$exppar1est)*nrow(gaps17to18sp[gaps17to18sp$use==T,])
+  lines(x = xVals, y = yValsExp, lwd=2, lty=2)
+  
+  yValsPow <- xVals^(1-szFreq17to18$powpar1est)
+  lines(x = xVals, y = yValsPow, lwd=2, lty=3)
+  
+  # 2018 to 2019
+  szFreq18to19$weibloglike
+  szFreq18to19$powloglike
+  szFreq18to19$exploglike
+  
+  plot(x = brksMids, y = gapSizes18to19,
+       xlim=gapAreaRange,
+       ylim=yRange,
+       col = adjustcolor(col17,0.8),
+       log = logOption,
+       pch=19,
+       ylab = "n Gaps (#/m2)",
+       xlab = "Gap area (m2)")
+  
+  xVals <- seq(gapAreaRange[1],gapAreaRange[2],length.out = 1000)
+  
+  # use pweibull to correct for truncation mutliply by 1/(pwebmax - pweibwin)
+  
+  scaleWeib <- 1/(pweibull(mxSz,
+                           shape= szFreq18to19$weibpar1est,
+                           scale = szFreq18to19$weibpar2est) -
+                    pweibull(10,
+                             shape= szFreq18to19$weibpar1est,
+                             scale = szFreq18to19$weibpar2est))
+  
+  yValsWeib <- scaleWeib*dweibull(xVals,
+                                  shape= szFreq18to19$weibpar1est,
+                                  scale = szFreq18to19$weibpar2est)*nrow(gaps18to19sp[gaps18to19sp$use==T,])
+  lines(x = xVals, y = yValsWeib, lwd=2)
+  
+  scaleExp <- 1/(pexp(mxSz,rate = szFreq18to19$exppar1est) -
+                   pexp(10, rate = szFreq18to19$exppar1est))
+  yValsExp <- scaleExp * dexp(xVals, rate = szFreq18to19$exppar1est)*nrow(gaps18to19sp[gaps18to19sp$use==T,])
+  lines(x = xVals, y = yValsExp, lwd=2, lty=2)
+  
+  yValsPow <- xVals^(1-szFreq18to19$powpar1est)
+  lines(x = xVals, y = yValsPow, lwd=2, lty=3)
+  
+  # 2019 to 2020
+  szFreq19to20$weibloglike
+  szFreq19to20$powloglike
+  szFreq19to20$exploglike
+  
+  plot(x = brksMids, y = gapSizes19to20,
+       xlim=gapAreaRange,
+       ylim=yRange,
+       col = adjustcolor(col17,0.8),
+       log = logOption,
+       pch=19,
+       ylab = "n Gaps (#/m2)",
+       xlab = "Gap area (m2)")
+  
+  xVals <- seq(gapAreaRange[1],gapAreaRange[2],length.out = 1000)
+  
+  # use pweibull to correct for truncation mutliply by 1/(pwebmax - pweibwin)
+  
+  scaleWeib <- 1/(pweibull(mxSz,
+                           shape= szFreq19to20$weibpar1est,
+                           scale = szFreq19to20$weibpar2est) -
+                    pweibull(10,
+                             shape= szFreq19to20$weibpar1est,
+                             scale = szFreq19to20$weibpar2est))
+  
+  yValsWeib <- scaleWeib*dweibull(xVals,
+                                  shape= szFreq19to20$weibpar1est,
+                                  scale = szFreq19to20$weibpar2est)*nrow(gaps19to20sp[gaps19to20sp$use==T,])
+  lines(x = xVals, y = yValsWeib, lwd=2)
+  
+  scaleExp <- 1/(pexp(mxSz,rate = szFreq19to20$exppar1est) -
+                   pexp(10, rate = szFreq19to20$exppar1est))
+  yValsExp <- scaleExp * dexp(xVals, rate = szFreq19to20$exppar1est)*nrow(gaps19to20sp[gaps19to20sp$use==T,])
+  lines(x = xVals, y = yValsExp, lwd=2, lty=2)
+  
+  yValsPow <- xVals^(1-szFreq19to20$powpar1est)
+  lines(x = xVals, y = yValsPow, lwd=2, lty=3)
