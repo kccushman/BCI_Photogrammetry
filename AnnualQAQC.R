@@ -74,14 +74,14 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use15 <- ifelse(gridInfo$QAQC15_A < 0.05 & gridInfo$QAQC15_B < 1.5,
+    gridInfo$Use15 <- ifelse(gridInfo$QAQC15_A < 0.04 & gridInfo$QAQC15_B < 1.5,
                              T,
                              F)
     
   # Plot masked tiles on canopy height change raster
     
     chm09 <- raster::raster("DSM_2009.tif")
-    chm15 <- raster::raster("DSM_2015_corrected.tif")
+    chm15 <- raster::raster("DSM_2015_corrected_tin.tif")
     
     dHeight09to15 <- chm15-chm09
     
@@ -158,7 +158,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use17 <- ifelse(gridInfo$QAQC17_A < 0.023 & gridInfo$QAQC17_B < 1.5,
+    gridInfo$Use17 <- ifelse(gridInfo$QAQC17_A < 0.04 & gridInfo$QAQC17_B < 1.5,
                              T,
                              F)
     
@@ -166,15 +166,15 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
   # Plot masked tiles on canopy height change raster
     
-    chm15 <- raster::raster("DSM_2015_corrected.tif")
-    chm17 <- raster::raster("DSM_2017_corrected.tif")
+    chm15 <- raster::raster("DSM_2015_corrected_tin.tif")
+    chm17 <- raster::raster("DSM_2017_corrected_tin.tif")
     
     dHeight15to17 <- chm17-chm15
     
-    colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
-    colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
+    colBrks2 <- c(-100,-5,-0.5,0.5,5,100)
+    colPal2 <- colorRampPalette(c("red","yellow",
                                   "white",
-                                  "aliceblue","cornflowerblue","darkblue"))
+                                  "aliceblue","cornflowerblue"))
     
     raster::plot(dHeight15to17,
                  col = colPal2(length(colBrks2)-1),
@@ -241,7 +241,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use18 <- ifelse(gridInfo$QAQC18_A < 0.023 & gridInfo$QAQC18_B < 1.5,
+    gridInfo$Use18 <- ifelse(gridInfo$QAQC18_A < 0.04 & gridInfo$QAQC18_B < 1.5,
                              T,
                              F)
     
@@ -249,15 +249,15 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     # Plot masked tiles on canopy height change raster
     
-    chm17 <- raster::raster("CHM_2017_corrected.tif")
-    chm18 <- raster::raster("CHM_2018_corrected.tif")
+    chm17 <- raster::raster("DSM_2017_corrected_tin.tif")
+    chm18 <- raster::raster("DSM_2018_corrected_tin.tif")
     
     dHeight17to18 <- chm18-chm17
     
-    colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
-    colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
+    colBrks2 <- c(-100,-5,-0.5,0.5,5,100)
+    colPal2 <- colorRampPalette(c("red","yellow",
                                   "white",
-                                  "aliceblue","cornflowerblue","darkblue"))
+                                  "aliceblue","cornflowerblue"))
     
     raster::plot(dHeight17to18,
                  col = colPal2(length(colBrks2)-1),
@@ -324,7 +324,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use19 <- ifelse(gridInfo$QAQC19_A < 0.023 & gridInfo$QAQC19_B < 1.5,
+    gridInfo$Use19 <- ifelse(gridInfo$QAQC19_A < 0.04 & gridInfo$QAQC19_B < 1.5,
                              T,
                              F)
     
@@ -332,8 +332,8 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     # Plot masked tiles on canopy height change raster
     
-    chm18 <- raster::raster("CHM_2018_corrected.tif")
-    chm19 <- raster::raster("CHM_2019_corrected.tif")
+    chm18 <- raster::raster("DSM_2018_corrected_tin.tif")
+    chm19 <- raster::raster("DSM_2019_corrected_tin.tif")
     
     dHeight18to19 <- chm19-chm18
     
@@ -407,7 +407,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=20,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use20 <- ifelse(gridInfo$QAQC20_A < 0.023 & gridInfo$QAQC20_B < 1.5,
+    gridInfo$Use20 <- ifelse(gridInfo$QAQC20_A < 0.04 & gridInfo$QAQC20_B < 1.5,
                              T,
                              F)
     
@@ -415,8 +415,8 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     # Plot masked tiles on canopy height change raster
     
-    chm19 <- raster::raster("CHM_2019_corrected.tif")
-    chm20 <- raster::raster("CHM_2020_corrected.tif")
+    chm19 <- raster::raster("DSM_2019_corrected_tin.tif")
+    chm20 <- raster::raster("DSM_2020_corrected_tin.tif")
     
     dHeight19to20 <- chm20-chm19
     

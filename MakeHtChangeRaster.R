@@ -14,10 +14,6 @@ cat09 <- lidR::catalog("D:/BCI_Spatial/Lidar_Data/lidar tiles 2009/lidar tiles 2
 cat09at <- lidR::catalog(paste0(path1,"BCI09Tiles_trim/"))
 cat15at <- lidR::catalog(paste0(path2,"BCI15Tiles_alignedTrim/"))
 
-chm09 <- lidR::grid_canopy(cat09at,
-                           res = 1,
-                           algorithm = lidR::p2r(subcircle=0.5))
-
 chm09 <- lidR::grid_canopy(cat09,
                            res = 1,
                            algorithm = lidR::p2r(subcircle=0.01))
@@ -26,7 +22,8 @@ chm09 <- raster::crop(chm09, soils)
 
 chm15 <- lidR::grid_canopy(cat15at,
                            res = 1,
-                           algorithm = lidR::p2r(subcircle=0.01))
+                           algorithm = lidR::p2r(subcircle=0.01,
+                                                 na.fill = lidR::tin()))
 
 # Plot canopy height rasters and canopy height change
 colBrks1 <- seq(1,250)
@@ -53,8 +50,8 @@ raster::plot(dHeight09to15,
              main = "Corrected 2009 to 2015 height change")
 
 
-raster::writeRaster(chm09, file = "CHM_2009.tif")
-raster::writeRaster(chm15, file = "CHM_2015_corrected.tif")
+raster::writeRaster(chm09, file = "DSM_2009.tif")
+raster::writeRaster(chm15, file = "DSM_2015_corrected_tin.tif")
 
 #### 2015 to 2017 #### 
 
@@ -62,17 +59,13 @@ raster::writeRaster(chm15, file = "CHM_2015_corrected.tif")
 
 cat17at <- lidR::catalog(paste0(path2,"BCI17Tiles_alignedTrim/"))
 
-cat17at09 <- lidR::catalog(paste0(path2,"BCI17Tiles_alignedTrim09/"))
-
 chm15 <- raster::raster("CHM_2015_corrected.tif")
 
 chm17 <- lidR::grid_canopy(cat17at,
                            res = 1,
-                           algorithm = lidR::p2r(subcircle=0.01))
+                           algorithm = lidR::p2r(subcircle=0.01,
+                                                 na.fill = lidR::tin()))
 
-chm17_09 <- lidR::grid_canopy(cat17at09,
-                           res = 1,
-                           algorithm = lidR::p2r(subcircle=0.01))
 
 # Plot canopy height rasters and canopy height change
 colBrks1 <- seq(1,250)
@@ -97,8 +90,7 @@ raster::plot(dHeight15to17,
              breaks = colBrks2,
              main = "Corrected 2015 to 2017 height change")
 
-raster::writeRaster(chm17, file = "CHM_2017_corrected.tif")
-raster::writeRaster(chm17_09, file = "CHM_2017_corrected_09.tif")
+raster::writeRaster(chm17, file = "DSM_2017_corrected_tin.tif")
 
 
 #### 2017 to 2018 #### 
@@ -107,11 +99,12 @@ raster::writeRaster(chm17_09, file = "CHM_2017_corrected_09.tif")
 
 cat18at <- lidR::catalog(paste0(path2,"BCI18Tiles_alignedTrim/"))
 
-chm17 <- raster::raster("CHM_2017_corrected.tif")
+chm17 <- raster::raster("DSM_2017_corrected.tif")
 
 chm18 <- lidR::grid_canopy(cat18at,
                            res = 1,
-                           algorithm = lidR::p2r(subcircle=0.01))
+                           algorithm = lidR::p2r(subcircle=0.01,
+                                                 na.fill = lidR::tin()))
 
 # Plot canopy height rasters and canopy height change
 colBrks1 <- seq(1,250)
@@ -136,7 +129,7 @@ raster::plot(dHeight17to18,
              breaks = colBrks2,
              main = "Corrected 2017 to 2018 height change")
 
-raster::writeRaster(chm18, file = "CHM_2018_corrected.tif")
+raster::writeRaster(chm18, file = "DSM_2018_corrected_tin.tif")
 
 #### 2018 to 2019 #### 
 
@@ -148,7 +141,8 @@ dsm18 <- raster::raster("DSM_2018_corrected.tif")
 
 dsm19 <- lidR::grid_canopy(cat19at,
                            res = 1,
-                           algorithm = lidR::p2r(subcircle=0.01))
+                           algorithm = lidR::p2r(subcircle=0.01,
+                                                 na.fill = lidR::tin()))
 
 # Plot canopy height rasters and canopy height change
 colBrks1 <- seq(1,250)
@@ -161,7 +155,7 @@ raster::plot(dsm19,
              col = terrain.colors(length(colBrks1), rev=T),
              breaks = colBrks1)
 
-dHeight18to19 <- dsm19-dsm18
+dHeight18to19 <- dsm19-chm18
 
 colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
 colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
@@ -173,7 +167,7 @@ raster::plot(dHeight18to19,
              breaks = colBrks2,
              main = "Corrected 2018 to 2019 height change")
 
-raster::writeRaster(dsm19, file = "DSM_2019_corrected.tif")
+raster::writeRaster(dsm19, file = "DSM_2019_corrected_tin.tif")
 
 #### 2019 to 2020 #### 
 
@@ -185,7 +179,8 @@ dsm19 <- raster::raster("DSM_2019_corrected.tif")
 
 dsm20 <- lidR::grid_canopy(cat20at,
                            res = 1,
-                           algorithm = lidR::p2r(subcircle=0.01))
+                           algorithm = lidR::p2r(subcircle=0.01,
+                                                 na.fill = lidR::tin()))
 
 # Plot canopy height rasters and canopy height change
 colBrks1 <- seq(1,250)
@@ -210,4 +205,4 @@ raster::plot(dHeight19to20,
              breaks = colBrks2,
              main = "Corrected 2019 to 2020 height change")
 
-raster::writeRaster(dsm20, file = "DSM_2020_corrected.tif")
+raster::writeRaster(dsm20, file = "DSM_2020_corrected_tin.tif")
