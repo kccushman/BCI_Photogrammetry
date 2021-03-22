@@ -3,28 +3,28 @@
 #### READ DATA ####
     
 # Canopy height change rasters
-  d15to17 <- raster::raster("dCHM15to17.tif")
-  d17to18 <- raster::raster("dCHM17to18.tif")
-  d18to19 <- raster::raster("dCHM18to19.tif")
-  d19to20 <- raster::raster("dCHM19to20.tif")
+  d15to18 <- raster::raster("dCHM15to18_tin.tif")
+  d18to19 <- raster::raster("dCHM18to19_tin.tif")
+  d19to20 <- raster::raster("dCHM19to20_tin.tif")
+  d18to20 <- raster::raster("dCHM18to20_tin.tif")
   
-# Canopy height change rastes where only possible gap values (> 5 m initially) are included  
-  d15to17tall <- raster::raster("dCHM15to17tall.tif")
-  d17to18tall <- raster::raster("dCHM17to18tall.tif")
-  d18to19tall <- raster::raster("dCHM18to19tall.tif")
-  d19to20tall <- raster::raster("dCHM19to20tall.tif")
+# Canopy height change rasters where only possible gap values (> 5 m initially) are included  
+  d15to18tall <- raster::raster("dCHM15to18tall_tin.tif")
+  d18to19tall <- raster::raster("dCHM18to19tall_tin.tif")
+  d19to20tall <- raster::raster("dCHM19to20tall_tin.tif")
+  d18to20tall <- raster::raster("dCHM18to20tall_tin.tif")
   
 # Gap rasters
-  gaps15to17 <- raster::raster("newGaps15to17.tif")
-  gaps17to18 <- raster::raster("newGaps17to18.tif")
-  gaps18to19 <- raster::raster("newGaps18to19.tif")
-  gaps19to20 <- raster::raster("newGaps19to20.tif")
+  gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
+  gaps18to19 <- raster::raster("newGaps18to19_tin.tif")
+  gaps19to20 <- raster::raster("newGaps19to20_tin.tif")
+  gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
   
 # Gap polygons
-  gaps15to17sp <- rgdal::readOGR("gaps15to17_shapefile/gaps15to17sp.shp")
-  gaps17to18sp <- rgdal::readOGR("gaps17to18_shapefile/gaps17to18sp.shp")
-  gaps18to19sp <- rgdal::readOGR("gaps18to19_shapefile/gaps18to19sp.shp")
-  gaps19to20sp <- rgdal::readOGR("gaps19to20_shapefile/gaps19to20sp.shp")
+  gaps15to18sp <- rgdal::readOGR("gaps15to18_shapefile_tin/gaps15to18sp.shp")
+  gaps18to19sp <- rgdal::readOGR("gaps18to19_shapefile_tin/gaps18to19sp.shp")
+  gaps19to20sp <- rgdal::readOGR("gaps19to20_shapefile_tin/gaps19to20sp.shp")
+  gaps18to20sp <- rgdal::readOGR("gaps18to20_shapefile_tin/gaps18to20sp.shp")
   
 # Block values for bootstrapping
   blockData <- read.csv("bootstrapBlocks.csv")
@@ -32,11 +32,8 @@
 #### AREA SAMPLED EACH YEAR ####
   
 # All area
-  allVals15to17 <- raster::values(d15to17)
-  areaSampled15to17 <- length(allVals15to17[!is.na(allVals15to17)])/10000
-  
-  allVals17to18 <- raster::values(d17to18)
-  areaSampled17to18 <- length(allVals17to18[!is.na(allVals17to18)])/10000
+  allVals15to18 <- raster::values(d15to18)
+  areaSampled15to18 <- length(allVals15to18[!is.na(allVals15to18)])/10000
   
   allVals18to19 <- raster::values(d18to19)
   areaSampled18to19 <- length(allVals18to19[!is.na(allVals18to19)])/10000
@@ -44,24 +41,29 @@
   allVals19to20 <- raster::values(d19to20)
   areaSampled19to20 <- length(allVals19to20[!is.na(allVals19to20)])/10000  
   
-# Only area greater than 5 m height initially
-  allVals15to17tall <- raster::values(d15to17tall)
-  areaSampled15to17tall <- length(allVals15to17tall[!is.na(allVals15to17tall)])/10000
+  allVals18to20 <- raster::values(d18to20)
+  areaSampled18to20 <- length(allVals18to20[!is.na(allVals18to20)])/10000  
   
-  allVals17to18tall <- raster::values(d17to18tall)
-  areaSampled17to18tall <- length(allVals17to18tall[!is.na(allVals17to18tall)])/10000
+# Only area greater than 5 m height initially
+  allVals15to18tall <- raster::values(d15to18tall)
+  areaSampled15to18tall <- length(allVals15to18tall[!is.na(allVals15to18tall)])/10000
   
   allVals18to19tall <- raster::values(d18to19tall)
   areaSampled18to19tall <- length(allVals18to19tall[!is.na(allVals18to19tall)])/10000
   
   allVals19to20tall <- raster::values(d19to20tall)
   areaSampled19to20tall <- length(allVals19to20tall[!is.na(allVals19to20tall)])/10000
+  
+  allVals18to20tall <- raster::values(d18to20tall)
+  areaSampled18to20tall <- length(allVals18to20tall[!is.na(allVals18to20tall)])/10000
     
 # Total number of new canopy disturbance events
-  length(c(gaps15to17sp[gaps15to17sp$use==T,]$area,
-           gaps17to18sp[gaps17to18sp$use==T,]$area,
+  length(c(gaps15to18sp[gaps15to18sp$use==T,]$area,
            gaps18to19sp[gaps18to19sp$use==T,]$area,
            gaps19to20sp[gaps19to20sp$use==T,]$area))
+  
+  length(c(gaps15to18sp[gaps15to18sp$use==T,]$area,
+           gaps18to20sp[gaps18to20sp$use==T,]$area))
   
 #### SUMMARY GAP STATS PER YEAR ####
   
@@ -118,13 +120,8 @@
       return(results)
   }
   
-  gapSummary15to17 <- getGapSummary(gapLayer = gaps15to17,
-                                    allLayer = d15to17tall,
-                                    bootBlocks = blockData,
-                                    nBoot = 1000)
-  
-  gapSummary17to18 <- getGapSummary(gapLayer = gaps17to18,
-                                    allLayer = d17to18tall,
+  gapSummary15to18 <- getGapSummary(gapLayer = gaps15to18,
+                                    allLayer = d15to18tall,
                                     bootBlocks = blockData,
                                     nBoot = 1000)
   
@@ -138,22 +135,30 @@
                                     bootBlocks = blockData,
                                     nBoot = 1000)
   
-  round(mean(gapSummary15to17$gapsPerHa)/2,2)
-  round(mean(gapSummary17to18$gapsPerHa),2)
+  gapSummary18to20 <- getGapSummary(gapLayer = gaps18to20,
+                                    allLayer = d18to20tall,
+                                    bootBlocks = blockData,
+                                    nBoot = 1000)
+  
+  round(mean(gapSummary15to18$gapsPerHa)/3,2)
   round(mean(gapSummary18to19$gapsPerHa),2)
   round(mean(gapSummary19to20$gapsPerHa)/(13/12),2)
-  round(quantile(gapSummary15to17$gapsPerHa,probs = c(0.025,0.975))/2,2)
-  round(quantile(gapSummary17to18$gapsPerHa,probs = c(0.025,0.975)),2)
+  round(mean(gapSummary18to20$gapsPerHa)/(25/12),2)
+  
+  round(quantile(gapSummary15to18$gapsPerHa,probs = c(0.025,0.975))/3,2)
   round(quantile(gapSummary18to19$gapsPerHa,probs = c(0.025,0.975)),2)
   round(quantile(gapSummary19to20$gapsPerHa,probs = c(0.025,0.975))/(13/12),2)
-  round(mean(gapSummary15to17$percentGap)/2,2)
-  round(mean(gapSummary17to18$percentGap),2)
+  round(quantile(gapSummary18to20$gapsPerHa,probs = c(0.025,0.975))/(25/12),2)
+  
+  round(mean(gapSummary15to18$percentGap)/3,2)
   round(mean(gapSummary18to19$percentGap),2)
   round(mean(gapSummary19to20$percentGap)/(13/12),2)
-  round(quantile(gapSummary15to17$percentGap,probs = c(0.025,0.975))/2,2)
-  round(quantile(gapSummary17to18$percentGap,probs = c(0.025,0.975)),2)
+  round(mean(gapSummary18to20$percentGap)/(25/12),2)
+  
+  round(quantile(gapSummary15to18$percentGap,probs = c(0.025,0.975))/3,2)
   round(quantile(gapSummary18to19$percentGap,probs = c(0.025,0.975)),2)
   round(quantile(gapSummary19to20$percentGap,probs = c(0.025,0.975))/(13/12),2)
+  round(quantile(gapSummary18to20$percentGap,probs = c(0.025,0.975))/(25/12),2)
   
 #### BOOTSTRAPPED SIZE FREQUENCY DISTRIBUTIONS ####
   source("makesizedistforRaquel.r")
@@ -161,10 +166,10 @@
   source("sizedistpart3forRaquel.R")
   
   # find max gap size
-  mxSz <- max(c(gaps15to17sp[gaps15to17sp$use==T,]$area,
+  mxSz <- quantile(c(gaps15to17sp[gaps15to17sp$use==T,]$area,
               gaps17to18sp[gaps17to18sp$use==T,]$area,
               gaps18to19sp[gaps18to19sp$use==T,]$area,
-              gaps19to20sp[gaps19to20sp$use==T,]$area))
+              gaps19to20sp[gaps19to20sp$use==T,]$area),0.999)
   
   
   allData15to17 <- data.frame(dbh = gaps15to17sp[gaps15to17sp$use==T,]$area,
@@ -270,15 +275,15 @@
   # Make plot of data and best-fit lines
   
   # find max gap size
-  mxSz <- max(c(gaps15to17sp[gaps15to17sp$use==T,]$area,
-                gaps17to18sp[gaps17to18sp$use==T,]$area,
+  mxSz <- max(c(gaps15to18sp[gaps15to18sp$use==T,]$area,
                 gaps18to19sp[gaps18to19sp$use==T,]$area,
-                gaps19to20sp[gaps19to20sp$use==T,]$area))
+                gaps19to20sp[gaps19to20sp$use==T,]$area,
+                gaps18to20sp[gaps18to20sp$use==T,]$area))
   
   # Divide intervals for plotting
-  gapAreaRange <- c(10,mxSz)
+  gapAreaRange <- c(25,mxSz)
   logRange <- log(gapAreaRange)
-  brksRange_log <- seq(logRange[1],logRange[2],length.out = 20)
+  brksRange_log <- seq(logRange[1],logRange[2],length.out = 18)
   brksRange <- floor(exp(brksRange_log))
   
   brksMins <- brksRange[1:length(brksRange)-1]
@@ -296,13 +301,9 @@
     return(nArea)
   }
   
-  gapSizes15to17 <- makeGapVectors(gapAreaVector = gaps15to17sp[gaps15to17sp$use==T,]$area,
+  gapSizes15to18 <- makeGapVectors(gapAreaVector = gaps15to18sp[gaps15to18sp$use==T,]$area,
                                    minarea = brksMins,
-                                   maxarea = brksMaxs)/areaSampled15to17
-  
-  gapSizes17to18 <- makeGapVectors(gapAreaVector = gaps17to18sp[gaps17to18sp$use==T,]$area,
-                                   minarea = brksMins,
-                                   maxarea = brksMaxs)/areaSampled17to18
+                                   maxarea = brksMaxs)/areaSampled15to18
   
   gapSizes18to19 <- makeGapVectors(gapAreaVector = gaps18to19sp[gaps18to19sp$use==T,]$area,
                                    minarea = brksMins,
@@ -311,6 +312,10 @@
   gapSizes19to20 <- makeGapVectors(gapAreaVector = gaps19to20sp[gaps19to20sp$use==T,]$area,
                                    minarea = brksMins,
                                    maxarea = brksMaxs)/areaSampled19to20
+  
+  gapSizes18to20 <- makeGapVectors(gapAreaVector = gaps18to20sp[gaps18to20sp$use==T,]$area,
+                                   minarea = brksMins,
+                                   maxarea = brksMaxs)/areaSampled18to20
   
   
   # Get correct fitted y-values for each year, adjusted for truncated distributions
@@ -334,45 +339,75 @@
   yValsWeib19 <- getWeibEsts(szFreqResults = szFreq18to19, gapSp = gaps18to19sp, xVals)/areaSampled18to19
   yValsWeib20 <- getWeibEsts(szFreqResults = szFreq19to20, gapSp = gaps19to20sp, xVals)/(13/12)/areaSampled19to20
   
-  # Plot 
+  # Plot 1 : three intervals
   
   logOption <- "xy"
   
-  yRange <- range(c(gapSizes15to17,gapSizes17to18,gapSizes18to19,gapSizes19to20)) + c(1e-7,0)
+  yRange <- range(c(gapSizes15to18,gapSizes18to19,gapSizes19to20,gapSizes18to20)) + c(1e-7,0)
   
   #Define colors
-  col17 <- "black"
-  col18 <- "#1b9e77"
-  col19 <- "#d95f02"
-  col20 <- "#7570b3"
-  
+  col18 <- "black"
+  col19 <- "#1b9e77"
+  col20 <- "#d95f02"
+
   par(las = 1)
-  plot(x = brksMids, y = gapSizes15to17*0.5,
-       xlim=gapAreaRange,
+  plot(x = brksMids, y = gapSizes15to18/3,
+       xlim=range(brksMids),
        ylim=yRange,
-       col = adjustcolor(col17,0.6),
+       col = adjustcolor(col18,0.6),
        log = logOption,
        pch=19,
        cex.axis = 0.8,
        ylab = expression("Disturbance frequency (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
        xlab = expression("Disturbance area (m"^"2"~")"))
   
-  points(x = brksMids, y = gapSizes17to18,
-         col = adjustcolor(col18,0.6), pch=19)
   points(x = brksMids, y = gapSizes18to19,
          col = adjustcolor(col19,0.6), pch=19)
-  points(x = brksMids, y = gapSizes19to20*(12/13),
+  points(x = brksMids, y = gapSizes19to20/(23/12),
          col = adjustcolor(col20,0.6), pch=19)
   
-  legend(x=10,y=0.01,
-         c("'15-'17","'17-'18","'18-19","'19-'20"),
-         col=adjustcolor(c(col17,col18,col19,col20),0.6),
+  legend(x=30,y=0.0001,
+         c("'15-'18","'18-'19","'19-'20"),
+         col=adjustcolor(c(col18,col19,col20),0.6),
          pch=19, cex=1,
          bty="n")
   
-  lines(x = xVals, y = yValsWeib17, col = adjustcolor(col17,0.6), lwd=2)
   lines(x = xVals, y = yValsWeib18, col = adjustcolor(col18,0.6), lwd=2)
   lines(x = xVals, y = yValsWeib19, col = adjustcolor(col19,0.6), lwd=2)
+  lines(x = xVals, y = yValsWeib20, col = adjustcolor(col20,0.6), lwd=2)
+  
+  # Plot 2 : two intervals
+  
+  logOption <- "xy"
+  
+  yRange <- range(c(gapSizes15to18,gapSizes18to19,gapSizes19to20,gapSizes18to20)) + c(1e-7,0)
+  
+  #Define colors
+  col18 <- "black"
+  col19 <- "#1b9e77"
+  col20 <- "#d95f02"
+  
+  par(las = 1)
+  plot(x = brksMids, y = gapSizes15to18/3,
+       xlim=range(brksMids),
+       ylim=yRange,
+       col = adjustcolor(col18,0.6),
+       log = logOption,
+       pch=19,
+       cex.axis = 0.8,
+       ylab = expression("Disturbance frequency (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
+       xlab = expression("Disturbance area (m"^"2"~")"))
+  
+  points(x = brksMids, y = gapSizes18to20/(25/12),
+         col = adjustcolor(col20,0.6), pch=19)
+  
+  legend(x=30,y=0.0001,
+         c("'15-'18","'18-'20"),
+         col=adjustcolor(c(col18,col20),0.6),
+         pch=19, cex=1,
+         bty="n")
+  
+  lines(x = xVals, y = yValsWeib18, col = adjustcolor(col18,0.6), lwd=2)
   lines(x = xVals, y = yValsWeib20, col = adjustcolor(col20,0.6), lwd=2)
   
 

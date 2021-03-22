@@ -27,12 +27,13 @@ dem09 <- raster::resample(dem09,dsm09)
 chm09 <- dsm09-dem09
 chm09 <- raster::mask(chm09, buffer)
 
+threshLo <- 10
 
-threshLo <- quantile(chm09@data@values,0.03,na.rm=T)
-threshHi <- quantile(chm09@data@values,0.97,na.rm=T)
 
 binLo <- chm09
-binLo@data@values[binLo@data@values > threshLo] <- NA
+binLo@data@values[!(is.na(binLo@data@values)) & binLo@data@values < threshLo] <- 0
+binLo@data@values[!(is.na(binLo@data@values)) & binLo@data@values >= threshLo] <- 1
+
 
 binHi <- chm09
 binHi@data@values[binHi@data@values < threshHi] <- NA
@@ -74,7 +75,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use15 <- ifelse(gridInfo$QAQC15_A < 0.04 & gridInfo$QAQC15_B < 1.5,
+    gridInfo$Use15 <- ifelse(gridInfo$QAQC15_A < 0.05 & gridInfo$QAQC15_B < 1.5,
                              T,
                              F)
     
@@ -113,16 +114,25 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     for(i in 1:dim(gridInfo)[1]){
       if(gridInfo$Use15[i]==T){
         file.copy(from = paste0(path2, "BCI15Tiles_aligned/BCI15a_",gridInfo$ID[i],".las"),
-                  to = paste0(path2, "BCI15Tiles_ref"))
-        file.rename(from = paste0(path2, "BCI15Tiles_ref/BCI15a_",gridInfo$ID[i],".las"),
-                    to = paste0(path2, "BCI15Tiles_ref/BCI15r_",gridInfo$ID[i],".las"))
+                  to = paste0(path2, "BCI15Tiles_ref2"))
+        file.rename(from = paste0(path2, "BCI15Tiles_ref2/BCI15a_",gridInfo$ID[i],".las"),
+                    to = paste0(path2, "BCI15Tiles_ref2/BCI15r_",gridInfo$ID[i],".las"))
       }
       
       if(gridInfo$Use15[i]==F){
          data <- lidR::readLAS(paste0(path1,"BCI09Tiles/BCI09_",gridInfo$ID[i],".laz"))
-         lidR::writeLAS(data, paste0(path2, "BCI15Tiles_ref/BCI15r_",gridInfo$ID[i],".las"))
+         lidR::writeLAS(data, paste0(path2, "BCI15Tiles_ref2/BCI15r_",gridInfo$ID[i],".las"))
       }
     }
+    
+  # Make full raster of height range
+    
+    cat15_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI15Tiles_alignedTrim/")
+    qaqc15 <- lidR::grid_metrics(cat15_at,
+                                 res = 0.2,
+                                 func = ~max(Z)-min(Z))
+    raster::writeRaster(qaqc15, "htRangeRaster_2015.tif")
+    rm(qaqc15)
     
 #### 2017 ####
     
@@ -209,6 +219,27 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
  
 #### 2018 ####
     
+    # Rename transition matrix file
+    for(i in 1:dim(gridInfo)[1]){
+      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI18Tiles_dec/",
+                                    full.names = T, pattern = paste0("BCI18d_",i,"_REG")),
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI18Tiles_dec/BCI18mat2_",i,".txt"))
+    }
+    
+    # Trim tiles
+      for(i in 1:dim(gridInfo)[1]){
+        
+        data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI18Tiles_alignedto15Full/BCI18af_",gridInfo$ID[i],".las")),
+                                     xleft=gridInfo$xmin[i],
+                                     xright=gridInfo$xmax[i],
+                                     ybottom=gridInfo$ymin[i],
+                                     ytop=gridInfo$ymax[i])
+        if(length(data@data$X)>0){
+          lidR::writeLAS(las = data,
+                         file = paste0(path2, "BCI18Tiles_alignedto15Trim/BCI18at_",gridInfo$ID[i],".laz"))
+        }
+      }
+    
     # Make variables to store two QAQC metrics
     
     # A. Proportion of pixels (1 x 1 m resolution) with no data
@@ -219,7 +250,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     for(i in 1:dim(gridInfo)[1]){
       
-      data <- lidR::readLAS(paste0(path2, "BCI18Tiles_alignedTrim/BCI18at_",gridInfo$ID[i],".laz"))
+      data <- lidR::readLAS(paste0(path2, "BCI18Tiles_alignedto15Trim/BCI18at_",gridInfo$ID[i],".laz"))
       
       chmA <- lidR::grid_canopy(data,
                                 res = 1,
@@ -232,7 +263,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
                                  func = ~max(Z)-min(Z))
       
       gridInfo$QAQC18_B[i] <- mean(chmB@data@values,na.rm=T)
-      
+      print(i)
     }
     
     plot(QAQC18_B~QAQC18_A, data = gridInfo,
@@ -241,7 +272,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use18 <- ifelse(gridInfo$QAQC18_A < 0.04 & gridInfo$QAQC18_B < 1.5,
+    gridInfo$Use18 <- ifelse(gridInfo$QAQC18_A < 0.05 & gridInfo$QAQC18_B < 1.5,
                              T,
                              F)
     
@@ -250,22 +281,22 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     # Plot masked tiles on canopy height change raster
     
     chm17 <- raster::raster("DSM_2017_corrected_tin.tif")
-    chm18 <- raster::raster("DSM_2018_corrected_tin.tif")
+    dsm18 <- raster::raster("DSM_2018_corrected_tin.tif")
     
-    dHeight17to18 <- chm18-chm17
+    dHeight15to18 <- chm18-chm15
     
     colBrks2 <- c(-100,-5,-0.5,0.5,5,100)
     colPal2 <- colorRampPalette(c("red","yellow",
                                   "white",
                                   "aliceblue","cornflowerblue"))
     
-    raster::plot(dHeight17to18,
+    raster::plot(dHeight15to18,
                  col = colPal2(length(colBrks2)-1),
                  breaks = colBrks2,
-                 main = "Corrected 2017 to 2018 height change")
+                 main = "Corrected 2015 to 2018 height change")
     
     for(i in 1:dim(gridInfo)[1]){
-      if(gridInfo$Use18[i]==F | gridInfo$Use17[i]==F){
+      if(gridInfo$Use18[i]==F | gridInfo$Use15[i]==F){
         
         x1 <- gridInfo[i, "xmin"] 
         x2 <- gridInfo[i, "xmax"]
@@ -280,17 +311,46 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     for(i in 1:dim(gridInfo)[1]){
       if(gridInfo$Use18[i]==T){
-        data <- lidR::readLAS(paste0(path2, "BCI18Tiles_aligned/BCI18a_",gridInfo$ID[i],".las"))
-        lidR::writeLAS(data, paste0(path2, "BCI18Tiles_ref/BCI18r_",gridInfo$ID[i],".laz"))
+        data <- lidR::readLAS(paste0(path2, "BCI18Tiles_alignedto15/BCI18a_",gridInfo$ID[i],".las"))
+        lidR::writeLAS(data, paste0(path2, "BCI18Tiles_ref2/BCI18r_",gridInfo$ID[i],".laz"))
       }
       
       if(gridInfo$Use18[i]==F){
-        data <- lidR::readLAS(paste0(path2,"BCI17Tiles_ref/BCI17r_",gridInfo$ID[i],".las"))
-        lidR::writeLAS(data, paste0(path2, "BCI18Tiles_ref/BCI18r_",gridInfo$ID[i],".laz"))
+        data <- lidR::readLAS(paste0(path2,"BCI15Tiles_ref2/BCI15r_",gridInfo$ID[i],".las"))
+        lidR::writeLAS(data, paste0(path2, "BCI18Tiles_ref2/BCI18r_",gridInfo$ID[i],".laz"))
       }
     }
     
+    cat18_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI18Tiles_alignedto15Trim/")
+    qaqc18 <- lidR::grid_metrics(cat18_at,
+                                 res = 0.2,
+                                 func = ~max(Z)-min(Z))
+    raster::writeRaster(qaqc18, "htRangeRaster_2018.tif")
+    rm(qaqc18)
+    
+
 #### 2019 ####
+    # Rename transition matrix file
+    for(i in 1:dim(gridInfo)[1]){
+      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_dec/",
+                                    full.names = T, pattern = paste0("BCI19d_",i,"_REG")),
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_dec/BCI19mat2_",i,".txt"))
+    }
+    
+    # Trim tiles
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI19Tiles_alignedto18Full/BCI19af_",gridInfo$ID[i],".las")),
+                                   xleft=gridInfo$xmin[i],
+                                   xright=gridInfo$xmax[i],
+                                   ybottom=gridInfo$ymin[i],
+                                   ytop=gridInfo$ymax[i])
+      if(length(data@data$X)>0){
+        lidR::writeLAS(las = data,
+                       file = paste0(path2, "BCI19Tiles_alignedto18Trim/BCI19at_",gridInfo$ID[i],".laz"))
+      }
+      print(i)
+    }
     
     # Make variables to store two QAQC metrics
     
@@ -302,7 +362,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     for(i in 1:dim(gridInfo)[1]){
       
-      data <- lidR::readLAS(paste0(path2, "BCI19Tiles_alignedTrim/BCI19at_",gridInfo$ID[i],".laz"))
+      data <- lidR::readLAS(paste0(path2, "BCI19Tiles_alignedto18Trim/BCI19at_",gridInfo$ID[i],".laz"))
       
       chmA <- lidR::grid_canopy(data,
                                 res = 1,
@@ -315,8 +375,10 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
                                  func = ~max(Z)-min(Z))
       
       gridInfo$QAQC19_B[i] <- mean(chmB@data@values,na.rm=T)
-      
+      print(i)
     }
+    
+   
     
     plot(QAQC19_B~QAQC19_A, data = gridInfo,
          xlab="Proportion of empty 1 m pixels",
@@ -324,7 +386,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=19,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use19 <- ifelse(gridInfo$QAQC19_A < 0.04 & gridInfo$QAQC19_B < 1.5,
+    gridInfo$Use19 <- ifelse(gridInfo$QAQC19_A < 0.05 & gridInfo$QAQC19_B < 1.5,
                              T,
                              F)
     
@@ -332,12 +394,12 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     # Plot masked tiles on canopy height change raster
     
-    chm18 <- raster::raster("DSM_2018_corrected_tin.tif")
-    chm19 <- raster::raster("DSM_2019_corrected_tin.tif")
+    dsm18 <- raster::raster("DSM_2018_corrected_tin.tif")
+    dsm19 <- raster::raster("DSM_2019_corrected_tin.tif")
     
-    dHeight18to19 <- chm19-chm18
+    dHeight18to19 <- dsm19-dsm18
     
-    colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
+    colBrks2 <- c(-100,-20,-10,-5,-1,1,5,10,20,100)
     colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
                                   "white",
                                   "aliceblue","cornflowerblue","darkblue"))
@@ -359,21 +421,51 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
       }
     }
     
-    # Make reference folder based on QAQC metrics
     
+    # Create reference tiles for next step
     for(i in 1:dim(gridInfo)[1]){
       if(gridInfo$Use19[i]==T){
-        data <- lidR::readLAS(paste0(path2, "BCI19Tiles_aligned/BCI19a_",gridInfo$ID[i],".las"))
-        lidR::writeLAS(data, paste0(path2, "BCI19Tiles_ref/BCI19r_",gridInfo$ID[i],".laz"))
+        data <- lidR::readLAS(paste0(path2, "BCI19Tiles_alignedto18/BCI19a_",gridInfo$ID[i],".las"))
+        lidR::writeLAS(data, paste0(path2, "BCI19Tiles_ref2/BCI19r_",gridInfo$ID[i],".laz"))
       }
       
       if(gridInfo$Use19[i]==F){
-        data <- lidR::readLAS(paste0(path2,"BCI18Tiles_ref/BCI18r_",gridInfo$ID[i],".las"))
-        lidR::writeLAS(data, paste0(path2, "BCI19Tiles_ref/BCI19r_",gridInfo$ID[i],".laz"))
+        data <- lidR::readLAS(paste0(path2,"BCI18Tiles_ref2/BCI18r_",gridInfo$ID[i],".las"))
+        lidR::writeLAS(data, paste0(path2, "BCI19Tiles_ref2/BCI19r_",gridInfo$ID[i],".laz"))
       }
     }
     
+    cat19_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_alignedto18Trim/")
+    qaqc19 <- lidR::grid_metrics(cat19_at,
+                                 res = 0.2,
+                                 func = ~max(Z)-min(Z))
+    raster::writeRaster(qaqc19, "htRangeRaster_2019.tif")
+    rm(qaqc19)
+    
 #### 2020 ####
+    
+    # Rename transition matrix file
+    for(i in 1:dim(gridInfo)[1]){
+      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_dec/",
+                                    full.names = T, pattern = paste0("BCI20d_",i,"_REG")),
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_dec/BCI20mat2_",i,".txt"))
+    }
+    
+    # Trim tiles
+    for(i in 1:dim(gridInfo)[1]){
+      
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI20Tiles_alignedto19Full/BCI20af_",gridInfo$ID[i],".las")),
+                                   xleft=gridInfo$xmin[i],
+                                   xright=gridInfo$xmax[i],
+                                   ybottom=gridInfo$ymin[i],
+                                   ytop=gridInfo$ymax[i])
+      if(length(data@data$X)>0){
+        lidR::writeLAS(las = data,
+                       file = paste0(path2, "BCI20Tiles_alignedto19Trim/BCI20at_",gridInfo$ID[i],".laz"))
+      }
+      print(i)
+    }
+    
     
     # Make variables to store two QAQC metrics
     
@@ -407,7 +499,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
          pch=20,
          col = adjustcolor("black",alpha.f = 0.5))
     
-    gridInfo$Use20 <- ifelse(gridInfo$QAQC20_A < 0.04 & gridInfo$QAQC20_B < 1.5,
+    gridInfo$Use20 <- ifelse(gridInfo$QAQC20_A < 0.05 & gridInfo$QAQC20_B < 1.5,
                              T,
                              F)
     
@@ -415,12 +507,12 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     # Plot masked tiles on canopy height change raster
     
-    chm19 <- raster::raster("DSM_2019_corrected_tin.tif")
-    chm20 <- raster::raster("DSM_2020_corrected_tin.tif")
+    dsm19 <- raster::raster("DSM_2019_corrected_tin.tif")
+    dsm20 <- raster::raster("DSM_2020_corrected_tin.tif")
     
-    dHeight19to20 <- chm20-chm19
+    dHeight19to20 <- dsm20-dsm19
     
-    colBrks2 <- c(-100,-20,-10,-5,-1,-0.5,0.5,1,5,10,20,100)
+    colBrks2 <- c(-100,-20,-10,-5,-1,1,5,10,20,100)
     colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
                                   "white",
                                   "aliceblue","cornflowerblue","darkblue"))
@@ -431,7 +523,7 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
                  main = "Corrected 2019 to 2020 height change")
     
     for(i in 1:dim(gridInfo)[1]){
-      if(gridInfo$Use20[i]==F | gridInfo$Use18[i]==F){
+      if(gridInfo$Use20[i]==F | gridInfo$Use19[i]==F){
         
         x1 <- gridInfo[i, "xmin"] 
         x2 <- gridInfo[i, "xmax"]
@@ -456,12 +548,20 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
       }
     }
     
+    cat20_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_alignedto19Trim/")
+    qaqc20 <- lidR::grid_metrics(cat20_at,
+                                 res = 0.2,
+                                 func = ~max(Z)-min(Z))
+    raster::writeRaster(qaqc20, "htRangeRaster_2020.tif")
+    rm(qaqc20)
+    
+    
 #### Find tile ID from coordinates ####
     
     coords <- locator(1)
     ID <- gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
     
-    gridInfo[ID,c("QAQC17_A","QAQC17_B")]
+    gridInfo[ID,c("QAQC18_A","QAQC18_B")]
     
 #### Cloud mask 2015 ####
 

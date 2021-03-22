@@ -20,14 +20,14 @@
     valGaps19to20 <- valGaps[valGaps$dateClass>date19 & valGaps$dateClass<date20,]
     
   # Read canopy height change rasters
-    dchm17to18 <- raster::raster("dCHM17to18.tif")
-    dchm18to19 <- raster::raster("dCHM18to19.tif")
-    dchm19to20 <- raster::raster("dCHM19to20.tif")
+    dchm17to18 <- raster::raster("dCHM17to18_tin.tif")
+    dchm18to19 <- raster::raster("dCHM18to19_tin.tif")
+    dchm19to20 <- raster::raster("dCHM19to20_tin.tif")
     
   # Read new gap shapefiles
-    gaps17to18 <- rgdal::readOGR("gaps17to18_shapefile/gaps17to18sp.shp")
-    gaps18to19 <- rgdal::readOGR("gaps18to19_shapefile/gaps18to19sp.shp")
-    gaps19to20 <- rgdal::readOGR("gaps19to20_shapefile/gaps19to20sp.shp")
+    gaps17to18 <- rgdal::readOGR("gaps17to18_shapefile_tin/gaps17to18sp.shp")
+    gaps18to19 <- rgdal::readOGR("gaps18to19_shapefile_tin/gaps18to19sp.shp")
+    gaps19to20 <- rgdal::readOGR("gaps19to20_shapefile_tin/gaps19to20sp.shp")
     
     # Only keep gaps within the plot (ADD)
     
