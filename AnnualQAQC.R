@@ -134,89 +134,6 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     raster::writeRaster(qaqc15, "htRangeRaster_2015.tif")
     rm(qaqc15)
     
-#### 2017 ####
-    
-    # Make variables to store two QAQC metrics
-    
-    # A. Proportion of pixels (1 x 1 m resolution) with no data
-    # B. Mean height range within single pixels (0.1 x 0.1 m resolution)
-    
-    gridInfo$QAQC17_A <- NA
-    gridInfo$QAQC17_B <- NA
-    
-    for(i in 1:dim(gridInfo)[1]){
-      
-      data <- lidR::readLAS(paste0(path2, "BCI17Tiles_alignedTrim/BCI17at_",gridInfo$ID[i],".laz"))
-      
-      chmA <- lidR::grid_canopy(data,
-                                res = 1,
-                                algorithm = lidR::p2r(subcircle=0.01))
-      
-      gridInfo$QAQC17_A[i] <-  length(chmA@data@values[is.na(chmA@data@values)])/length(chmA@data@values)
-      
-      chmB <- lidR::grid_metrics(data,
-                                 res = 0.2,
-                                 func = ~max(Z)-min(Z))
-      
-      gridInfo$QAQC17_B[i] <- mean(chmB@data@values,na.rm=T)
-      
-    }
-    
-    plot(QAQC17_B~QAQC17_A, data = gridInfo,
-         xlab="Proportion of empty 1 m pixels",
-         ylab="Mean height range in 0.2 m pixels",
-         pch=19,
-         col = adjustcolor("black",alpha.f = 0.5))
-    
-    gridInfo$Use17 <- ifelse(gridInfo$QAQC17_A < 0.04 & gridInfo$QAQC17_B < 1.5,
-                             T,
-                             F)
-    
-    write.csv(gridInfo, "gridInfo_QAQC.csv", row.names = F)
-    
-  # Plot masked tiles on canopy height change raster
-    
-    chm15 <- raster::raster("DSM_2015_corrected_tin.tif")
-    chm17 <- raster::raster("DSM_2017_corrected_tin.tif")
-    
-    dHeight15to17 <- chm17-chm15
-    
-    colBrks2 <- c(-100,-5,-0.5,0.5,5,100)
-    colPal2 <- colorRampPalette(c("red","yellow",
-                                  "white",
-                                  "aliceblue","cornflowerblue"))
-    
-    raster::plot(dHeight15to17,
-                 col = colPal2(length(colBrks2)-1),
-                 breaks = colBrks2,
-                 main = "Corrected 2015 to 2017 height change")
-    
-    for(i in 1:dim(gridInfo)[1]){
-      if(gridInfo$Use17[i]==F | gridInfo$Use15[i]==F){
-        
-        x1 <- gridInfo[i, "xmin"] 
-        x2 <- gridInfo[i, "xmax"]
-        y1 <- gridInfo[i, "ymin"] 
-        y2 <- gridInfo[i, "ymax"] 
-        
-        raster::plot(raster::extent(c(x1,x2,y1,y2)), add=T, col="red", lwd=2)
-      }
-    }
-    
-    # Make reference folder based on QAQC metrics
-    
-    for(i in 1:dim(gridInfo)[1]){
-      if(gridInfo$Use17[i]==T){
-        data <- lidR::readLAS(paste0(path2, "BCI17Tiles_aligned/BCI17a_",gridInfo$ID[i],".las"))
-        lidR::writeLAS(data, paste0(path2, "BCI17Tiles_ref/BCI17r_",gridInfo$ID[i],".laz"))
-      }
-      
-      if(gridInfo$Use17[i]==F){
-          data <- lidR::readLAS(paste0(path2,"BCI15Tiles_ref/BCI15r_",gridInfo$ID[i],".las"))
-          lidR::writeLAS(data, paste0(path2, "BCI17Tiles_ref/BCI17r_",gridInfo$ID[i],".laz"))
-      }
-    }
- 
 #### 2018 ####
     
     # Rename transition matrix file
@@ -329,139 +246,26 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     rm(qaqc18)
     
 
-#### 2019 ####
-    # Rename transition matrix file
-    for(i in 1:dim(gridInfo)[1]){
-      file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_dec/",
-                                    full.names = T, pattern = paste0("BCI19d_",i,"_REG")),
-                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_dec/BCI19mat2_",i,".txt"))
-    }
-    
-    # Trim tiles
-    for(i in 1:dim(gridInfo)[1]){
-      
-      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI19Tiles_alignedto18Full/BCI19af_",gridInfo$ID[i],".las")),
-                                   xleft=gridInfo$xmin[i],
-                                   xright=gridInfo$xmax[i],
-                                   ybottom=gridInfo$ymin[i],
-                                   ytop=gridInfo$ymax[i])
-      if(length(data@data$X)>0){
-        lidR::writeLAS(las = data,
-                       file = paste0(path2, "BCI19Tiles_alignedto18Trim/BCI19at_",gridInfo$ID[i],".laz"))
-      }
-      print(i)
-    }
-    
-    # Make variables to store two QAQC metrics
-    
-    # A. Proportion of pixels (1 x 1 m resolution) with no data
-    # B. Mean height range within single pixels (0.1 x 0.1 m resolution)
-    
-    gridInfo$QAQC19_A <- NA
-    gridInfo$QAQC19_B <- NA
-    
-    for(i in 1:dim(gridInfo)[1]){
-      
-      data <- lidR::readLAS(paste0(path2, "BCI19Tiles_alignedto18Trim/BCI19at_",gridInfo$ID[i],".laz"))
-      
-      chmA <- lidR::grid_canopy(data,
-                                res = 1,
-                                algorithm = lidR::p2r(subcircle=0.01))
-      
-      gridInfo$QAQC19_A[i] <-  length(chmA@data@values[is.na(chmA@data@values)])/length(chmA@data@values)
-      
-      chmB <- lidR::grid_metrics(data,
-                                 res = 0.2,
-                                 func = ~max(Z)-min(Z))
-      
-      gridInfo$QAQC19_B[i] <- mean(chmB@data@values,na.rm=T)
-      print(i)
-    }
-    
-   
-    
-    plot(QAQC19_B~QAQC19_A, data = gridInfo,
-         xlab="Proportion of empty 1 m pixels",
-         ylab="Mean height range in 0.2 m pixels",
-         pch=19,
-         col = adjustcolor("black",alpha.f = 0.5))
-    
-    gridInfo$Use19 <- ifelse(gridInfo$QAQC19_A < 0.05 & gridInfo$QAQC19_B < 1.5,
-                             T,
-                             F)
-    
-    write.csv(gridInfo, "gridInfo_QAQC.csv", row.names = F)
-    
-    # Plot masked tiles on canopy height change raster
-    
-    dsm18 <- raster::raster("DSM_2018_corrected_tin.tif")
-    dsm19 <- raster::raster("DSM_2019_corrected_tin.tif")
-    
-    dHeight18to19 <- dsm19-dsm18
-    
-    colBrks2 <- c(-100,-20,-10,-5,-1,1,5,10,20,100)
-    colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
-                                  "white",
-                                  "aliceblue","cornflowerblue","darkblue"))
-    
-    raster::plot(dHeight18to19,
-                 col = colPal2(length(colBrks2)-1),
-                 breaks = colBrks2,
-                 main = "Corrected 2018 to 2019 height change")
-    
-    for(i in 1:dim(gridInfo)[1]){
-      if(gridInfo$Use19[i]==F | gridInfo$Use18[i]==F){
-        
-        x1 <- gridInfo[i, "xmin"] 
-        x2 <- gridInfo[i, "xmax"]
-        y1 <- gridInfo[i, "ymin"] 
-        y2 <- gridInfo[i, "ymax"] 
-        
-        raster::plot(raster::extent(c(x1,x2,y1,y2)), add=T, col="red", lwd=2)
-      }
-    }
-    
-    
-    # Create reference tiles for next step
-    for(i in 1:dim(gridInfo)[1]){
-      if(gridInfo$Use19[i]==T){
-        data <- lidR::readLAS(paste0(path2, "BCI19Tiles_alignedto18/BCI19a_",gridInfo$ID[i],".las"))
-        lidR::writeLAS(data, paste0(path2, "BCI19Tiles_ref2/BCI19r_",gridInfo$ID[i],".laz"))
-      }
-      
-      if(gridInfo$Use19[i]==F){
-        data <- lidR::readLAS(paste0(path2,"BCI18Tiles_ref2/BCI18r_",gridInfo$ID[i],".las"))
-        lidR::writeLAS(data, paste0(path2, "BCI19Tiles_ref2/BCI19r_",gridInfo$ID[i],".laz"))
-      }
-    }
-    
-    cat19_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI19Tiles_alignedto18Trim/")
-    qaqc19 <- lidR::grid_metrics(cat19_at,
-                                 res = 0.2,
-                                 func = ~max(Z)-min(Z))
-    raster::writeRaster(qaqc19, "htRangeRaster_2019.tif")
-    rm(qaqc19)
-    
 #### 2020 ####
     
     # Rename transition matrix file
     for(i in 1:dim(gridInfo)[1]){
       file.rename(from = list.files("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_dec/",
                                     full.names = T, pattern = paste0("BCI20d_",i,"_REG")),
-                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_dec/BCI20mat2_",i,".txt"))
+                  to = paste0("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_dec/BCI20mat3_",i,".txt"))
     }
     
     # Trim tiles
     for(i in 1:dim(gridInfo)[1]){
       
-      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI20Tiles_alignedto19Full/BCI20af_",gridInfo$ID[i],".las")),
+      data <- lidR::clip_rectangle(las = lidR::readLAS(paste0(path2,"BCI20Tiles_alignedto18Full/BCI20af_",gridInfo$ID[i],".las")),
                                    xleft=gridInfo$xmin[i],
                                    xright=gridInfo$xmax[i],
                                    ybottom=gridInfo$ymin[i],
                                    ytop=gridInfo$ymax[i])
       if(length(data@data$X)>0){
         lidR::writeLAS(las = data,
-                       file = paste0(path2, "BCI20Tiles_alignedto19Trim/BCI20at_",gridInfo$ID[i],".laz"))
+                       file = paste0(path2, "BCI20Tiles_alignedto18Trim/BCI20at_",gridInfo$ID[i],".laz"))
       }
       print(i)
     }
@@ -583,26 +387,6 @@ raster::plot(mask15)
 
 raster::writeRaster(mask15, "CloudMask_2015.tif")
     
-#### Cloud mask 2017 ####
-    
-  # Read albedo (because clouds are bright)
-  albedo17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2017.tif")
-  albedo17 <- raster::mask(albedo17,buffer)
-  
-  # Read red-blue difference (because clouds tend to be blue)
-  redblu17 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2017.tif")
-  redblu17 <- raster::mask(redblu17,buffer)
-  
-  
-  thresh_albedo <- 375
-  thresh_redblu <- 20
-  mask17 <- albedo17
-  mask17@data@values[albedo17@data@values >= thresh_albedo & redblu17@data@values <= thresh_redblu] <- 0
-  mask17@data@values[albedo17@data@values < thresh_albedo | redblu17@data@values > thresh_redblu] <- 1
-  raster::plot(mask17)
-  
-  raster::writeRaster(mask17, "CloudMask_2017.tif")
-
 #### Cloud mask 2018 ####
   
   # Read albedo (because clouds are bright)
@@ -624,26 +408,6 @@ raster::writeRaster(mask15, "CloudMask_2015.tif")
   raster::writeRaster(mask18, "CloudMask_2018.tif")      
     
 
-#### Cloud mask 2019 ####
-  
-  # Read albedo (because clouds are bright)
-  albedo19 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Min_Albedo_2019.tif")
-  albedo19 <- raster::mask(albedo19,buffer)
-  
-  # Read red-blue difference (because clouds tend to be blue)
-  redblu19 <- raster::raster("D:/BCI_Spatial/UAV_Data/CloudMasks/Max_RBdiff_2019.tif")
-  redblu19 <- raster::mask(redblu19,buffer)
-  
-  
-  thresh_albedo <- 375
-  thresh_redblu <- 5
-  mask19 <- albedo19
-  mask19@data@values[albedo19@data@values >= thresh_albedo & redblu19@data@values <= thresh_redblu] <- 0
-  mask19@data@values[albedo19@data@values < thresh_albedo | redblu19@data@values > thresh_redblu] <- 1
-  raster::plot(mask19)
-  
-  raster::writeRaster(mask19, "CloudMask_2019.tif")      
-  
 #### Cloud mask 2020 ####
   
   # Read albedo (because clouds are bright)

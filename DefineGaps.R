@@ -5,7 +5,6 @@
 # Read in canopy height rasters:
   dsm15 <- raster::raster("DSM_2015_corrected_tin.tif")
   dsm18 <- raster::raster("DSM_2018_corrected_tin2.tif")
-  dsm19 <- raster::raster("DSM_2019_corrected_tin2.tif")
   dsm20 <- raster::raster("DSM_2020_corrected_tin2.tif")
   
 # Read in forest age (used to exclude recent clearings)
@@ -29,25 +28,21 @@
 # Remove raster areas outside BCI perimeter (exclude within 25 m of lake)
   dsm15 <- raster::mask(dsm15, buffer)  
   dsm18 <- raster::mask(dsm18, buffer)  
-  dsm19 <- raster::mask(dsm19, buffer)  
   dsm20 <- raster::mask(dsm20, buffer)
 
 # Remove raster areas in clearings
   dsm15 <- raster::mask(dsm15, ageUse)  
   dsm18 <- raster::mask(dsm18, ageUse)  
-  dsm19 <- raster::mask(dsm19, ageUse)  
   dsm20 <- raster::mask(dsm20, ageUse)
 
 # Crop to ensure each raster has same extent
   dsm15 <- raster::crop(dsm15, raster::extent(ageUse))  
   dsm18 <- raster::crop(dsm18, raster::extent(ageUse))  
-  dsm19 <- raster::crop(dsm19, raster::extent(ageUse))  
   dsm20 <- raster::crop(dsm20, raster::extent(ageUse))    
   
 # Subtract ground elevation
   chm15 <- dsm15-dem
   chm18 <- dsm18-dem
-  chm19 <- dsm19-dem
   chm20 <- dsm20-dem
   
 # Set areas that fail QAQC to "NA"
@@ -70,10 +65,6 @@
       chm18 <- raster::mask(chm18, extent_i, inverse = T)
     }
     
-    if(qaqc$Use19[i]==F){
-      chm19 <- raster::mask(chm19, extent_i, inverse = T)
-    }
-    
     if(qaqc$Use20[i]==F){
       chm20 <- raster::mask(chm20, extent_i, inverse = T)
     }
@@ -82,33 +73,28 @@
 
 # Make sure all years have the same extent
   chm18 <- raster::crop(chm18, raster::extent(chm15))
-  chm19 <- raster::crop(chm19, raster::extent(chm15))
   chm20 <- raster::crop(chm20, raster::extent(chm15))
   
   
 # Cloud masks for 2017-2020
   mask15 <- raster::raster("CloudMask_2015.tif")
   mask18 <- raster::raster("CloudMask_2018.tif")
-  mask19 <- raster::raster("CloudMask_2019.tif")
   mask20 <- raster::raster("CloudMask_2020.tif")
   
   # Resample to extent and resolution of CHMs
   mask15 <- raster::resample(mask15, chm15)
   mask18 <- raster::resample(mask18, chm18)
-  mask19 <- raster::resample(mask19, chm19)
   mask20 <- raster::resample(mask20, chm20)
   
   # Remove cloud pixels
   chm15[!(mask15>0.99)] <- NA
   chm18[!(mask18==1)] <- NA
-  chm19[!(mask19==1)] <- NA
   chm20[!(mask20==1)] <- NA
     
 # # Save
-#    raster::writeRaster(chm15, "CHM_2015_QAQC_tin.tif", overwrite=T)
-#    raster::writeRaster(chm18, "CHM_2018_QAQC_tin.tif", overwrite=T)
-#    raster::writeRaster(chm19, "CHM_2019_QAQC_tin.tif", overwrite=T)
-#    raster::writeRaster(chm20, "CHM_2020_QAQC_tin.tif", overwrite=T)
+    raster::writeRaster(chm15, "CHM_2015_QAQC_tin.tif", overwrite=T)
+    raster::writeRaster(chm18, "CHM_2018_QAQC_tin.tif", overwrite=T)
+    raster::writeRaster(chm20, "CHM_2020_QAQC_tin.tif", overwrite=T)
   
 
 #### MAKE AND SAVE CANOPY HEIGHT CHANGE RASTERS ####  
@@ -121,16 +107,12 @@
   
   # Calculate the change in canopy height for each interval  
     d15to18 <- chm18-chm15
-    d18to19 <- chm19-chm18
-    d19to20 <- chm20-chm19
     d18to20 <- chm20-chm18
     
     
   # Make additional rasters where values below and initial height threshold are
   # omitted 
     d15to18tall <- d15to18
-    d18to19tall <- d18to19
-    d19to20tall <- d19to20
     d18to20tall <- d18to20
     
   # Mask out areas that are initially < 5 m in height and decrease between two years
@@ -139,33 +121,19 @@
       short15[raster::values(chm15)<5 & !is.na(raster::values(chm15))] <- 1
       
       d15to18tall@data@values[short15==1] <- NA
-    
-    # 2018 - 2019
-        short18 <- rep(0, length(raster::values(chm18)))
-        short18[raster::values(chm18)<5 & !is.na(raster::values(chm18))] <- 1
-        
-        d18to19tall@data@values[short18==1] <- NA
-    
-    # 2019 - 2020
-        short19 <- rep(0, length(raster::values(chm19)))
-        short19[raster::values(chm19)<5 & !is.na(raster::values(chm19))] <- 1
-        
-        d19to20tall@data@values[short19==1] <- NA
         
     # 2018 - 2020
-        d19to20tall@data@values[short18==1] <- NA    
+      short18 <- rep(0, length(raster::values(chm18)))
+      short18[raster::values(chm18)<5 & !is.na(raster::values(chm18))] <- 1
+        d18to20tall@data@values[short18==1] <- NA    
       
   # Save rasters of canopy height change, with and without 5 m initial height mask
      
-    # raster::writeRaster(d15to18, file="dCHM15to18_tin.tif", overwrite = T)
-    # raster::writeRaster(d18to19, file="dCHM18to19_tin.tif", overwrite = T)
-    # raster::writeRaster(d19to20, file="dCHM19to20_tin.tif", overwrite = T)
-    # raster::writeRaster(d18to20, file="dCHM18to20_tin.tif", overwrite = T)
-    # 
-    # raster::writeRaster(d15to18tall, file="dCHM15to18tall_tin.tif", overwrite = T)
-    # raster::writeRaster(d18to19tall, file="dCHM18to19tall_tin.tif", overwrite = T)
-    # raster::writeRaster(d19to20tall, file="dCHM19to20tall_tin.tif", overwrite = T)  
-    # raster::writeRaster(d18to20tall, file="dCHM18to20tall_tin.tif", overwrite = T)  
+     raster::writeRaster(d15to18, file="dCHM15to18_tin.tif", overwrite = T)
+     raster::writeRaster(d18to20, file="dCHM18to20_tin.tif", overwrite = T)
+     
+     raster::writeRaster(d15to18tall, file="dCHM15to18tall_tin.tif", overwrite = T)
+     raster::writeRaster(d18to20tall, file="dCHM18to20tall_tin.tif", overwrite = T)  
     
         
 #### BINARY NEW GAPS #### 
@@ -225,100 +193,7 @@
         }
       }
       
-    # 2018 - 2019
-        
-      # Identify gaps  
-        gaps18to19 <- ForestGapR::getForestGaps(d18to19,
-                                                threshold = gapHtThresh ,
-                                                size=c(gapSzMin,gapSzMax))
-      
-      # Create a Spatial Polygon Data Frame object, where each polygon is a gap
-        gaps18to19sp <- ForestGapR::GapSPDF(gaps18to19)
-      
-      # Calculate the area and perimeter from each gap object
-        gaps18to19sp@data$area <- NA
-        gaps18to19sp@data$perimeter <- NA
-        for(i in 1:length(gaps18to19sp)){
-          gaps18to19sp[gaps18to19sp$gap_id==i,"area"] <- raster::area(gaps18to19sp[gaps18to19sp$gap_id==i,])
-          
-          perims_j <- c()
-          for(j in 1:length(gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons)){
-            
-            coordsj <- gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
-            
-            lengths_k <- c()
-            for(k in 2:dim(coordsj)[1]){
-              lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
-              
-            }
-            perims_j[j] <- sum(lengths_k)
-            
-            if(gaps18to19sp[gaps18to19sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
-              perims_j[j] <- 0
-            }
-            
-          }
-          gaps18to19sp[gaps18to19sp$gap_id==i,"perimeter"] <- sum(perims_j)
-          
-        }
-      
-      # Calculate the ratio of area to perimeter
-        gaps18to19sp@data$ratio <- gaps18to19sp@data$area/gaps18to19sp@data$perimeter
-      
-      # Remove gaps that don't meet a minimum area/perimeter threshold
-        for(i in 1:length(gaps18to19sp@data$ratio)){
-          if(gaps18to19sp@data$ratio[i] < areaPerimThresh){
-            gaps18to19[gaps18to19==gaps18to19sp@data$gap_id[i]] <- NA
-          }
-        }
-        
-  # 2019 - 2020
-        
-      # Identify gaps  
-        gaps19to20 <- ForestGapR::getForestGaps(d19to20,
-                                                threshold = gapHtThresh ,
-                                                size=c(gapSzMin,gapSzMax))
-      
-      # Create a Spatial Polygon Data Frame object, where each polygon is a gap
-        gaps19to20sp <- ForestGapR::GapSPDF(gaps19to20)
-      
-      # Calculate the area and perimeter from each gap object
-        gaps19to20sp@data$area <- NA
-        gaps19to20sp@data$perimeter <- NA
-        for(i in 1:length(gaps19to20sp)){
-          gaps19to20sp[gaps19to20sp$gap_id==i,"area"] <- raster::area(gaps19to20sp[gaps19to20sp$gap_id==i,])
-          
-          perims_j <- c()
-          for(j in 1:length(gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons)){
-            
-            coordsj <- gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@coords
-            
-            lengths_k <- c()
-            for(k in 2:dim(coordsj)[1]){
-              lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
-              
-            }
-            perims_j[j] <- sum(lengths_k)
-            
-            if(gaps19to20sp[gaps19to20sp$gap_id==i,]@polygons[[1]]@Polygons[[j]]@hole==T){
-              perims_j[j] <- 0
-            }
-            
-          }
-          gaps19to20sp[gaps19to20sp$gap_id==i,"perimeter"] <- sum(perims_j)
-          
-        }
-      
-      # Calculate the ratio of area to perimeter
-        gaps19to20sp@data$ratio <- gaps19to20sp@data$area/gaps19to20sp@data$perimeter
-      
-      # Remove gaps that don't meet a minimum area/perimeter threshold
-        for(i in 1:length(gaps19to20sp@data$ratio)){
-          if(gaps19to20sp@data$ratio[i] < areaPerimThresh){
-            gaps19to20[gaps19to20==gaps19to20sp@data$gap_id[i]] <- NA
-          }
-        }
-        
+  
     # 2018 - 2020
         
         # Identify gaps  
@@ -368,18 +243,13 @@
   # Create variable to store whether gaps pass area:perimeter threshold 
       gaps15to18sp$use <- ifelse(gaps15to18sp$ratio<areaPerimThresh,
                                  F,T)
-      gaps18to19sp$use <- ifelse(gaps18to19sp$ratio<areaPerimThresh,
-                                 F,T)  
-      gaps19to20sp$use <- ifelse(gaps19to20sp$ratio<areaPerimThresh,
-                                 F,T)  
+ 
       gaps18to20sp$use <- ifelse(gaps18to20sp$ratio<areaPerimThresh,
                                  F,T)  
         
   # Save rasters of new gap pixels
-      # raster::writeRaster(gaps15to18, file="newGaps15to18_tin.tif", overwrite = T)
-      # raster::writeRaster(gaps18to19, file="newGaps18to19_tin.tif", overwrite = T)
-      # raster::writeRaster(gaps19to20, file="newGaps19to20_tin.tif", overwrite = T)
-      # raster::writeRaster(gaps18to20, file="newGaps18to20_tin.tif", overwrite = T)
+       raster::writeRaster(gaps15to18, file="newGaps15to18_tin.tif", overwrite = T)
+       raster::writeRaster(gaps18to20, file="newGaps18to20_tin.tif", overwrite = T)
       
 #### GAPS NEIGHBORING NA CELLS ####
         
@@ -402,42 +272,6 @@
     }
         
 
-  # 2018 to 2019 
-    
-    # gaps18to19sp <- rgdal::readOGR("gaps18to19_shapefile_tin/gaps18to19sp.shp")    
-    # d18to19 <- raster::raster("dCHM18to19.tif")    
-    
-    gaps18to19sp$borderNAs <- NA
-    
-    for(i in 1:length(gaps18to19sp)){
-      # create a 1 m buffer (one cell) around gap polygon
-      polyBuff <- raster::buffer(gaps18to19sp[i,], 1)
-      # find raster cells within that polygon
-      cells <- raster::cellFromPolygon(object = d18to19,
-                                       p = polyBuff)[[1]]
-      # count NA cells within buffered gap polygon
-      gaps18to19sp$borderNAs[i] <- length(d18to19[cells][is.na(d18to19[cells])])
-      
-    }  
-    
-  # 2019 to 2020 
-    
-    # gaps19to20sp <- rgdal::readOGR("gaps19to20_shapefile_tin/gaps19to20sp.shp")    
-    # d19to20 <- raster::raster("dCHM19to20.tif")    
-    
-    gaps19to20sp$borderNAs <- NA
-    
-    for(i in 1:length(gaps19to20sp)){
-      # create a 1 m buffer (one cell) around gap polygon
-      polyBuff <- raster::buffer(gaps19to20sp[i,], 1)
-      # find raster cells within that polygon
-      cells <- raster::cellFromPolygon(object = d19to20,
-                                       p = polyBuff)[[1]]
-      # count NA cells within buffered gap polygon
-      gaps19to20sp$borderNAs[i] <- length(d19to20[cells][is.na(d19to20[cells])])
-      
-    }  
-  
   # 2018 to 2020 
     
     # gaps18to20sp <- rgdal::readOGR("gaps18to20_shapefile_tin/gaps18to20sp.shp")    
@@ -458,41 +292,27 @@
     
   # Calculate NA cells as a proportion of total gap perimeter
     gaps15to18sp$pctNAs <- gaps15to18sp$borderNAs/gaps15to18sp$perimeter
-    gaps18to19sp$pctNAs <- gaps18to19sp$borderNAs/gaps18to19sp$perimeter
-    gaps19to20sp$pctNAs <- gaps19to20sp$borderNAs/gaps19to20sp$perimeter
     gaps18to20sp$pctNAs <- gaps18to20sp$borderNAs/gaps18to20sp$perimeter
     
   # What proportion of gaps neighbor NA cells?
     pct15to18 <- 100*round(length(gaps15to18sp[gaps15to18sp$use==T & gaps15to18sp$borderNAs>0,])/length(gaps15to18sp[gaps15to18sp$use==T,]),3)
-    pct18to19 <- 100*round(length(gaps18to19sp[gaps18to19sp$use==T & gaps18to19sp$borderNAs>0,])/length(gaps18to19sp[gaps18to19sp$use==T,]),3)    
-    pct19to20 <- 100*round(length(gaps19to20sp[gaps19to20sp$use==T & gaps19to20sp$borderNAs>0,])/length(gaps19to20sp[gaps19to20sp$use==T,]),3)
     pct18to20 <- 100*round(length(gaps18to20sp[gaps18to20sp$use==T & gaps18to20sp$borderNAs>0,])/length(gaps18to20sp[gaps18to20sp$use==T,]),3)
     
   # What proportion of gaps have 10% or more of perimeter
     length(gaps15to18sp[gaps15to18sp$use==T & gaps15to18sp$pctNAs>0.1,])/length(gaps15to18sp[gaps15to18sp$use==T,])
-    length(gaps18to19sp[gaps18to19sp$use==T & gaps18to19sp$pctNAs>0.1,])/length(gaps18to19sp[gaps18to19sp$use==T,])
-    length(gaps19to20sp[gaps19to20sp$use==T & gaps19to20sp$pctNAs>0.1,])/length(gaps19to20sp[gaps19to20sp$use==T,])
     length(gaps18to20sp[gaps18to20sp$use==T & gaps18to20sp$pctNAs>0.1,])/length(gaps18to20sp[gaps18to20sp$use==T,])
     
 #### ASSIGN GAP POLYGONS TO BOOTSTRAP GROUPS ####
   blocks <- read.csv("bootstrapBlocks.csv")
     
   gaps15to18sp$block <- NA 
-  gaps18to19sp$block <- NA 
-  gaps19to20sp$block <- NA
   gaps18to20sp$block <- NA
   
   for(i in 1:dim(blocks)[1]){
     gaps15to18sp@data[gaps15to18sp@data[,1]>=blocks$xmin[i] & gaps15to18sp@data[,1] < blocks$xmax[i]
                       & gaps15to18sp@data[,2]>=blocks$ymin[i] & gaps15to18sp@data[,2] < blocks$ymax[i],"block"] <- i
    
-    gaps18to19sp@data[gaps18to19sp$X1>=blocks$xmin[i] & gaps18to19sp$X1 < blocks$xmax[i]
-                      & gaps18to19sp$X2>=blocks$ymin[i] & gaps18to19sp$X2 < blocks$ymax[i],"block"] <- i
-    
-    gaps19to20sp@data[gaps19to20sp$X1>=blocks$xmin[i] & gaps19to20sp$X1 < blocks$xmax[i]
-                      & gaps19to20sp$X2>=blocks$ymin[i] & gaps19to20sp$X2 < blocks$ymax[i],"block"] <- i
-    
-    gaps18to20sp@data[gaps18to20sp$X1>=blocks$xmin[i] & gaps18to20sp$X1 < blocks$xmax[i]
+     gaps18to20sp@data[gaps18to20sp$X1>=blocks$xmin[i] & gaps18to20sp$X1 < blocks$xmax[i]
                       & gaps18to20sp$X2>=blocks$ymin[i] & gaps18to20sp$X2 < blocks$ymax[i],"block"] <- i
   }  
     
@@ -503,16 +323,6 @@
     rgdal::writeOGR(gaps15to18sp,
                     dsn = "gaps15to18_shapefile_tin",
                     layer = "gaps15to18sp", 
-                    driver = "ESRI Shapefile")
-    
-    rgdal::writeOGR(gaps18to19sp,
-                    dsn = "gaps18to19_shapefile_tin",
-                    layer = "gaps18to19sp", 
-                    driver = "ESRI Shapefile")
-    
-    rgdal::writeOGR(gaps19to20sp,
-                    dsn = "gaps19to20_shapefile_tin",
-                    layer = "gaps19to20sp", 
                     driver = "ESRI Shapefile")
     
     rgdal::writeOGR(gaps18to20sp,
@@ -612,3 +422,42 @@ par(mfrow=c(2,2))
     raster::plot(buffer,add=T)
     raster::plot(gaps18to20, col = "red",add=T)
     
+#### Compare 2018-2019 and 2019-2020 vs 2018-2020 ####
+    
+# 2018-19 vs 2018-20
+    
+comp1 <- gaps18to19    
+comp1[!(is.na(gaps18to20))] <- NA    
+
+raster::plot(gaps18to19, col="lightblue")
+raster::plot(comp1, col="red", add=T)
+raster::plot(buffer,add=T)
+
+vals1 <- raster::values(gaps18to19)
+vals2 <- raster::values(comp1)
+length(vals2[!is.na(vals2)])/length(vals1[!is.na(vals1)])
+
+# 2019-20 vs 2018-20
+
+comp2 <- gaps19to20    
+comp2[!(is.na(gaps18to20))] <- NA    
+
+raster::plot(gaps19to20, col="lightblue")
+raster::plot(comp2, col="red", add=T)
+raster::plot(buffer,add=T)
+
+vals1 <- raster::values(gaps19to20)
+vals2 <- raster::values(comp2)
+length(vals2[!is.na(vals2)])/length(vals1[!is.na(vals1)])
+
+# Are there gaps in 2018-2020 but not the other years?
+comp3 <- gaps18to20    
+comp3[!(is.na(gaps18to19)) | !(is.na(gaps19to20))] <- NA    
+
+raster::plot(gaps18to20, col="lightblue")
+raster::plot(comp3, col="red", add=T)
+raster::plot(buffer,add=T)
+
+vals1 <- raster::values(gaps18to20)
+vals2 <- raster::values(comp3)
+length(vals2[!is.na(vals2)])/length(vals1[!is.na(vals1)])
