@@ -360,13 +360,9 @@
 
 # Load rasters    
 d15to18 <- raster::raster("dCHM15to18_tin.tif")     
-d18to19 <- raster::raster("dCHM18to19_tin.tif")      
-d19to20 <- raster::raster("dCHM19to20_tin.tif")  
 d18to20 <- raster::raster("dCHM18to20_tin.tif")  
 
 gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
-gaps18to19 <- raster::raster("newGaps18to19_tin.tif")
-gaps19to20 <- raster::raster("newGaps19to20_tin.tif")
 gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
 
 
@@ -382,13 +378,9 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
   }  
    
   plot15to18 <- makePlotRaster(d15to18, buffer)  
-  plot18to19 <- makePlotRaster(d18to19, buffer)  
-  plot19to20 <- makePlotRaster(d19to20, buffer)  
   plot18to20 <- makePlotRaster(d18to20, buffer)  
   
   
-par(mfrow=c(2,2))
-
 
     raster::plot(plot15to18,
                  bty="n", box=F,yaxt="n",
@@ -398,22 +390,7 @@ par(mfrow=c(2,2))
     raster::plot(buffer,add=T)
     raster::plot(gaps15to18, col = "red",add=T)
     
-    raster::plot(plot18to19,
-                 bty="n", box=F,yaxt="n",
-                 breaks = c(-1001,-999,1000),
-                 col = c("lightgrey","white"),
-                 main = "2018 - 2019")
-    raster::plot(buffer,add=T)
-    raster::plot(gaps18to19, col = "red",add=T)
-    
-    raster::plot(plot19to20,
-                 bty="n", box=F,yaxt="n",
-                 breaks = c(-1001,-999,1000),
-                 col = c("lightgrey","white"),
-                 main = "2019 - 2020")
-    raster::plot(buffer,add=T)
-    raster::plot(gaps19to20, col = "red",add=T)
-    
+ 
     raster::plot(plot18to20,
                  bty="n", box=F,yaxt="n",
                  breaks = c(-1001,-999,1000),
@@ -421,43 +398,3 @@ par(mfrow=c(2,2))
                  main = "2018 - 2020")
     raster::plot(buffer,add=T)
     raster::plot(gaps18to20, col = "red",add=T)
-    
-#### Compare 2018-2019 and 2019-2020 vs 2018-2020 ####
-    
-# 2018-19 vs 2018-20
-    
-comp1 <- gaps18to19    
-comp1[!(is.na(gaps18to20))] <- NA    
-
-raster::plot(gaps18to19, col="lightblue")
-raster::plot(comp1, col="red", add=T)
-raster::plot(buffer,add=T)
-
-vals1 <- raster::values(gaps18to19)
-vals2 <- raster::values(comp1)
-length(vals2[!is.na(vals2)])/length(vals1[!is.na(vals1)])
-
-# 2019-20 vs 2018-20
-
-comp2 <- gaps19to20    
-comp2[!(is.na(gaps18to20))] <- NA    
-
-raster::plot(gaps19to20, col="lightblue")
-raster::plot(comp2, col="red", add=T)
-raster::plot(buffer,add=T)
-
-vals1 <- raster::values(gaps19to20)
-vals2 <- raster::values(comp2)
-length(vals2[!is.na(vals2)])/length(vals1[!is.na(vals1)])
-
-# Are there gaps in 2018-2020 but not the other years?
-comp3 <- gaps18to20    
-comp3[!(is.na(gaps18to19)) | !(is.na(gaps19to20))] <- NA    
-
-raster::plot(gaps18to20, col="lightblue")
-raster::plot(comp3, col="red", add=T)
-raster::plot(buffer,add=T)
-
-vals1 <- raster::values(gaps18to20)
-vals2 <- raster::values(comp3)
-length(vals2[!is.na(vals2)])/length(vals1[!is.na(vals1)])
