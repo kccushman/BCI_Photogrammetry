@@ -6,90 +6,89 @@
     # Convert date to date class
     valGaps$dateClass <- as.Date(valGaps$date)
     
-    # Only keep gaps > 10 m2
-    valGaps <- valGaps[valGaps$area_m2 > 10,]
+    # Only keep gaps > 25 m2
+    valGaps <- valGaps[valGaps$area_m2 > 25,]
     
     # Split into years that correspond to annual island flights
-    date17 <- as.Date("2017-06-22")
+    date15 <- as.Date("2015-07-1")
     date18 <- as.Date("2018-06-20")
-    date19 <- as.Date("2019-06-24")
     date20 <- as.Date("2020-07-31")
     
-    valGaps17to18 <- valGaps[valGaps$dateClass>date17 & valGaps$dateClass<date18,]
-    valGaps18to19 <- valGaps[valGaps$dateClass>date18 & valGaps$dateClass<date19,]
-    valGaps19to20 <- valGaps[valGaps$dateClass>date19 & valGaps$dateClass<date20,]
+    valGaps15to18 <- valGaps[valGaps$dateClass>date15 & valGaps$dateClass<date18,]
+    valGaps18to20 <- valGaps[valGaps$dateClass>date18 & valGaps$dateClass<date20,]
     
   # Read canopy height change rasters
-    dchm17to18 <- raster::raster("dCHM17to18_tin.tif")
-    dchm18to19 <- raster::raster("dCHM18to19_tin.tif")
-    dchm19to20 <- raster::raster("dCHM19to20_tin.tif")
+    dchm15to18 <- raster::raster("dCHM15to18_tin.tif")
+    dchm18to20 <- raster::raster("dCHM18to20_tin.tif")
     
   # Read new gap shapefiles
-    gaps17to18 <- rgdal::readOGR("gaps17to18_shapefile_tin/gaps17to18sp.shp")
-    gaps18to19 <- rgdal::readOGR("gaps18to19_shapefile_tin/gaps18to19sp.shp")
-    gaps19to20 <- rgdal::readOGR("gaps19to20_shapefile_tin/gaps19to20sp.shp")
+    gaps15to18 <- rgdal::readOGR("gaps15to18_shapefile_tin/gaps15to18sp.shp")
+    gaps18to20 <- rgdal::readOGR("gaps18to20_shapefile_tin/gaps18to20sp.shp")
     
     # Only keep gaps within the plot (ADD)
+    gaps15to18 <- raster::crop(gaps15to18,raster::extent(valGaps))
+    gaps18to20 <- raster::crop(gaps18to20,raster::extent(valGaps))
+    
+    # Only keep gaps that pass area:perimeter threshold
+    gaps15to18 <- gaps15to18[gaps15to18$use==T,]
+    gaps18to20 <- gaps18to20[gaps18to20$use==T,]
     
 #### Make initial plots for each year ####
     
-    # 2017 to 2018
-    raster::plot(dchm17to18,
+    # 2015 to 2018 (Don't use 2018-2020 period because Raquel's data don't extend that long)
+    raster::plot(dchm15to18,
                  ext = raster::extent(valGaps))
-    raster::plot(valGaps17to18, col = NA, 
+    raster::plot(valGaps15to18, col = NA, 
                  border = "black", lwd = 1, add=T)
-    raster::plot(gaps17to18[gaps17to18$use==T,], col = NA, 
+    raster::plot(gaps15to18, col = NA, 
                  border = "red", lty=2, add=T)
-    
-    raster::plot(dchm18to19,
-                 ext = raster::extent(valGaps))
-    raster::plot(valGaps18to19, col = NA, 
-                 border = "black", lwd = 1, add=T)
-    raster::plot(gaps18to19[gaps18to19$use==T,], col = NA, 
-                 border = "red", lty=2, add=T)
-    
-    # DON'T USE LAST YEAR because Raquel's data don't extend this long.
-    raster::plot(dchm19to20,
-                 ext = raster::extent(valGaps))
-    raster::plot(valGaps19to20, col = NA, 
-                 border = "black", lwd = 1, add=T)
-    raster::plot(gaps19to20[gaps19to20$use==T,], col = NA, 
-                 border = "red", lty=2, add=T)
-    
     
 #### Calculate precision and recall ####
     
   # First, find which of Raquel's gaps were covered in annual data
-    valGaps17to18$area_sampled <- raster::extract(dchm17to18, valGaps17to18, fun = mean, na.rm=T)[,1]
-    valGaps18to19$area_sampled <- raster::extract(dchm18to19, valGaps18to19, fun = mean, na.rm=T)[,1]
-  
+    valGaps15to18$area_sampled <- raster::extract(dchm15to18, valGaps15to18, fun = mean, na.rm=T)[,1]
+
     # Only keep gaps sampled
-    valGaps17to18 <- valGaps17to18[!is.na(valGaps17to18$area_sampled),]
-    valGaps18to19 <- valGaps18to19[!is.na(valGaps18to19$area_sampled),]
-    
-  # Manually make proj4 strings the same
-    sp::proj4string(gaps17to18) <- sp::proj4string(valGaps17to18)
-    sp::proj4string(gaps18to19) <- sp::proj4string(valGaps18to19)
-    
-  # Calculate precision: how many of my gaps are also in Raquel's data? (ADD)
-    
-  # Calculate recall: how many of Raquel's gaps are also in my data?
-    
-    valGaps17to18$observed <- NA
-    for(i in 1:length(valGaps17to18)){
-      valGaps17to18$observed[i] <- rgeos::gIntersects(valGaps17to18[i,], gaps17to18, prepared = F)
-    }
-    
-    valGaps18to19$observed <- NA
-    for(i in 1:length(valGaps18to19)){
-      valGaps18to19$observed[i] <- rgeos::gIntersects(valGaps18to19[i,], gaps18to19, prepared = F)
+    valGaps15to18 <- valGaps15to18[!is.na(valGaps15to18$area_sampled),]
+
+    # Manually make proj4 strings the same
+      sp::proj4string(gaps15to18) <- sp::proj4string(valGaps15to18)
+
+  # Calculate precision: how many of my gaps are also in Raquel's data?
+    gaps15to18$observed <- NA
+    for(i in 1:length(gaps15to18)){
+      gaps15to18$observed[i] <- rgeos::gIntersects(gaps15to18[i,], valGaps15to18)
     }
     
     # Proportion of gaps recalled
-      recall17to18_n <- length(valGaps17to18[valGaps17to18$observed==T,])/length(valGaps17to18)
-      recall18to19_n <- length(valGaps18to19[valGaps18to19$observed==T,])/length(valGaps18to19)
-      
+    precision15to18_n <- length(gaps15to18[gaps15to18$observed==T,])/length(gaps15to18)
+    
     # Proportion of gap area (based on T/F) recalled
-      recall17to18_area <- sum(valGaps17to18$area_m2[valGaps17to18$observed==T])/sum(valGaps17to18$area_m2)
-      recall18to19_area <- sum(valGaps18to19$area_m2[valGaps18to19$observed==T])/sum(valGaps18to19$area_m2)
+    precision15to18_area <- sum(gaps15to18$area[gaps15to18$observed==T])/sum(gaps15to18$area)
+    
+    
+  # Calculate recall: how many of Raquel's gaps are also in my data?
+    
+    valGaps15to18$observed <- NA
+    for(i in 1:length(valGaps15to18)){
+      valGaps15to18$observed[i] <- rgeos::gIntersects(valGaps15to18[i,], gaps15to18)
+    }
+    
+    # Proportion of gaps recalled
+      recall15to18_n <- length(valGaps15to18[valGaps15to18$observed==T,])/length(valGaps15to18)
+
+    # Proportion of gap area (based on T/F) recalled
+      recall15to18_area <- sum(valGaps15to18$area_m2[valGaps15to18$observed==T])/sum(valGaps15to18$area_m2)
+      
+  
+  # Save shapefiles to look in ArcGIS
+      rgdal::writeOGR(valGaps15to18,
+                      dsn = "Monthly_50haGaps_2015-2018",
+                      layer = "MonthlyGaps", 
+                      driver = "ESRI Shapefile")
+      
+      rgdal::writeOGR(gaps15to18,
+                      dsn = "Annual_50haGaps_2015-2018",
+                      layer = "AnnualGaps", 
+                      driver = "ESRI Shapefile")
       
