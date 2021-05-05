@@ -102,7 +102,6 @@
   # Canopy height models for all years
     # chm15 <- raster::raster("CHM_2015_QAQC_tin.tif")
     # chm18 <- raster::raster("CHM_2018_QAQC_tin.tif")
-    # chm19 <- raster::raster("CHM_2019_QAQC_tin.tif")
     # chm20 <- raster::raster("CHM_2020_QAQC_tin.tif")
   
   # Calculate the change in canopy height for each interval  
@@ -398,3 +397,159 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
                  main = "2018 - 2020")
     raster::plot(buffer,add=T)
     raster::plot(gaps18to20, col = "red",add=T)
+    
+#### Figure S#: ####
+ 
+  # Look at initial canopy height and transitions per height class
+    
+    # Load rasters    
+    d15to18 <- raster::raster("dCHM15to18_tin.tif")     
+    d18to20 <- raster::raster("dCHM18to20_tin.tif")
+    
+    chm09 <- raster::raster("CHM_2009_QAQC.tif")
+    chm15 <- raster::raster("CHM_2015_QAQC_tin.tif")
+    chm18 <- raster::raster("CHM_2018_QAQC_tin.tif")
+    chm20 <- raster::raster("CHM_2020_QAQC_tin.tif")
+    
+    # Make sure all have same extents (2009 slightly shorter)
+    chm15 <- raster::crop(chm15, raster::extent(chm09))
+    chm18 <- raster::crop(chm18, raster::extent(chm09))
+    chm20 <- raster::crop(chm20, raster::extent(chm09))
+    
+    chm09_vals <- raster::values(chm09)
+    chm15_vals <- raster::values(chm15)
+    chm18_vals <- raster::values(chm18)
+    chm20_vals <- raster::values(chm20)
+    
+    d15to18_vals <- raster::values(d15to18)
+    d18to20_vals <- raster::values(d18to20)
+    
+    chm09_vals[is.na(d15to18_vals) | is.na(d18to20_vals)] <- NA
+    chm15_vals[is.na(d15to18_vals) | is.na(d18to20_vals)] <- NA
+    chm18_vals[is.na(d15to18_vals) | is.na(d18to20_vals)] <- NA
+    chm20_vals[is.na(d15to18_vals) | is.na(d18to20_vals)] <- NA
+    
+    toChange <- which(!is.na(chm15_vals) & (chm15_vals-chm09_vals) > 3 & (chm18_vals-chm15_vals) < -1)
+    newVals <- chm09_vals[toChange]
+    #newVals <- 0.5*(chm09_vals[toChange]+chm18_vals[toChange])
+    chm15c <- chm15
+    raster::values(chm15c)[toChange] <- newVals
+    chm15_c_vals <-  raster::values(chm15c)
+    chm15_c_vals[is.na(d15to18_vals) | is.na(d18to20_vals)] <- NA
+    length(toChange)/length(chm15c_vals[!is.na(chm15c_vals)])
+    
+
+    
+    allStart <- floor(max(c(chm15_vals,chm18_vals),na.rm=T))
+    
+    propGap <- data.frame(start = 5:allStart,
+                          n15 = NA,
+                          propGap15 = NA,
+                          propNA15 = NA,
+                          n18 = NA,
+                          propGap18 = NA,
+                          propNA18 = NA,
+                          n20=NA,
+                          n15_c = NA,
+                          propGap15_c = NA,
+                          propNA15_c = NA,
+                          n09=NA)
+    
+    for(i in 1:nrow(propGap)){
+      
+      vals15 <- which(!is.na(chm15_vals) & chm15_vals>=propGap$start[i] & chm15_vals<(propGap$start[i]+1))
+      d15 <- chm18_vals[vals15] - chm15_vals[vals15]
+      propGap$n15[i] <- length(vals15)/length(chm15_vals[!is.na(chm15_vals)])
+      propGap$propGap15[i] <- length(d15[!is.na(d15) & d15<=-5])/length(vals15)
+      propGap$propNA15[i] <- length(d15[is.na(d15)])/length(vals15)
+      
+      vals18 <- which(!is.na(chm18_vals) & chm18_vals>=propGap$start[i] & chm18_vals<(propGap$start[i]+1))
+      d18 <- chm20_vals[vals18] - chm18_vals[vals18]
+      propGap$n18[i] <- length(vals18)/length(chm18_vals[!is.na(chm18_vals)])
+      propGap$propGap18[i] <- length(d18[!is.na(d18) & d18<=-5])/length(vals18)
+      propGap$propNA18[i] <- length(d18[is.na(d18)])/length(vals18)
+      
+      vals09 <- which(!is.na(chm09_vals) & chm09_vals>=propGap$start[i] & chm09_vals<(propGap$start[i]+1))
+      propGap$n09[i] <- length(vals09)/length(chm09_vals[!is.na(chm09_vals)])
+      
+      vals20 <- which(!is.na(chm20_vals) & chm20_vals>=propGap$start[i] & chm20_vals<(propGap$start[i]+1))
+      propGap$n20[i] <- length(vals20)/length(chm20_vals[!is.na(chm20_vals)])
+
+      vals15_c <- which(!is.na(chm15_c_vals) & chm15_c_vals>=propGap$start[i] & chm15_c_vals<(propGap$start[i]+1))
+      d15_c <- chm18_vals[vals15_c] - chm15_c_vals[vals15_c]
+      propGap$n15_c[i] <- length(vals15_c)/length(chm15_c_vals[!is.na(chm15_c_vals)])
+      propGap$propGap15_c[i] <- length(d15_c[!is.na(d15_c) & d15_c<=-5])/length(vals15_c)
+      propGap$propNA15_c[i] <- length(d15_c[is.na(d15_c)])/length(vals15_c)
+    }
+    
+    
+    # Normalize the proportion of gaps observed to per year
+    nYr15to18 <- as.numeric(as.Date("2018-06-07") - as.Date("2015-06-26"))/365
+    nYr18to20 <- as.numeric(as.Date("2020-07-31") - as.Date("2018-06-07"))/365
+    
+    # Plot canopy height distributions
+      plot(n15~start,
+           data = propGap,
+           type="l",
+           ylim=c(0,0.06),
+           xlim=c(5,50),
+           xlab = "Initial canopy height (m)",
+           ylab = "Proportion of area",
+           main = "Proportion of total area at height",
+           col = adjustcolor("black",0.6),
+           lty=3,
+           lwd=3)
+  
+      lines(n15_c~start,
+            col = adjustcolor("black",0.6),
+            data=propGap,lty=1,lwd=3)  
+      
+      lines(n09~start,
+            data = propGap,
+            col=adjustcolor("orange",0.6), lwd=3)
+      
+       lines(n18~start,
+             data = propGap,
+             col=adjustcolor("red",0.6), lwd=3)
+    
+        lines(n20~start,
+              data = propGap,
+              col=adjustcolor("blue",0.6), lwd=3)
+      
+      legend(x=35,y=0.06,
+             bty="n",
+             c("2009","2015 (original)","2015 (corrected)","2018","2020"),
+             lty=c(1,3,1,1,1),
+             col=adjustcolor(c("orange","black","black","red","blue"),0.6), lwd=3)
+    
+      
+      
+    # Plot probability of becoming a gap for area in each height bin
+      par(mfrow=c(1,1), mar=c(4,4,1,1))
+    plot(propGap15/nYr15to18~start,
+         data = propGap,
+         type="l",
+         ylim=c(0,0.06),
+         xlim=c(5,50),
+         xlab = "Initial canopy height (m)",
+         ylab = "Proportion of area",
+         main = "Proportion of area at height that decreases > 5 m",
+         lwd=2)
+
+    lines(propGap18/nYr18to20~start, data=propGap,
+          col="red", lwd=2)
+    lines(propGap15_c/nYr15to18~start, data=propGap,
+          col="black",lty=2, lwd=2)
+    
+    legend(x=25,y=0.06,
+           bty="n",
+           c("2015-2018 (original)","2015-2018 (corrected)","2018-2020"),
+           col=c("black","black","red"), lwd=2, lty=c(1,2,1))
+    
+    
+
+    
+
+    
+    
+    

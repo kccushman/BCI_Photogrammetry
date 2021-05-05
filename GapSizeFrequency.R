@@ -106,17 +106,29 @@
                                     bootBlocks = blockData,
                                     nBoot = 1000)
   
-  round(mean(gapSummary15to18$gapsPerHa)/3,2)
-  round(mean(gapSummary18to20$gapsPerHa)/(25/12),2)
+  nYr15to18 <- as.numeric(as.Date("2018-06-07") - as.Date("2015-06-26"))/365
+  nYr18to20 <- as.numeric(as.Date("2020-07-31") - as.Date("2018-06-07"))/365
   
-  round(quantile(gapSummary15to18$gapsPerHa,probs = c(0.025,0.975))/3,2)
-  round(quantile(gapSummary18to20$gapsPerHa,probs = c(0.025,0.975))/(25/12),2)
+  # Mean frequency of gaps per interval--percent of area
+  round(mean(gapSummary15to18$percentGap)/nYr15to18,2)
+  round(mean(gapSummary18to20$percentGap)/nYr18to20,2)
   
-  round(mean(gapSummary15to18$percentGap)/3,2)
-  round(mean(gapSummary18to20$percentGap)/(25/12),2)
+  round(quantile(gapSummary15to18$percentGap,probs = c(0.025,0.975))/nYr15to18,2)
+  round(quantile(gapSummary18to20$percentGap,probs = c(0.025,0.975))/nYr18to20,2)
   
-  round(quantile(gapSummary15to18$percentGap,probs = c(0.025,0.975))/3,2)
-  round(quantile(gapSummary18to20$percentGap,probs = c(0.025,0.975))/(25/12),2)
+    # % higher in first interval
+    (2.57-2.04)/2.04*100
+  
+  # Mean frequency of gaps per interval--number of gaps
+  round(mean(gapSummary15to18$gapsPerHa)/nYr15to18,2)
+  round(mean(gapSummary18to20$gapsPerHa)/nYr18to20,2)
+  
+  round(quantile(gapSummary15to18$gapsPerHa,probs = c(0.025,0.975))/nYr15to18,2)
+  round(quantile(gapSummary18to20$gapsPerHa,probs = c(0.025,0.975))/nYr18to20,2)
+  
+    # % higher in first interval
+    (1.97-1.84)/1.84*100
+
   
 #### BOOTSTRAPPED SIZE FREQUENCY DISTRIBUTIONS ####
   source("makesizedistforRaquel.r")
@@ -165,24 +177,36 @@
   szFreq18to20 <- read.table("SizeFreqResults/gaps18to20sizedistbsfit.txt", header = T)
   
   
-  # What distribution has the highest adjusted R2?
+  # What distribution has the highest log likelihood?
   
-  # 2015 to 2017
-  round(szFreq15to18$weibcatadjr2,2)
-  round(szFreq15to18$powcatadjr2,2)
-  round(szFreq15to18$expcatadjr2,2)
+    # 2015 to 2017
+    round(szFreq15to18$weibloglike,0)
+    round(szFreq15to18$powloglike,0)
+    round(szFreq15to18$exploglike,0)
+    
+    # 2018 to 2020
+    round(szFreq18to20$weibloglike,0)
+    round(szFreq18to20$powloglike,0)
+    round(szFreq18to20$exploglike,0)
   
-  # 2018 to 2020
-  round(szFreq18to20$weibcatadjr2,2)
-  round(szFreq18to20$powcatadjr2,2)
-  round(szFreq18to20$expcatadjr2,2)
+  # Get r-squared values for each
+    
+    # 2015 to 2017
+    round(szFreq15to18$weibcatadjr2,3)
+    round(szFreq15to18$powcatadjr2,3)
+    round(szFreq15to18$expcatadjr2,3)
+    
+    # 2018 to 2020
+    round(szFreq18to20$weibcatadjr2,3)
+    round(szFreq18to20$powcatadjr2,3)
+    round(szFreq18to20$expcatadjr2,3)
   
-  #Weibull has highest R2
-  round(szFreq15to18[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],2)
-  round(szFreq18to20[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],2)
+  # Exponential has highest likelihood in both intervals
+  round(szFreq15to18[,c("exppar1est","exppar1lo1","exppar1hi1")],4)
+  round(szFreq18to20[,c("exppar1est","exppar1lo1","exppar1hi1")],4)
   
-  round(szFreq15to18[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
-  round(szFreq18to20[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
+  round(szFreq15to18[,c("exppar2est","exppar2lo1","exppar2hi1")],2)
+  round(szFreq18to20[,c("exppar2est","exppar2lo1","exppar2hi1")],2)
   
 
   # Make plot of data and best-fit lines
@@ -194,8 +218,8 @@
   # Divide intervals for plotting
   gapAreaRange <- c(25,mxSz)
   logRange <- log(gapAreaRange)
-  brksRange_log <- seq(logRange[1],logRange[2],length.out = 20)
-  brksRange <- floor(exp(brksRange_log))
+  brksRange_log <- c(seq(logRange[1],7,length.out = 15),logRange[2])
+  brksRange <- ceiling(exp(brksRange_log))
   
   brksMins <- brksRange[1:length(brksRange)-1]
   brksMaxs <- brksRange[2:length(brksRange)]
@@ -214,11 +238,11 @@
   
   gapSizes15to18 <- makeGapVectors(gapAreaVector = gaps15to18sp[gaps15to18sp$use==T,]$area,
                                    minarea = brksMins,
-                                   maxarea = brksMaxs)/areaSampled15to18
+                                   maxarea = brksMaxs)/areaSampled15to18tall
   
   gapSizes18to20 <- makeGapVectors(gapAreaVector = gaps18to20sp[gaps18to20sp$use==T,]$area,
                                    minarea = brksMins,
-                                   maxarea = brksMaxs)/areaSampled18to20
+                                   maxarea = brksMaxs)/areaSampled18to20tall
   
   
   # Get correct fitted y-values for each year, adjusted for truncated distributions
@@ -244,27 +268,27 @@
     scaleExp <- 1/(pexp(mxSz,rate = szFreqResults$exppar1est) -
                      pexp(25, rate = szFreqResults$exppar1est))
     
-    yValsExp <- scaleExp*dexp(xVals, rate = szFreqResults$exppar1est)*nrow(gapSp[gapSp$use==T,])
+    yValsExp <- scaleExp*dexp(xVals, rate = szFreqResults$exppar1est, log=F)*nrow(gapSp[gapSp$use==T,])
     
     return(yValsExp)
   }
   
-  yValsWeib18 <- getWeibEsts(szFreqResults = szFreq15to18, gapSp = gaps15to18sp, xVals)/3/areaSampled15to18
-  yValsWeib20 <- getWeibEsts(szFreqResults = szFreq18to20, gapSp = gaps18to20sp, xVals)/(25/12)/areaSampled18to20
+  yValsWeib18 <- getWeibEsts(szFreqResults = szFreq15to18, gapSp = gaps15to18sp, xVals)/nYr15to18/areaSampled15to18tall
+  yValsWeib20 <- getWeibEsts(szFreqResults = szFreq18to20, gapSp = gaps18to20sp, xVals)/nYr18to20/areaSampled18to20tall
   
-  yValsExp18 <- getExpEsts(szFreqResults = szFreq15to18, gapSp = gaps15to18sp, xVals)/3/areaSampled15to18
-  yValsExp20 <- getExpEsts(szFreqResults = szFreq18to20, gapSp = gaps18to20sp, xVals)/(25/12)/areaSampled18to20
+  yValsExp18 <- getExpEsts(szFreqResults = szFreq15to18, gapSp = gaps15to18sp, xVals)/nYr15to18/areaSampled15to18tall
+  yValsExp20 <- getExpEsts(szFreqResults = szFreq18to20, gapSp = gaps18to20sp, xVals)/nYr18to20/areaSampled18to20tall
   
   logOption <- "xy"
   
-  yRange <- range(c(gapSizes15to18,gapSizes18to20)) + c(1e-7,0)
+  yRange <- range(c(gapSizes15to18/nYr15to18,gapSizes18to20/nYr18to20)) + c(1e-7,0)
   
   #Define colors
   col18 <- "black"
   col20 <- "#d95f02"
   
-  par(las = 1)
-  plot(x = brksMids, y = gapSizes15to18/3,
+  par(las = 1, mar=c(4,5,2,1))
+  plot(x = brksMids, y = gapSizes15to18/nYr15to18,
        xlim=range(brksMids),
        ylim=yRange,
        col = adjustcolor(col18,0.6),
@@ -274,7 +298,7 @@
        ylab = expression("Disturbance frequency (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
        xlab = expression("Disturbance area (m"^"2"~")"))
   
-  points(x = brksMids, y = gapSizes18to20/(25/12),
+  points(x = brksMids, y = gapSizes18to20/nYr18to20,
          col = adjustcolor(col20,0.6), pch=19)
   
   legend(x=30,y=0.0001,
