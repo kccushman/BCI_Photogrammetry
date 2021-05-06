@@ -226,10 +226,8 @@
       for(j in 1:length(gaps15to18)){
         gaps15to18$observed[j] <- rgeos::gIntersects(gaps15to18[j,], valGaps15to18)
       }
-      
-      
           
-  missingGaps <- gaps15to18[gaps15to18$observed==F & gaps15to18$use==T,]    
+  missingGaps <- gaps15to18[gaps15to18$observed==F,]    
   missingGaps <- missingGaps[order(-missingGaps$area),]
   
   imageList <- list.files("C:/Users/cushmank/Desktop/RaquelOrthoAligned/", full.names = T, pattern = ".tif")
@@ -258,27 +256,30 @@
       }
   }
   
+  
+  
   # Make a plot of my raster heights
-  for(i in 1:10){
+  for(i in 1:20){
+    
     # find extent of gap to extract from images
     extent_i <- raster::extent(missingGaps[i,])
     
     # Correct
     chm09i <- raster::crop(chm09,
-                           raster::extent(extent_i@xmin - 20,
-                                          extent_i@xmax + 20,
-                                          extent_i@ymin - 20,
-                                          extent_i@ymax + 20))
+                           raster::extent(extent_i@xmin - 10,
+                                          extent_i@xmax + 10,
+                                          extent_i@ymin - 10,
+                                          extent_i@ymax + 10))
     chm15i <- raster::crop(chm15,
-                           raster::extent(extent_i@xmin - 20,
-                                          extent_i@xmax + 20,
-                                          extent_i@ymin - 20,
-                                          extent_i@ymax + 20))
+                           raster::extent(extent_i@xmin - 10,
+                                          extent_i@xmax + 10,
+                                          extent_i@ymin - 10,
+                                          extent_i@ymax + 10))
     chm18i <- raster::crop(chm18,
-                           raster::extent(extent_i@xmin - 20,
-                                          extent_i@xmax + 20,
-                                          extent_i@ymin - 20,
-                                          extent_i@ymax + 20))
+                           raster::extent(extent_i@xmin - 10,
+                                          extent_i@xmax + 10,
+                                          extent_i@ymin - 10,
+                                          extent_i@ymax + 10))
     
     # try some thresholds
     vals09i <- raster::values(chm09i)
@@ -290,83 +291,77 @@
     chm15c <- chm15i; raster::values(chm15c)[toChange] <- newVals
     
     
-    colBrks <- seq(0,60,2)
+    colBrks <- c(seq(0,30,2),50)
     
     par(mfrow=c(2,3), mar=c(1,1,1,1), oma=c(0,0,1,6))
-    raster::plot(raster::crop(chm09,
-                              raster::extent(extent_i@xmin - 20,
-                                             extent_i@xmax + 20,
-                                             extent_i@ymin - 20,
-                                             extent_i@ymax + 20)),
+    raster::plot(chm09i,
                  breaks=colBrks,
                  col=rev(terrain.colors(length(colBrks))),
                  bty="n",box=F,xaxt="n",yaxt="n",legend=F,
                  main = "2009 canopy height (m)")
     raster::plot(missingGaps[i,], border="red",add=T)
     
-    raster::plot(raster::crop(chm15,
-                              raster::extent(extent_i@xmin - 20,
-                                             extent_i@xmax + 20,
-                                             extent_i@ymin - 20,
-                                             extent_i@ymax + 20)),
+    raster::plot(chm15i,
                  breaks=colBrks,
                  col=rev(terrain.colors(length(colBrks))),
                  bty="n",box=F,xaxt="n",yaxt="n",legend=F,
                  main = "2015 canopy height (m)")
     raster::plot(missingGaps[i,], border="red",add=T)
     
-    raster::plot(raster::crop(chm18,
-                              raster::extent(extent_i@xmin - 20,
-                                             extent_i@xmax + 20,
-                                             extent_i@ymin - 20,
-                                             extent_i@ymax + 20)),
+    raster::plot(chm18i,
                  breaks=colBrks,
                  col=rev(terrain.colors(length(colBrks))),
                  bty="n",box=F,xaxt="n",yaxt="n",
                  main = "2018 canopy height (m)")
     raster::plot(missingGaps[i,], border="red",add=T)
     
-    raster::plot(raster::crop(d15to18,
-                              raster::extent(extent_i@xmin - 20,
-                                             extent_i@xmax + 20,
-                                             extent_i@ymin - 20,
-                                             extent_i@ymax + 20)),
-                 breaks=c(-50,-8,seq(-3,45,2)),
-                 col=c("red",viridis::viridis(30)),
-                 bty="n",box=F,xaxt="n",yaxt="n", legend=T,
-                 main = "2015-18 unncorrected ht change (m)")
-    raster::plot(missingGaps[i,], border="red",add=T)
-    
-    raster::plot(raster::crop(chm15c,
-                              raster::extent(extent_i@xmin - 20,
-                                             extent_i@xmax + 20,
-                                             extent_i@ymin - 20,
-                                             extent_i@ymax + 20)),
-                 breaks=colBrks,
-                 col=rev(terrain.colors(length(colBrks))),
-                 bty="n",box=F,xaxt="n",yaxt="n",legend=F,
-                 main = "2015 corrected canopy height (m)")
-    raster::plot(missingGaps[i,], border="red",add=T)
-    
-    raster::plot(raster::crop(chm18i-chm15c,
-                              raster::extent(extent_i@xmin - 20,
-                                             extent_i@xmax + 20,
-                                             extent_i@ymin - 20,
-                                             extent_i@ymax + 20)),
-                 breaks=c(-50,-8,seq(-3,45,2)),
-                 col=c("red",viridis::viridis(30)),
+    raster::plot((chm15i-chm09i),
+                 breaks=seq(-30,30,3),
+                 col=rev(rainbow(21)),
                  bty="n",box=F,xaxt="n",yaxt="n", legend=F,
-                 main = "2015-18 corrected ht change (m)")
+                 main = "2009-15 ht change (m)")
     raster::plot(missingGaps[i,], border="red",add=T)
+    
+    raster::plot((chm18i-chm15i),
+                 breaks=seq(-30,30,3),
+                 col=rev(rainbow(21)),
+                 bty="n",box=F,xaxt="n",yaxt="n", legend=T,
+                 main = "2015-18 ht change (m)")
+    raster::plot(missingGaps[i,], border="red",add=T)
+    
   }
   
   
-  rgdal::writeOGR(missingGaps,
-                  dsn = "ValidationGaps_50ha",
-                  layer = "ValidationGaps_50ha", 
+  rgdal::writeOGR(missingGaps[c(3,8),],
+                  dsn = "GapsToPlot",
+                  layer = "GapsToPlot", 
                   driver = "ESRI Shapefile")
       
+
   
+#### plot height value histograms for the 50ha plot ####
+  vals09 <- raster::values(raster::crop(chm09,plotShp))
+  dens09 <- density(vals09[!is.na(vals09)])
+  
+  vals15 <- raster::values(raster::crop(chm15,plotShp))
+  dens15 <- density(vals15[!is.na(vals15)])
+  
+  vals18 <- raster::values(raster::crop(chm18,plotShp))
+  dens18 <- density(vals18[!is.na(vals18)])
+  
+  par(mfrow=c(1,1), mar=c(4,4,1,1))
+  plot(dens15,
+       xlim=c(0,50),
+       main = "Canopy height distribution",
+       col="red",lwd=2,
+       xlab="canopy height (m)")
+  lines(dens09,col="black",lwd=2)
+  lines(dens18,col="blue",lwd=2)
+  legend(x=0,y=0.055,
+         c("2009 (lidar)","2015 (photogram.)","2018 (photogram.)"),
+         col=c("black","red","blue"),
+         bty="n",
+         lwd=2)
   
 #### Sandbox: figure out good metric for correcting data ####
   chm09i <- raster::crop(chm09,
