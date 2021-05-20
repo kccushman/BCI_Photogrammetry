@@ -134,6 +134,14 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     raster::writeRaster(qaqc15, "htRangeRaster_2015.tif")
     rm(qaqc15)
     
+    qaqc15 <- lidR::grid_canopy(cat15_at,
+                                res = 1,
+                                algorithm = lidR::p2r(subcircle=0.01))
+    raster::writeRaster(qaqc15, "CHM_noGapFill_2015.tif")
+    rm(qaqc15)
+    
+    
+    
 #### 2018 ####
     
     # Rename transition matrix file
@@ -197,8 +205,8 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     # Plot masked tiles on canopy height change raster
     
-    chm17 <- raster::raster("DSM_2017_corrected_tin.tif")
-    dsm18 <- raster::raster("DSM_2018_corrected_tin.tif")
+    chm15 <- raster::raster("DSM_2015_corrected_tin.tif")
+    chm18 <- raster::raster("DSM_2018_corrected_tin.tif")
     
     dHeight15to18 <- chm18-chm15
     
@@ -238,11 +246,20 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
       }
     }
     
+  
+  # Make full raster of height range
+    
     cat18_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI18Tiles_alignedto15Trim/")
     qaqc18 <- lidR::grid_metrics(cat18_at,
                                  res = 0.2,
                                  func = ~max(Z)-min(Z))
     raster::writeRaster(qaqc18, "htRangeRaster_2018.tif")
+    rm(qaqc18)
+    
+    qaqc18 <- lidR::grid_canopy(cat18_at,
+                                res = 1,
+                                algorithm = lidR::p2r(subcircle=0.01))
+    raster::writeRaster(qaqc18, "CHM_noGapFill_2018.tif")
     rm(qaqc18)
     
 
@@ -311,17 +328,17 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
     
     # Plot masked tiles on canopy height change raster
     
-    dsm19 <- raster::raster("DSM_2019_corrected_tin.tif")
+    dsm18 <- raster::raster("DSM_2018_corrected_tin.tif")
     dsm20 <- raster::raster("DSM_2020_corrected_tin.tif")
     
-    dHeight19to20 <- dsm20-dsm19
+    dHeight18to20 <- dsm20-dsm18
     
     colBrks2 <- c(-100,-20,-10,-5,-1,1,5,10,20,100)
     colPal2 <- colorRampPalette(c("red","darksalmon","yellow",
                                   "white",
                                   "aliceblue","cornflowerblue","darkblue"))
     
-    raster::plot(dHeight19to20,
+    raster::plot(dHeight18to20,
                  col = colPal2(length(colBrks2)-1),
                  breaks = colBrks2,
                  main = "Corrected 2019 to 2020 height change")
@@ -352,20 +369,20 @@ raster::writeRaster(binHi, "binaryHiCanopy.tif", overwrite=T)
       }
     }
     
-    cat20_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_alignedto19Trim/")
+    # Make full raster of height range
+    
+    cat20_at <- lidR::catalog("D:/BCI_Spatial/UAV_Data/TiledPointClouds/BCI20Tiles_alignedto18Trim/")
     qaqc20 <- lidR::grid_metrics(cat20_at,
                                  res = 0.2,
                                  func = ~max(Z)-min(Z))
     raster::writeRaster(qaqc20, "htRangeRaster_2020.tif")
     rm(qaqc20)
     
-    
-#### Find tile ID from coordinates ####
-    
-    coords <- locator(1)
-    ID <- gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
-    
-    gridInfo[ID,c("QAQC18_A","QAQC18_B")]
+    qaqc20 <- lidR::grid_canopy(cat20_at,
+                                res = 1,
+                                algorithm = lidR::p2r(subcircle=0.01))
+    raster::writeRaster(qaqc20, "CHM_noGapFill_2020.tif")
+    rm(qaqc20)
     
 #### Cloud mask 2015 ####
 
@@ -432,3 +449,139 @@ raster::writeRaster(mask15, "CloudMask_2015.tif")
   
   
       
+#### Data QAQC mask 2015 ####
+  
+  # Aggregate criteria 1: range of heights within 0.2 m pixels
+  qaqc15a <- raster::raster("htRangeRaster_2015.tif")
+  qaqc15a_ag <- raster::aggregate(qaqc15a, fact = 50, fun=median)
+  raster::plot(qaqc15a_ag,
+               breaks=c(0,1.5,50),
+               col=c("grey","red"))
+  
+  # Aggregate criteria 2: number of non-empty cells
+  qaqc15b <- raster::raster("CHM_noGapFill_2015.tif")
+  
+  # Make binary (1 if value, 0 if NA)
+  qaqc15b_bin <- raster::values(qaqc15b)
+  qaqc15b_bin[!is.na(qaqc15b_bin)] <- 1
+  qaqc15b_bin[is.na(qaqc15b_bin)] <- 0
+  raster::values(qaqc15b) <- qaqc15b_bin
+  
+  # Aggregate by adding non-NA values
+  qaqc15b_ag <- raster::aggregate(qaqc15b, fact = 10, fun=sum)
+  raster::plot(qaqc15b_ag,
+               breaks=c(0,90,100),
+               col=c("red","grey"))
+  
+  # Make binary map
+  thresh_1 <- 1.5
+  thresh_2 <- 90
+  
+  mask15 <- qaqc15a_ag
+  # Set mask values
+  mask_vals <- raster::values(mask15)
+  vals_a <- raster::values(qaqc15a_ag)
+  vals_b <- raster::values(qaqc15b_ag)
+  
+  # Bad pixels == 0
+  mask_vals[vals_a >= thresh_1 | vals_b <= thresh_2] <- 0
+  # Good pixels == 1
+  mask_vals[vals_a < thresh_1 & vals_b > thresh_2] <- 1
+  raster::values(mask15) <- mask_vals
+  
+  raster::plot(mask15)
+  raster::writeRaster(mask15, "QAQCMask_2015.tif")
+    
+#### Data QAQC mask 2018 ####
+    
+    # Aggregate criteria 1: range of heights within 0.2 m pixels
+    qaqc18a <- raster::raster("htRangeRaster_2018.tif")
+    qaqc18a_ag <- raster::aggregate(qaqc18a, fact = 50, fun=median)
+    raster::plot(qaqc18a_ag,
+                 breaks=c(0,1.5,50),
+                 col=c("grey","red"))
+    
+    # Aggregate criteria 2: number of non-empty cells
+    qaqc18b <- raster::raster("CHM_noGapFill_2018.tif")
+    
+    # Make binary (1 if value, 0 if NA)
+    qaqc18b_bin <- raster::values(qaqc18b)
+    qaqc18b_bin[!is.na(qaqc18b_bin)] <- 1
+    qaqc18b_bin[is.na(qaqc18b_bin)] <- 0
+    raster::values(qaqc18b) <- qaqc18b_bin
+    
+    # Aggregate by adding non-NA values
+    qaqc18b_ag <- raster::aggregate(qaqc18b, fact = 10, fun=sum)
+    raster::plot(qaqc18b_ag,
+                 breaks=c(0,90,100),
+                 col=c("red","grey"))
+    
+    # Make binary map
+    thresh_1 <- 1.5
+    thresh_2 <- 90
+    
+    mask18 <- qaqc18a_ag
+    # Set mask values
+    mask_vals <- raster::values(mask18)
+    vals_a <- raster::values(qaqc18a_ag)
+    vals_b <- raster::values(qaqc18b_ag)
+    
+    # Bad pixels == 0
+    mask_vals[vals_a >= thresh_1 | vals_b <= thresh_2] <- 0
+    # Good pixels == 1
+    mask_vals[vals_a < thresh_1 & vals_b > thresh_2] <- 1
+    raster::values(mask18) <- mask_vals
+    
+    raster::plot(mask18)
+    raster::writeRaster(mask18, "QAQCMask_2018.tif")
+    
+#### Data QAQC mask 2020 ####
+    
+    # Aggregate criteria 1: range of heights within 0.2 m pixels
+    qaqc20a <- raster::raster("htRangeRaster_2020.tif")
+    qaqc20a_ag <- raster::aggregate(qaqc20a, fact = 50, fun=median)
+    raster::plot(qaqc20a_ag,
+                 breaks=c(0,1.5,50),
+                 col=c("grey","red"))
+    
+    # Aggregate criteria 2: number of non-empty cells
+    qaqc20b <- raster::raster("CHM_noGapFill_2020.tif")
+    
+    # Make binary (1 if value, 0 if NA)
+    qaqc20b_bin <- raster::values(qaqc20b)
+    qaqc20b_bin[!is.na(qaqc20b_bin)] <- 1
+    qaqc20b_bin[is.na(qaqc20b_bin)] <- 0
+    raster::values(qaqc20b) <- qaqc20b_bin
+    
+    # Aggregate by adding non-NA values
+    qaqc20b_ag <- raster::aggregate(qaqc20b, fact = 10, fun=sum)
+    raster::plot(qaqc20b_ag,
+                 breaks=c(0,90,100),
+                 col=c("red","grey"))
+    
+    # Make binary map
+    thresh_1 <- 1.5
+    thresh_2 <- 90
+    
+    mask20 <- qaqc20a_ag
+    # Set mask values
+    mask_vals <- raster::values(mask20)
+    vals_a <- raster::values(qaqc20a_ag)
+    vals_b <- raster::values(qaqc20b_ag)
+    
+    # Bad pixels == 0
+    mask_vals[vals_a >= thresh_1 | vals_b <= thresh_2] <- 0
+    # Good pixels == 1
+    mask_vals[vals_a < thresh_1 & vals_b > thresh_2] <- 1
+    raster::values(mask20) <- mask_vals
+    
+    raster::plot(mask20)
+    raster::writeRaster(mask20, "QAQCMask_2020.tif")
+    
+    
+#### Troubleshooting: find tile ID from coordinates ####
+    
+    coords <- locator(1)
+    ID <- gridInfo[gridInfo$xmin<coords$x & gridInfo$xmax>coords$x & gridInfo$ymin<coords$y & gridInfo$ymax>coords$y,"ID"]
+    
+    gridInfo[ID,c("QAQC18_A","QAQC18_B")]    
