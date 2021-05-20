@@ -66,17 +66,6 @@
      # valGaps15to18 <- valGaps15to18[valGaps15to18$area2>=25,]
       
 
-#### Make initial plot ####
-    
-    # 2015 to 2018
-    raster::plot(dchm15to18,
-                 ext = raster::extent(valGaps))
-    raster::plot(plotShp, add=T)
-    raster::plot(valGaps15to18, col = NA, 
-                 border = "black", lwd = 1, add=T)
-    raster::plot(gaps15to18, col = NA, 
-                 border = "red", lty=2, add=T)
-    
 #### Calculate precision and recall for various threshold values ####
     
   # Try alternate circularity metric
@@ -349,97 +338,82 @@
   vals18 <- raster::values(raster::crop(chm18,plotShp))
   dens18 <- density(vals18[!is.na(vals18)])
   
+  # Monthly data from close in time
+  dsm15_50ha <- raster::raster("C:/Users/cushmank/Desktop/RaquelOrthoAligned/DEM_20150629_geo.tif")
+    # Aggregate 50 ha plot data to get close to correct resolution taking highest value
+    dsm15_50ha <- raster::aggregate(dsm15_50ha,14,fun=max)
+    
+    # Crop to plot
+    dsm15_50ha <- raster::crop(dsm15_50ha, plotShp)
+    
+    # Read in BCI DEM to get height above ground
+    dem <- raster::raster("D:/BCI_Spatial/BCI_Topo/LidarDEM_BCI.tif")
+    dem <- raster::crop(dem, plotShp)
+    
+    # Resample so both match
+    dsm15_50ha <- raster::resample(dsm15_50ha,raster::crop(chm09,plotShp))
+    dem <- raster::resample(dem,raster::crop(chm09,plotShp))
+    
+    # Subtract to get CHM
+    chm15_50ha <- dsm15_50ha-dem
+    
+    # Get density
+    vals15_50ha <- raster::values(chm15_50ha)
+    
+    # Calculate offset
+    offset_50ha <- max(vals15_50ha,na.rm=T) -max(vals15,na.rm=T)
+    vals15_50ha <- vals15_50ha - offset_50ha
+    dens15_50ha <- density(vals15_50ha[!is.na(vals15_50ha)])
+  
+  # Do sensitivity analysis to find best parameters to use
+    correctionParams <- data.frame(par1 = rep(1:10,10),
+                                   par2 = rep(1:10,each=10),
+                                   stat = NA)
+    
+    for(i in 1:nrow(correctionParams)){
+      toChange <- which((vals15-vals09)> correctionParams$par1[i] & (vals18-vals15) < (-1*correctionParams$par2[i]))
+      newVals <- vals09[toChange]
+      vals15c <- vals15; vals15c[toChange] <- newVals
+      
+      correctionParams$stat[i] <- kruskal.test(list(vals15c,vals15_50ha))$statistic
+    }
+    
+    par1 <- correctionParams[which(correctionParams$stat==min(correctionParams$stat)),"par1"]
+    par2 <- correctionParams[which(correctionParams$stat==min(correctionParams$stat)),"par2"]
+    
+    # BEST: par1 = 5 and par2 = 1
+    
+  # Island-wide data with correction
+    toChange <- which((vals15-vals09)> par1 & (vals18-vals15)< (-1*par2))
+    newVals <- vals09[toChange]
+    vals15c <- vals15; vals15c[toChange] <- newVals
+    dens15c <- density(vals15c[!is.na(vals15c)])
+    
   par(mfrow=c(1,1), mar=c(4,4,1,1))
   plot(dens15,
        xlim=c(0,50),
        main = "Canopy height distribution",
        col="red",lwd=2,
        xlab="canopy height (m)")
+  lines(dens15c, col="red", lwd=2, lty=2)
+  lines(dens15_50ha, col="red", lwd=2, lty=3)
   lines(dens09,col="black",lwd=2)
   lines(dens18,col="blue",lwd=2)
-  legend(x=0,y=0.055,
+  legend(x=30,y=0.055,
          c("2009 (lidar)","2015 (photogram.)","2018 (photogram.)"),
          col=c("black","red","blue"),
          bty="n",
-         lwd=2)
-  
-#### Sandbox: figure out good metric for correcting data ####
-  chm09i <- raster::crop(chm09,
-                         raster::extent(extent_i@xmin - 20,
-                                        extent_i@xmax + 20,
-                                        extent_i@ymin - 20,
-                                        extent_i@ymax + 20))
-  chm15i <- raster::crop(chm15,
-                         raster::extent(extent_i@xmin - 20,
-                                        extent_i@xmax + 20,
-                                        extent_i@ymin - 20,
-                                        extent_i@ymax + 20))
-  chm18i <- raster::crop(chm18,
-                         raster::extent(extent_i@xmin - 20,
-                                        extent_i@xmax + 20,
-                                        extent_i@ymin - 20,
-                                        extent_i@ymax + 20))
-
-  # try some thresholds
-  vals09i <- raster::values(chm09i)
-  vals15i <- raster::values(chm15i)
-  vals18i <- raster::values(chm18i)
-  
-  # WORKS toChange <- which(vals09i<35 & (vals15i-vals09i)>5 & vals18i<35)
-  toChange <- which((vals15i-vals09i)>3 & (vals18i-vals15i)< -1)
-  newVals <- vals09i[toChange]
-  chm15c <- chm15i; raster::values(chm15c)[toChange] <- newVals
-                         
-  # plot
-  par(mfrow=c(2,3), mar=c(1,1,1,1), oma=c(0,0,1,6))
-  raster::plot(raster::crop(chm09,
-                            raster::extent(extent_i@xmin - 20,
-                                           extent_i@xmax + 20,
-                                           extent_i@ymin - 20,
-                                           extent_i@ymax + 20)),
-               breaks=colBrks,
-               col=rev(terrain.colors(length(colBrks))),
-               bty="n",box=F,xaxt="n",yaxt="n",legend=F)
-  raster::plot(missingGaps[i,], border="red",add=T)
-  
-  raster::plot(raster::crop(chm15,
-                            raster::extent(extent_i@xmin - 20,
-                                           extent_i@xmax + 20,
-                                           extent_i@ymin - 20,
-                                           extent_i@ymax + 20)),
-               breaks=colBrks,
-               col=rev(terrain.colors(length(colBrks))),
-               bty="n",box=F,xaxt="n",yaxt="n",legend=F)
-  raster::plot(missingGaps[i,], border="red",add=T)
-  
-  raster::plot(raster::crop(chm18,
-                            raster::extent(extent_i@xmin - 20,
-                                           extent_i@xmax + 20,
-                                           extent_i@ymin - 20,
-                                           extent_i@ymax + 20)),
-               breaks=colBrks,
-               col=rev(terrain.colors(length(colBrks))),
-               bty="n",box=F,xaxt="n",yaxt="n")
-  raster::plot(missingGaps[i,], border="red",add=T)
-  
-  raster::plot(chm15c,
-               breaks=colBrks,
-               col=rev(terrain.colors(length(colBrks))),
-               bty="n",box=F,xaxt="n",yaxt="n")
-  raster::plot(missingGaps[i,], border="red",add=T)
-  
-  raster::plot(chm18i-chm15c,
-               breaks=c(-50,-5,seq(-3,45,2)),
-               col=c(viridis::viridis(30)),
-               bty="n",box=F,xaxt="n",yaxt="n")
-  raster::plot(missingGaps[i,], border="red",add=T)
-  
-  raster::plot(chm18i-chm15c,
-               breaks=c(-50,-8,seq(-3,45,2)),
-               col=c("red",viridis::viridis(30)),
-               bty="n",box=F,xaxt="n",yaxt="n")
-  raster::plot(missingGaps[i,], border="red",add=T)
-  
+         lwd=2,
+         cex=0.9)
+  legend(x=0,y=0.055,
+         c("Island-wide: original",
+           "Island-wide: proposed correction",
+           "50 ha plot data"),
+         col="red",
+         lty=c(1,2,3),
+         bty="n",
+         lwd=2,
+         cex=0.9)
   
 #### Correct 50 ha plot and test against Raquel's data ####
   
@@ -455,7 +429,7 @@
   vals18p <- raster::values(chm18p)
   
   
-  toChange <- which((vals15p-vals09p) > 3 & (vals18p-vals15p) < -1)
+  toChange <- which((vals15p-vals09p) > 5 & (vals18p-vals15p) < -1)
   newVals <- vals09p[toChange]
   chm15pc <- chm15p
   raster::values(chm15pc)[toChange] <- newVals
@@ -554,15 +528,12 @@
       }
 
       
-    # Merge my data with visual check results
+    # Merge my data with my previous visual check results
       
       valNew <- rgdal::readOGR("toCheckKC_2/toCheckKC_2.shp")
       plotGaps$vslChck <- NA
       for(i in 1:nrow(plotGaps@data)){
-        vslChck <- valNew[valNew$X1==plotGaps@data$X1[i],"vslChck"]
-        if(length(vslChck)==1){
-          plotGaps@data$vslChck[i] <- vslChck$vslChck
-        }
+        plotGaps$vslChck[i] <- sp::over(plotGaps[i,], valNew)$vslChck
       }
       
     # Which of Raquel's gaps do I see?
@@ -583,13 +554,13 @@
       plotGaps$observedAll[j] <- rgeos::gIntersects(plotGaps[j,], valGaps15to18)
     }
     
-    # What about if you ignore Raquel's size threshold?
+    # What about if you includ Raquel's size threshold?
     plotGaps$observedArea <- NA
     for(j in 1:length(plotGaps)){
       plotGaps$observedArea[j] <- rgeos::gIntersects(plotGaps[j,], valGapsSz)
     }
     
-    # What about if you ignore Raquel's ht drop threshold?
+    # What about if you include Raquel's ht drop threshold?
     plotGaps$observedHt <- NA
     for(j in 1:length(plotGaps)){
       plotGaps$observedHt[j] <- rgeos::gIntersects(plotGaps[j,], valGapsHt)
@@ -597,50 +568,13 @@
 
 #### Make shapefiles of gaps to check ####
   
-    # Proportion of gaps recalled
-    length(valGaps2[valGaps2$observed==T,])/length(valGaps2)
-    
-    # Proportion of gap area (based on T/F) recalled
-    sum(valGaps2$area_m2[valGaps2$observed==T])/sum(valGaps2$area_m2)
-    
-    # Look at classification of checked gaps
-    hist(valGaps2@data[valGaps2$observed==F,"vslChck"],breaks=seq(0.5,10.5,1))
-    hist(toCheckKC@data[toCheckKC$observed==F,"vslChck"],
-         breaks=seq(0.5,10.5,1))
-    
-    # what proportion of my gap area is false positive? just 3% now
-    sum(toCheckKC@data[toCheckKC$observed==F & toCheckKC$vslChck %in% c(2,10),"area"])/sum(toCheckKC@data[,"area"])
-    
-    # what proportion of my gap area is in decaying trees? also about 3%
-    sum(toCheckKC@data[toCheckKC$observed==F & toCheckKC$vslChck %in% c(7,9),"area"])/sum(toCheckKC@data[,"area"])
-    
-    # what proportion of my gap area is in other missed trees? 1%
-    sum(toCheckKC@data[toCheckKC$observed==F & toCheckKC$vslChck %in% c(1),"area"])/sum(toCheckKC@data[,"area"])
-    
-    # what proportion is due to mismatch in space, size, or time? 4%
-    sum(toCheckKC@data[toCheckKC$observed==F & toCheckKC$vslChck %in% c(5,6,8),"area"])/sum(toCheckKC@data[,"area"])
-    
-
-    # Missed gaps tend to be smaller and shorter than all gaps
-    mean(valGaps2@data[valGaps2$observed==F & valGaps2$vslChck==1,"area_m2"])
-    mean(valGaps2@data[valGaps2$observed==T,"area_m2"])
-    mean(valGaps2@data[valGaps2$observed==F & valGaps2$vslChck==1,"htDrop"])
-    mean(valGaps2@data[valGaps2$observed==T,"htDrop"])
-    
-    toCheckRaquel <- valGaps2
-    
-    # Add field to be filled in for type of error
-    toCheckKC$visualCheck <- 0
-    toCheckRaquel$visualCheck <- 0
-    
     # Write shapefiles
     plotGaps@data$vslChck[is.na(plotGaps@data$vslChck)] <- 0
     rgdal::writeOGR(plotGaps,
-                    dsn = "toCheckKC_2",
-                    layer = "toCheckKC_2", 
+                    dsn = "toCheckKC_final",
+                    layer = "toCheckKC_final", 
                     driver = "ESRI Shapefile")
 
-    
     rgdal::writeOGR(toCheckRaquel,
                     dsn = "toCheckRaquel",
                     layer = "toCheckRaquel", 
@@ -759,6 +693,9 @@
            cex=0.8)
 
 #### Plot errors -- island-wide  data ####
+    
+    plotGaps <- rgdal::readOGR("toCheckKC_final/toCheckKC_final.shp")
+      
     par(mar=c(4,4,1,1))
     
     # Observed with ht and area agreement
