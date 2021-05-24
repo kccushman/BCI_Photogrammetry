@@ -695,11 +695,38 @@
 #### Plot errors -- island-wide  data ####
     
     plotGaps <- rgdal::readOGR("toCheckKC_final/toCheckKC_final.shp")
+    
+    plotGaps@data$perimeter <- NA
+    for(i in 1:length(plotGaps)){
+
+      perims_j <- c()
+      for(j in 1:length(plotGaps[i,]@polygons[[1]]@Polygons)){
+        
+        coordsj <- plotGaps[i,]@polygons[[1]]@Polygons[[j]]@coords
+        
+        lengths_k <- c()
+        for(k in 2:dim(coordsj)[1]){
+          lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
+          
+        }
+        perims_j[j] <- sum(lengths_k)
+        
+        if(plotGaps[i,]@polygons[[1]]@Polygons[[j]]@hole==T){
+          perims_j[j] <- 0
+        }
+        
+      }
+      plotGaps[i,"perimeter"] <- sum(perims_j)
       
+    }
+    
+    
+    plotGaps$ratioCirc <- 4*pi*plotGaps$area/(plotGaps$perimeter^2)
+    
     par(mar=c(4,4,1,1))
     
     # Observed with ht and area agreement
-    plot(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==T & plotGaps$observedHt==T,],
+    plot(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T,],
          ylim=c(0,0.7),
          pch=20,
          col=adjustcolor("grey",0.6),
@@ -710,45 +737,45 @@
     
     # BLUE: observed by Raquel's data when contraints are not imposed
     # Observed by Raquel's data are less than 25m2
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==F & plotGaps$observedHt==T,],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==F & plotGaps$obsrvdH==T,],
            pch=20,
            col=adjustcolor("lightblue",0.6))
     # Observed by Raquel's data have ht drop less than 5 m
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==T & plotGaps$observedHt==F & !(plotGaps$vslChck==9),],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==F & !(plotGaps$vslChck==9),],
            pch=20,
            col=adjustcolor("darkblue",0.6))
     # Observed by Raquel's data are less than 25m2 AND have ht drop less than 5m (NONE)
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==F & plotGaps$observedHt==F & !(plotGaps$vslChck==9),],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==F & plotGaps$obsrvdH==F & !(plotGaps$vslChck==9),],
            pch=20,
            col=adjustcolor("blue",0.5))
     
     # RED: false positive in my data
     # Total false positive
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==2,],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==2,],
            pch=20,
            col=adjustcolor("red",0.6))
-    # Overestimation of 
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==10,],
+    # Overestimation of gap area
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==10,],
            pch=20,
            col=adjustcolor("brown1",0.6))
     
     # PURPLE: mismatch in space/time
     # Spatial alignment mismatch
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==5,],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==5,],
            pch=20,
            col=adjustcolor("purple",0.6))
     # Temporal mismatch (i.e. I see beginning of slowly dying tree and Raquel records the later fall)
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck %in% c(6,8),],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(6,8),],
            pch=20,
            col=adjustcolor("violet",0.6))
     
     # GREEN: my data are correct
     # Unclear why Raquel misses this gap
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==1,],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==1,],
            pch=20,
            col=adjustcolor("green",0.6))
     # Decaying tree: total miss
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==7,],
+    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==7,],
            pch=20,
            col=adjustcolor("limegreen",0.6))
     # Decaying tree: partial miss
