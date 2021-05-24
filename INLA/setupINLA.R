@@ -9,7 +9,7 @@ library(INLA)
     gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
     gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
     
-  # Canopy height change rasters where only possible gap values (> 5 m initially) are included  
+  # Canopy height change rasters where only likely gap values (> 10 m initially) are included  
     d15to18tall <- raster::raster("dCHM15to18tall_tin.tif")
     d18to20tall <- raster::raster("dCHM18to20tall_tin.tif")
     
@@ -63,14 +63,7 @@ library(INLA)
     # resample to same extent as gap rasters (adds NA area to edges)
     drainRaster <- raster::resample(drainRaster, gaps18to20)
   
-  # High rain frequency rasters
-    hiRain15to18 <- raster::raster("BCI_hiRainObs15to18.tif")
-    hiRain18to20 <- raster::raster("BCI_hiRainObs18to20.tif")
-    # resample to high resolution of gap raster
-    hiRain15to18 <- raster::resample(hiRain15to18, gaps18to20)
-    hiRain18to20 <- raster::resample(hiRain18to20, gaps18to20)
-    
-    
+
 #### Create SpatialPolygonsDataFrame across BCI with proper order for R-INLA ####
     
     # Define cell size (in m)
@@ -91,8 +84,8 @@ library(INLA)
     bci.poly <- as(bci.grid, "SpatialPolygons")
     
     # Convert gap polygons to points
-    gapsPts15to18 <- sp::SpatialPoints(coords = gaps15to18sp@data[gaps15to18sp$use==T,c("X1","X2")])
-    gapsPts18to20 <- sp::SpatialPoints(coords = gaps18to20sp@data[gaps18to20sp$use==T,c("X1","X2")])
+    gapsPts15to18 <- sp::SpatialPoints(coords = gaps15to18sp@data[,c("X1","X2")])
+    gapsPts18to20 <- sp::SpatialPoints(coords = gaps18to20sp@data[,c("X1","X2")])
     
     # 2015 - 2018
       #Number of gap observations per cell
@@ -145,7 +138,10 @@ library(INLA)
         gapCrop <- raster::crop(gapLayer, raster::extent(gapPoly))
         gapCropNew <- raster::values(gapCrop)
         gapCropNew[!is.na(gapCropNew)] <- 1
+          # omit values that are NA in the base (tall) layer (i.e. don't count gaps that are initially < 10 m)
+          gapCropNew[is.na(baseCropNew)] <- NA
         raster::values(gapCrop) <- gapCropNew
+          
         
         resampleBase <- raster::aggregate(baseCrop, cellSz, fun = sum)
         resampleGap <- raster::aggregate(gapCrop, cellSz, fun = sum)
@@ -189,7 +185,6 @@ library(INLA)
       
       bci.gaps18$gapProp <- bci.gaps18$gapProp/nYr15to18
       bci.gaps20$gapProp <- bci.gaps20$gapProp/nYr18to20
-      
       
 #### Assign forest age, soil parent material, and soil form to each cell ####
 
@@ -290,25 +285,6 @@ library(INLA)
       bci.gaps20$drainMean <- drainQuant$meanVal
       bci.gaps20$drainMed <- drainQuant$medVal
 
-#### Quantify the frequency of high rainfall events per cell ####
-  rainQuant15ot18 <- quantTopo(gapPoly = bci.gaps18,
-                               topoLayer = hiRain15to18,
-                               cellSz = cellSize,
-                               nX = nCellX,
-                               nY = nCellY) 
-      
-    bci.gaps18$rainMean <- rainQuant15ot18$meanVal
-    bci.gaps18$rainMed <- rainQuant15ot18$medVal
-    
-  rainQuant18to20 <- quantTopo(gapPoly = bci.gaps20,
-                               topoLayer = hiRain18to20,
-                               cellSz = cellSize,
-                               nX = nCellX,
-                               nY = nCellY) 
-    
-    bci.gaps20$rainMean <- rainQuant18to20$meanVal
-    bci.gaps20$rainMed <- rainQuant18to20$medVal  
-    
 #### Calculate curvature and slope across a range of smoothing values ####
 
 # Vector of different sigmas quantified    
@@ -377,10 +353,20 @@ library(INLA)
     bci.gapsAll[!is.na(bci.gapsAll$areaObs) & bci.gapsAll$areaObs<(0.5*cellSize*cellSize/10000),"gapPropCens"] <- NA
     
     # How many observations are left?
-    nrow(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),]) # 16276 observations
+    nrow(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),]) # 17059 observations
+    
+    # Remove median values from topographic covariates (keep mean)
+    medCols <- grepl(pattern="Med",names(bci.gapsAll))
+    bci.gapsAll <- bci.gapsAll[,!medCols]
+    
+    # Square topographic covariates (just mean values)
+    for(i in 8:32){
+      bci.gapsAll$new <-bci.gapsAll[,i]^2
+      names(bci.gapsAll)[names(bci.gapsAll)=="new"] <- paste0(names(bci.gapsAll)[i],"_sq")
+    }
     
     # Scale topographic covariates
-    for(i in 9:60){
+    for(i in c(8:32,35:59)){
       bci.gapsAll$new <- NA
       bci.gapsAll[!is.na(bci.gapsAll$age),"new"] <- scale(bci.gapsAll[!is.na(bci.gapsAll$age),i])
       names(bci.gapsAll)[names(bci.gapsAll)=="new"] <- paste0("Sc_",names(bci.gapsAll)[i])
@@ -418,7 +404,7 @@ library(INLA)
       
       # For initial model comparison, use only fixed effects
       
-      fixed_i <- paste0("Sc_curvMean_",topoScaleResults$curvScale[i]," + I(Sc_curvMean_",topoScaleResults$curvScale[i],"^2) + Sc_slopeMean_",topoScaleResults$slopeScale[i]," + I(Sc_slopeMean_",topoScaleResults$slopeScale[i],"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+      fixed_i <- paste0("Sc_curvMean_",topoScaleResults$curvScale[i]," + Sc_curvMean_",topoScaleResults$curvScale[i],"_sq + Sc_slopeMean_",topoScaleResults$slopeScale[i]," + Sc_slopeMean_",topoScaleResults$slopeScale[i],"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
       form_i <- formula(paste0("gapPropCens ~ ",fixed_i))
       #random_i <- "f(ID, model = \"matern2d\", nrow = nCellY, ncol = nCellX)"
       #form_i <- formula(paste0("gapPropCens ~ ",fixed_i," + ",random_i))
