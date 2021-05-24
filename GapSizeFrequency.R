@@ -136,12 +136,12 @@
   source("sizedistpart3forRaquel.R")
   
   # find max gap size
-  mxSz <- quantile(c(gaps15to18sp[gaps15to18sp$use==T,]$area,
-              gaps18to20sp[gaps18to20sp$use==T,]$area),0.999)
+  mxSz <- quantile(c(gaps15to18sp$area,
+              gaps18to20sp$area),1)
   
   
-  allData15to18 <- data.frame(dbh = gaps15to18sp[gaps15to18sp$use==T,]$area,
-                              quadnum = gaps15to18sp[gaps15to18sp$use==T,]$block)
+  allData15to18 <- data.frame(dbh = gaps15to18sp$area,
+                              quadnum = gaps15to18sp$block)
   
   i <- 1
   datadir <- "SizeFreqResults/"
@@ -156,8 +156,8 @@
                                         ddiv=seq(24.5,(mxSz + 0.5),by=1))
   
  
-  allData18to20 <- data.frame(dbh = gaps18to20sp[gaps18to20sp$use==T,]$area,
-                              quadnum = gaps18to20sp[gaps18to20sp$use==T,]$block)
+  allData18to20 <- data.frame(dbh = gaps18to20sp$area,
+                              quadnum = gaps18to20sp$block)
   i <- 1
   datadir <- "SizeFreqResults/"
   site <- "BCI"
@@ -212,8 +212,8 @@
   # Make plot of data and best-fit lines
   
   # find max gap size
-  mxSz <- max(c(gaps15to18sp[gaps15to18sp$use==T,]$area,
-                gaps18to20sp[gaps18to20sp$use==T,]$area))
+  mxSz <- max(c(gaps15to18sp$area,
+                gaps18to20sp$area))
   
   # Divide intervals for plotting
   gapAreaRange <- c(25,mxSz)
@@ -236,11 +236,11 @@
     return(nArea)
   }
   
-  gapSizes15to18 <- makeGapVectors(gapAreaVector = gaps15to18sp[gaps15to18sp$use==T,]$area,
+  gapSizes15to18 <- makeGapVectors(gapAreaVector = gaps15to18sp$area,
                                    minarea = brksMins,
                                    maxarea = brksMaxs)/areaSampled15to18tall
   
-  gapSizes18to20 <- makeGapVectors(gapAreaVector = gaps18to20sp[gaps18to20sp$use==T,]$area,
+  gapSizes18to20 <- makeGapVectors(gapAreaVector = gaps18to20sp$area,
                                    minarea = brksMins,
                                    maxarea = brksMaxs)/areaSampled18to20tall
   
