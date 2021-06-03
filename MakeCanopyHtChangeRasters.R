@@ -610,16 +610,13 @@
 #### Figure 1: area sampled and gaps in each interval ####
 
 # Load gap rasters
-gaps15to17 <- raster::raster("newGaps15to17_tin.tif")
-gaps17to18 <- raster::raster("newGaps17to18_tin.tif")
-gaps18to19 <- raster::raster("newGaps18to19_tin.tif")
-gaps19to20 <- raster::raster("newGaps19to20_tin.tif")
+gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
+gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
+
 
 # Load rasters    
-d15to17 <- raster::raster("dCHM15to17_tin.tif")     
-d17to18 <- raster::raster("dCHM17to18_tin.tif")     
-d18to19 <- raster::raster("dCHM18to19_tin.tif")      
-d19to20 <- raster::raster("dCHM19to20_tin.tif")     
+d15to18 <- raster::raster("dCHM15to18_tin.tif")     
+d18to20 <- raster::raster("dCHM18to20_tin.tif")      
 
 buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
 buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")  
@@ -631,43 +628,32 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
     return(plotRaster)
   }  
    
-  plot15to17 <- makePlotRaster(d15to17, buffer)  
-  plot17to18 <- makePlotRaster(d17to18, buffer)  
-  plot18to19 <- makePlotRaster(d18to19, buffer)  
-  plot19to20 <- makePlotRaster(d19to20, buffer)  
-  
+  plot15to18 <- makePlotRaster(d15to18, buffer)  
+  plot18to20 <- makePlotRaster(d18to20, buffer)  
 
 
-jpeg("Figure2.JPG", width=2000, height = 2500)
-  par(mfrow=c(2,2))
-    raster::plot(plot15to17,
+
+jpeg("Figure2.JPG", width=2000, height = 1500)
+  par(mfrow=c(1,2))
+    raster::plot(plot15to18,
                  bty="n", box=F,
                  xaxt = "n", yaxt= "n",
                  breaks = c(-1001,-999,1000),
                  col = c("lightgrey","white"),
-                 main = "2015 - 2017")
-    arrows(x0 =623500, x1=624500, y0=1010000, y1=1010000,
+                 main = "2015 - 2018")
+    arrows(x0 =624500, x1=625500, y0=1010000, y1=1010000,
            code = 3, angle = 90, length=0.1)
     raster::plot(buffer,add=T)
-    raster::plot(gaps15to17, col = "red", add=T)
+    raster::plot(gaps15to18, col = "red", add=T)
     
-    raster::plot(plot17to18,
+    raster::plot(plot18to20,
                  bty="n", box=F,
                  xaxt = "n", yaxt= "n",
                  breaks = c(-1001,-999,1000),
                  col = c("lightgrey","white"),
-                 main = "2017 - 2018")
+                 main = "2018 - 2020")
     raster::plot(buffer,add=T)
-    raster::plot(gaps17to18, col = "red", add=T)
-    
-    raster::plot(plot18to19,
-                 bty="n", box=F,
-                 xaxt = "n", yaxt= "n",
-                 breaks = c(-1001,-999,1000),
-                 col = c("lightgrey","white"),
-                 main = "2018 - 2019")
-    raster::plot(buffer,add=T)
-    raster::plot(gaps18to19, col = "red", add=T)
+    raster::plot(gaps18to20, col = "red", add=T)
     
     raster::plot(plot19to20,
                  bty="n", box=F,

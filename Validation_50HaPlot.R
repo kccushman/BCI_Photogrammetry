@@ -325,9 +325,7 @@
                   dsn = "GapsToPlot",
                   layer = "GapsToPlot", 
                   driver = "ESRI Shapefile")
-      
 
-  
 #### plot height value histograms for the 50ha plot ####
   vals09 <- raster::values(raster::crop(chm09,plotShp))
   dens09 <- density(vals09[!is.na(vals09)])

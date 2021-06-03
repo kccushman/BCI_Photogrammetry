@@ -177,7 +177,7 @@
   szFreq18to20 <- read.table("SizeFreqResults/gaps18to20sizedistbsfit.txt", header = T)
   
   
-  # What distribution has the highest log likelihood?
+  # What distribution has the lowest -log likelihood?
   
     # 2015 to 2017
     round(szFreq15to18$weibloglike,0)
@@ -201,12 +201,12 @@
     round(szFreq18to20$powcatadjr2,3)
     round(szFreq18to20$expcatadjr2,3)
   
-  # Exponential has highest likelihood in both intervals
-  round(szFreq15to18[,c("exppar1est","exppar1lo1","exppar1hi1")],4)
-  round(szFreq18to20[,c("exppar1est","exppar1lo1","exppar1hi1")],4)
+  # Weibull has the lowest -log likelihood in both intervals
+  round(szFreq15to18[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],4)
+  round(szFreq18to20[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],4)
   
-  round(szFreq15to18[,c("exppar2est","exppar2lo1","exppar2hi1")],2)
-  round(szFreq18to20[,c("exppar2est","exppar2lo1","exppar2hi1")],2)
+  round(szFreq15to18[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
+  round(szFreq18to20[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
   
 
   # Make plot of data and best-fit lines
@@ -258,7 +258,7 @@
                                  scale = szFreqResults$weibpar2est))
     yValsWeib <- scaleWeib*dweibull(xVals,
                                     shape= szFreqResults$weibpar1est,
-                                    scale = szFreqResults$weibpar2est)*nrow(gapSp[gapSp$use==T,])
+                                    scale = szFreqResults$weibpar2est)*nrow(gapSp)
     return(yValsWeib)
   }
   
@@ -268,7 +268,7 @@
     scaleExp <- 1/(pexp(mxSz,rate = szFreqResults$exppar1est) -
                      pexp(25, rate = szFreqResults$exppar1est))
     
-    yValsExp <- scaleExp*dexp(xVals, rate = szFreqResults$exppar1est, log=F)*nrow(gapSp[gapSp$use==T,])
+    yValsExp <- scaleExp*dexp(xVals, rate = szFreqResults$exppar1est, log=F)*nrow(gapSp)
     
     return(yValsExp)
   }

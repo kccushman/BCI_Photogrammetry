@@ -439,7 +439,7 @@ library(INLA)
       
       plotMin <- min(meanQuad_DIC)
       plotMax <- max(meanQuad_DIC)
-      plotBreaks <- c(seq(0,30,1),plotMax)
+      plotBreaks <- seq(0,plotMax,1)
     
       library(plot.matrix)
       par(mar=c(4,5,2,8))
@@ -451,49 +451,42 @@ library(INLA)
       resultsMeanQuad[which(resultsMeanQuad$DIC==min(resultsMeanQuad$DIC)),]
 
 #### Using best scale result, do initial variable selection without Matern spatial autocorrelation term ####
-  curvScale <- 9
-  slopeScale <- 15
+  curvScale <- 8
+  slopeScale <- 16
   
-  fixed_ref <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_ref <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_ref <- formula(paste0("gapPropCens ~ ",fixed_ref))
   
-  fixed_a <- paste0("I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_a <-  paste0("Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_a <- formula(paste0("gapPropCens ~ ",fixed_a))
   
-  fixed_b <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_b <-  paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_b <- formula(paste0("gapPropCens ~ ",fixed_b))
   
-  fixed_c <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_c <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_c <- formula(paste0("gapPropCens ~ ",fixed_c))
   
-  fixed_d <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_d <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_d <- formula(paste0("gapPropCens ~ ",fixed_d))
   
-  fixed_e <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_e <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_e <- formula(paste0("gapPropCens ~ ",fixed_e))
   
-  fixed_f <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_f <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + soilParent + soilForm + age + Year")
   form_f <- formula(paste0("gapPropCens ~ ",fixed_f))
   
-  fixed_g <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_g <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilForm + age + Year")
   form_g <- formula(paste0("gapPropCens ~ ",fixed_g))
   
-  fixed_h <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_h <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + age + Year")
   form_h <- formula(paste0("gapPropCens ~ ",fixed_h))
   
-  fixed_i <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilForm + age + Year")
+  fixed_i <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + Year")
   form_i <- formula(paste0("gapPropCens ~ ",fixed_i))
-  
-  fixed_j <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + age + Year")
-  form_j <- formula(paste0("gapPropCens ~ ",fixed_j))
-  
-  fixed_k <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_slopeMean_",slopeScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent  + Year")
-  form_k <- formula(paste0("gapPropCens ~ ",fixed_k))
 
-
-  form_list1 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h, form_i, form_j, form_k)
+  form_list1 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h, form_i)
   
-  step1_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h","i","j","k"),
+  step1_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h","i"),
                                margLik = NA,
                                DIC = NA)
   
@@ -519,42 +512,37 @@ library(INLA)
   
 # STEP 2
   
-  fixed_ref <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_ref <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_ref <- formula(paste0("gapPropCens ~ ",fixed_ref))
   
-  fixed_a <-  paste0("I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_a <-  paste0("Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_a <- formula(paste0("gapPropCens ~ ",fixed_a))
   
-  fixed_b <-  paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_b <-  paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_b <- formula(paste0("gapPropCens ~ ",fixed_b))
   
-  fixed_c <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_c <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_c <- formula(paste0("gapPropCens ~ ",fixed_c))
   
-  fixed_d <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_d <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_d <- formula(paste0("gapPropCens ~ ",fixed_d))
   
-  fixed_e <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_e <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + soilParent + soilForm + age + Year")
   form_e <- formula(paste0("gapPropCens ~ ",fixed_e))
   
-  fixed_f <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + I(Sc_rainMean^2) + soilParent + soilForm + age + Year")
+  fixed_f <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilForm + age + Year")
   form_f <- formula(paste0("gapPropCens ~ ",fixed_f))
   
-  fixed_g <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_g <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + age + Year")
   form_g <- formula(paste0("gapPropCens ~ ",fixed_g))
   
-  fixed_h <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilForm + age + Year")
+  fixed_h <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + Year")
   form_h <- formula(paste0("gapPropCens ~ ",fixed_h))
+
   
-  fixed_i <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + age + Year")
-  form_i <- formula(paste0("gapPropCens ~ ",fixed_i))
+  form_list2 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h)
   
-  fixed_j <-  paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + I(Sc_rainMean^2) + soilParent + soilForm + Year")
-  form_j <- formula(paste0("gapPropCens ~ ",fixed_j))
-  
-  form_list2 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h, form_i, form_j)
-  
-  step2_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h","i","j"),
+  step2_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h"),
                               margLik = NA,
                               DIC = NA)
   
@@ -577,66 +565,12 @@ library(INLA)
   step2_results$dDIC <- step2_results$DIC - min(step2_results$DIC,na.rm=T)
   step2_results <- step2_results[order(step2_results$dDIC),]
   
-  # STEP 3
+
   
-  fixed_ref <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
-  form_ref <- formula(paste0("gapPropCens ~ ",fixed_ref))
-  
-  fixed_a <- paste0("I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
-  form_a <- formula(paste0("gapPropCens ~ ",fixed_a))
-  
-  fixed_b <- paste0("Sc_curvMean_",curvScale,"+ Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
-  form_b <- formula(paste0("gapPropCens ~ ",fixed_b))
-  
-  fixed_c <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
-  form_c <- formula(paste0("gapPropCens ~ ",fixed_c))
-  
-  fixed_d <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
-  form_d <- formula(paste0("gapPropCens ~ ",fixed_d))
-  
-  fixed_e <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_rainMean + soilParent + soilForm + age + Year")
-  form_e <- formula(paste0("gapPropCens ~ ",fixed_e))
-  
-  fixed_f <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + soilParent + soilForm + age + Year")
-  form_f <- formula(paste0("gapPropCens ~ ",fixed_f))
-  
-  fixed_g <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilForm + age + Year")
-  form_g <- formula(paste0("gapPropCens ~ ",fixed_g))
-  
-  fixed_h <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + age + Year")
-  form_h <- formula(paste0("gapPropCens ~ ",fixed_h))
-  
-  fixed_i <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + Year")
-  form_i <- formula(paste0("gapPropCens ~ ",fixed_i))
-  
-  form_list3 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h, form_i)
-  
-  step3_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h","i"),
-                              margLik = NA,
-                              DIC = NA)
-  
-  for(i in 1:nrow(step3_results)){
-    
-    tryCatch(model_i <- inla(form_list3[[i]],
-                             family = "beta",
-                             data = bci.gapsAll,
-                             control.compute = list(dic = TRUE),
-                             control.family = list(beta.censor.value = cens),
-                             verbose = F),
-             error = function(e) {print(paste("iteration",i,"failed"))})
-    
-    #summary(model_i)
-    step3_results$margLik[i] <- model_i$mlik[2]
-    step3_results$DIC[i] <- model_i$dic$dic
-    print(i)
-  }
-  
-  step3_results$dDIC <- step3_results$DIC - min(step3_results$DIC,na.rm=T)
-  step3_results <- step3_results[order(step3_results$dDIC),]
   
 #### Using best scale result, do final variable selection with Matern spatial autocorrelation term ####
-  curvScale <- 9
-  slopeScale <- 15
+  curvScale <- 8
+  slopeScale <- 16
   
   # Make an ID value for each cell
   bci.gapsAll$Order <- 1:nrow(bci.gapsAll)
@@ -654,43 +588,42 @@ library(INLA)
   bci.gapsAll_Order <- bci.gapsAll[newOrder,]
   bci.gapsAll_Order$ID <- 1:nrow(bci.gapsAll_Order)
   
-  # STEP 1
+  # Define random effects matrix
   random_mat <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
   
-  fixed_ref <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  # STEP 1
+
+  fixed_ref <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_ref <- formula(paste0("gapPropCens ~ ",fixed_ref," + ",random_mat))
   
-  fixed_a <- paste0("I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_a <- paste0("Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_a <- formula(paste0("gapPropCens ~ ",fixed_a," + ",random_mat))
   
-  fixed_b <- paste0("Sc_curvMean_",curvScale,"+ Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_b <-  paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_b <- formula(paste0("gapPropCens ~ ",fixed_b," + ",random_mat))
   
-  fixed_c <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_c <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_c <- formula(paste0("gapPropCens ~ ",fixed_c," + ",random_mat))
   
-  fixed_d <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_d <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_d <- formula(paste0("gapPropCens ~ ",fixed_d," + ",random_mat))
   
-  fixed_e <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_e <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + soilParent + soilForm + age + Year")
   form_e <- formula(paste0("gapPropCens ~ ",fixed_e," + ",random_mat))
   
-  fixed_f <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + soilParent + soilForm + age + Year")
+  fixed_f <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilForm + age + Year")
   form_f <- formula(paste0("gapPropCens ~ ",fixed_f," + ",random_mat))
   
-  fixed_g <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilForm + age + Year")
+  fixed_g <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + age + Year")
   form_g <- formula(paste0("gapPropCens ~ ",fixed_g," + ",random_mat))
   
-  fixed_h <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + age + Year")
+  fixed_h <-  paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean + Sc_drainMean_sq + soilParent + soilForm + Year")
   form_h <- formula(paste0("gapPropCens ~ ",fixed_h," + ",random_mat))
   
-  fixed_i <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_drainMean + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + Year")
-  form_i <- formula(paste0("gapPropCens ~ ",fixed_i," + ",random_mat))
   
+  form_list1 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h)
   
-  form_list1 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h, form_i)
-  
-  step1b_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h","i"),
+  step1b_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h"),
                               margLik = NA,
                               DIC = NA)
   
@@ -716,36 +649,33 @@ library(INLA)
   
   # STEP 2
   
-  fixed_ref <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_ref <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_ref <- formula(paste0("gapPropCens ~ ",fixed_ref," + ",random_mat))
   
-  fixed_a <- paste0("I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_a <- paste0("Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_a <- formula(paste0("gapPropCens ~ ",fixed_a," + ",random_mat))
   
-  fixed_b <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_b <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_b <- formula(paste0("gapPropCens ~ ",fixed_b," + ",random_mat))
   
-  fixed_c <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_c <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   form_c <- formula(paste0("gapPropCens ~ ",fixed_c," + ",random_mat))
   
-  fixed_d <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_rainMean + soilParent + soilForm + age + Year")
+  fixed_d <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + soilParent + soilForm + age + Year")
   form_d <- formula(paste0("gapPropCens ~ ",fixed_d," + ",random_mat))
   
-  fixed_e <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + soilParent + soilForm + age + Year")
+  fixed_e <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilForm + age + Year")
   form_e <- formula(paste0("gapPropCens ~ ",fixed_e," + ",random_mat))
   
-  fixed_f <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilForm + age + Year")
+  fixed_f <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + age + Year")
   form_f <- formula(paste0("gapPropCens ~ ",fixed_f," + ",random_mat))
   
-  fixed_g <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + age + Year")
+  fixed_g <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + soilForm + Year")
   form_g <- formula(paste0("gapPropCens ~ ",fixed_g," + ",random_mat))
   
-  fixed_h <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm  + Year")
-  form_h <- formula(paste0("gapPropCens ~ ",fixed_h," + ",random_mat))
+  form_list2 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g)
   
-  form_list2 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g, form_h)
-  
-  step2b_results <- data.frame(model = c("ref","a","b","c","d","e","f","g","h"),
+  step2b_results <- data.frame(model = c("ref","a","b","c","d","e","f","g"),
                               margLik = NA,
                               DIC = NA)
   
@@ -768,57 +698,7 @@ library(INLA)
   step2b_results$dDIC <- step2b_results$DIC - min(step2b_results$DIC,na.rm=T)
   step2b_results <- step2b_results[order(step2b_results$dDIC),]
   
-  # STEP 3
-  
-  fixed_ref <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm  + Year")
-  form_ref <- formula(paste0("gapPropCens ~ ",fixed_ref," + ",random_mat))
-  
-  fixed_a <- paste0("I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm  + Year")
-  form_a <- formula(paste0("gapPropCens ~ ",fixed_a," + ",random_mat))
-  
-  fixed_b <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm  + Year")
-  form_b <- formula(paste0("gapPropCens ~ ",fixed_b," + ",random_mat))
-  
-  fixed_c <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm  + Year")
-  form_c <- formula(paste0("gapPropCens ~ ",fixed_c," + ",random_mat))
-  
-  fixed_d <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + Sc_rainMean + soilParent + soilForm  + Year")
-  form_d <- formula(paste0("gapPropCens ~ ",fixed_d," + ",random_mat))
-  
-  fixed_e <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + soilParent + soilForm  + Year")
-  form_e <- formula(paste0("gapPropCens ~ ",fixed_e," + ",random_mat))
-  
-  fixed_f <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilForm  + Year")
-  form_f <- formula(paste0("gapPropCens ~ ",fixed_f," + ",random_mat))
-  
-  fixed_g <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + Year")
-  form_g <- formula(paste0("gapPropCens ~ ",fixed_g," + ",random_mat))
-  
-  form_list3 <- list(form_ref, form_a, form_b, form_c, form_d, form_e, form_f, form_g)
-  
-  step3b_results <- data.frame(model = c("ref","a","b","c","d","e","f","g"),
-                              margLik = NA,
-                              DIC = NA)
-  
-  for(i in 1:nrow(step3b_results)){
-    
-    tryCatch(model_i <- inla(form_list3[[i]],
-                             family = "beta",
-                             data = bci.gapsAll_Order,
-                             control.compute = list(dic = TRUE),
-                             control.family = list(beta.censor.value = cens),
-                             verbose = F),
-             error = function(e) {print(paste("iteration",i,"failed"))})
-    
-    #summary(model_i)
-    step3b_results$margLik[i] <- model_i$mlik[2]
-    step3b_results$DIC[i] <- model_i$dic$dic
-    print(i)
-  }
-  
-  step3b_results$dDIC <- step3b_results$DIC - min(step3b_results$DIC,na.rm=T)
-  step3b_results <- step3b_results[order(step3b_results$dDIC),]
-  
+
 #### Run full model with Matern spatial autocorrelation term ####
   
   # Make an ID value for each cell
@@ -838,7 +718,7 @@ library(INLA)
   bci.gapsAll_Order$ID <- 1:nrow(bci.gapsAll_Order)
   
   # Run the best (and next most simple) models with full spatial autocorrelation
-  fixed_full <- paste0("Sc_curvMean_",curvScale," + I(Sc_curvMean_",curvScale,"^2) + Sc_slopeMean_",slopeScale," + I(Sc_drainMean^2) + Sc_rainMean + soilParent + soilForm  + Year")
+  fixed_full <- paste0("Sc_curvMean_",curvScale," + Sc_curvMean_",curvScale,"_sq + Sc_slopeMean_",slopeScale," + Sc_drainMean_sq + soilParent + soilForm + age + Year")
   random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
   form_full <- formula(paste0("gapPropCens ~ ",fixed_full," + ",random_full))
   
@@ -877,8 +757,8 @@ library(INLA)
   
   par(mfrow=c(2,1), las=1, mar=c(4,4,0,2), oma=c(1,1,1,1))
   
-  curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_21"], y = resd, df=50)
-  plot(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_21"], y = resd,
+  curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_8"], y = resd, df=50)
+  plot(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_8"], y = resd,
        pch=19,
        col = adjustcolor("black", 0.05),
        ylab = "Residual value",
@@ -893,8 +773,8 @@ library(INLA)
   curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
   for(i in 1:nrow(curvRMSE)){
     res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
-                         & bci.gapsAll$curvMean_21 > curvRMSE$min[i]
-                         & bci.gapsAll$curvMean_21 <= curvRMSE$max[i],"resd"]
+                         & bci.gapsAll$curvMean_8 > curvRMSE$min[i]
+                         & bci.gapsAll$curvMean_8 <= curvRMSE$max[i],"resd"]
     curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
   }
   
@@ -905,8 +785,8 @@ library(INLA)
   
   
   
-  slopeSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_9"], y = resd, df=50)
-  plot(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_9"], y = resd,
+  slopeSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_16"], y = resd, df=50)
+  plot(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_16"], y = resd,
        pch=19,
        col = adjustcolor("black", 0.05),
        ylab = "Residual value",
@@ -920,8 +800,8 @@ library(INLA)
   slopeRMSE$mid <- 0.5*(slopeRMSE$min+slopeRMSE$max)
   for(i in 1:nrow(slopeRMSE)){
     res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
-                         & bci.gapsAll$slopeMean_9 > slopeRMSE$min[i]
-                         & bci.gapsAll$slopeMean_9 <= slopeRMSE$max[i],"resd"]
+                         & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                         & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i],"resd"]
     slopeRMSE$RMSE[i] <- sqrt(mean(res_i^2))
   }
   
@@ -954,29 +834,7 @@ library(INLA)
        xlab = "drain (degree)",
        pch=19, ylim=c(0,0.05))
 
-  rainSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"rainMean"], y = resd, df=50)
-  plot(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"rainMean"], y = resd,
-       pch=19,
-       col = adjustcolor("black", 0.05),
-       ylab = "Residual value",
-       xlab = " Frequency of high precipitation events (hr/yr)")
-  abline(h=0,col="red")
-  lines(x = rainSpline$x, y= rainSpline$y, col="orange",lty=2,lwd=2)
-  rainRMSE <- data.frame(min = seq(min(rainSpline$x),max(rainSpline$x),length.out=11)[1:10],
-                          max = seq(min(rainSpline$x),max(rainSpline$x),length.out=11)[2:11],
-                          mid = NA,
-                          RMSE = NA)
-  rainRMSE$mid <- 0.5*(rainRMSE$min+rainRMSE$max)
-  for(i in 1:nrow(rainRMSE)){
-    res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
-                         & bci.gapsAll$rainMean > rainRMSE$min[i]
-                         & bci.gapsAll$rainMean <= rainRMSE$max[i],"resd"]
-    rainRMSE$RMSE[i] <- sqrt(mean(res_i^2))
-  }
-  plot(RMSE~mid, data=rainRMSE,
-       ylab = "RMSE",
-       xlab = "rain (degree)",
-       pch=19, ylim=c(0,0.05))
+ 
   
   aspectSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"aspectMean"], y = resd, df=50)
   plot(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"aspectMean"], y = resd,
@@ -1013,54 +871,15 @@ library(INLA)
   allSds <-  model_full$summary.fitted.values$sd[order(bci.gapsAll_Order$Order)]
 #  allSds[is.na(bci.gapsAll$gapPropCens)] <- NA
   
-  bci.gaps17$predictedMean <- allMeans[1:(nCellX*nCellY)]
-  bci.gaps18$predictedMean <- allMeans[(1 + nCellX*nCellY):(2*nCellX*nCellY)]
-  bci.gaps19$predictedMean <- allMeans[(1 + 2*nCellX*nCellY):(3*nCellX*nCellY)]
-  bci.gaps20$predictedMean <- allMeans[(1 + 3*nCellX*nCellY):(4*nCellX*nCellY)]
-  
-  bci.gaps17$predictedSD <- allSds[1:(nCellX*nCellY)]
-  bci.gaps18$predictedSD <- allSds[(1 + nCellX*nCellY):(2*nCellX*nCellY)]
-  bci.gaps19$predictedSD <- allSds[(1 + 2*nCellX*nCellY):(3*nCellX*nCellY)]
-  bci.gaps20$predictedSD <- allSds[(1 + 3*nCellX*nCellY):(4*nCellX*nCellY)]
+  bci.gaps18$predictedMean <- allMeans[1:(nCellX*nCellY)]
+  bci.gaps20$predictedMean <- allMeans[(1 + nCellX*nCellY):(2*nCellX*nCellY)]
+
+  bci.gaps18$predictedSD <- allSds[1:(nCellX*nCellY)]
+  bci.gaps20$predictedSD <- allSds[(1 + nCellX*nCellY):(2*nCellX*nCellY)]
+
 
   # convert to a raster object
   
-  # 2017
-  predMeanRaster17 <- raster::raster(x = matrix(data = bci.gaps17$predictedMean,
-                                                nrow = nCellY,
-                                                ncol = nCellX,
-                                                byrow = F),
-                                     xmn = raster::extent(bci.gaps17)@xmin,
-                                     xmx = raster::extent(bci.gaps17)@xmax,
-                                     ymn = raster::extent(bci.gaps17)@ymin,
-                                     ymx = raster::extent(bci.gaps17)@ymax)
-  predMeanRaster17 <- raster::mask(predMeanRaster17, buffer)
-  predMeanRaster17[predMeanRaster17<0] <- NA
-  
-  
-  obsRaster17 <- raster::raster(x = matrix(data = bci.gaps17$gapProp,
-                                                nrow = nCellY,
-                                                ncol = nCellX,
-                                                byrow = F),
-                                     xmn = raster::extent(bci.gaps17)@xmin,
-                                     xmx = raster::extent(bci.gaps17)@xmax,
-                                     ymn = raster::extent(bci.gaps17)@ymin,
-                                     ymx = raster::extent(bci.gaps17)@ymax)
-  obsRaster17 <- raster::mask(obsRaster17, buffer)
-
-  
-  
-  predSdRaster17 <- raster::raster(x = matrix(data = bci.gaps17$predictedSD,
-                                                nrow = nCellY,
-                                                ncol = nCellX,
-                                                byrow = F),
-                                     xmn = raster::extent(bci.gaps17)@xmin,
-                                     xmx = raster::extent(bci.gaps17)@xmax,
-                                     ymn = raster::extent(bci.gaps17)@ymin,
-                                     ymx = raster::extent(bci.gaps17)@ymax)
-  predSdRaster17[is.na(predMeanRaster17)] <- NA
-  
-
   # 2018
   predMeanRaster18 <- raster::raster(x = matrix(data = bci.gaps18$predictedMean,
                                                 nrow = nCellY,
@@ -1096,40 +915,6 @@ library(INLA)
                                    ymx = raster::extent(bci.gaps18)@ymax)
   predSdRaster18[is.na(predMeanRaster18)] <- NA
   
-  # 2019
-  predMeanRaster19 <- raster::raster(x = matrix(data = bci.gaps19$predictedMean,
-                                                nrow = nCellY,
-                                                ncol = nCellX,
-                                                byrow = F),
-                                     xmn = raster::extent(bci.gaps19)@xmin,
-                                     xmx = raster::extent(bci.gaps19)@xmax,
-                                     ymn = raster::extent(bci.gaps19)@ymin,
-                                     ymx = raster::extent(bci.gaps19)@ymax)
-  predMeanRaster19 <- raster::mask(predMeanRaster19, buffer)
-  predMeanRaster19[predMeanRaster19<0] <- NA
-  
-  
-  obsRaster19 <- raster::raster(x = matrix(data = bci.gaps19$gapProp,
-                                           nrow = nCellY,
-                                           ncol = nCellX,
-                                           byrow = F),
-                                xmn = raster::extent(bci.gaps19)@xmin,
-                                xmx = raster::extent(bci.gaps19)@xmax,
-                                ymn = raster::extent(bci.gaps19)@ymin,
-                                ymx = raster::extent(bci.gaps19)@ymax)
-  obsRaster19 <- raster::mask(obsRaster19, buffer)
-  
-  
-  
-  predSdRaster19 <- raster::raster(x = matrix(data = bci.gaps19$predictedSD,
-                                              nrow = nCellY,
-                                              ncol = nCellX,
-                                              byrow = F),
-                                   xmn = raster::extent(bci.gaps19)@xmin,
-                                   xmx = raster::extent(bci.gaps19)@xmax,
-                                   ymn = raster::extent(bci.gaps19)@ymin,
-                                   ymx = raster::extent(bci.gaps19)@ymax)
-  predSdRaster19[is.na(predMeanRaster19)] <- NA
   
   # 2020
   predMeanRaster20 <- raster::raster(x = matrix(data = bci.gaps20$predictedMean,
@@ -1167,35 +952,12 @@ library(INLA)
   predSdRaster20[is.na(predMeanRaster20)] <- NA
   
   # Plot rasters
-  colBreaks <- seq(0,0.85,0.05)
+  colBreaks <- seq(0,0.50,0.05)
 
   
-  # 2015-2017
+  # 2015-2108
   jpeg(height=3000,width=2000,file = "Figure S10. Raster patterns.jpg")
   par(mfrow=c(4,3))
-  raster::plot(obsRaster17,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Observed")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predMeanRaster17,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Predicted (mean)")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predSdRaster17,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(seq(0,0.1,0.01))),
-               breaks = seq(0,0.1,0.01),
-               main = "Predicted (SD)")
-  raster::plot(buffer, add=T)
-  mtext("2015 - 2017", outer=F, side = 3, line = -1.5)
-  
-  # 2017-2018
   raster::plot(obsRaster18,
                bty = "n", box = F, xaxt="n", yaxt="n",
                col = viridis::viridis(length(colBreaks)),
@@ -1216,32 +978,9 @@ library(INLA)
                breaks = seq(0,0.1,0.01),
                main = "Predicted (SD)")
   raster::plot(buffer, add=T)
-  mtext("2017 - 2018", outer=F, side = 3, line = -1.5)
+  mtext("2015 - 2018", outer=F, side = 3, line = -1.5)
   
-  # 2018-2019
-  raster::plot(obsRaster19,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Observed")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predMeanRaster19,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Predicted (mean)")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predSdRaster19,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(seq(0,0.1,0.01))),
-               breaks = seq(0,0.1,0.01),
-               main = "Predicted (SD)")
-  raster::plot(buffer, add=T)
-  mtext("2018 - 2019", outer=F, side = 3, line = -1.5)
-  
-  # 2019-2020
+  # 2018-2020
   raster::plot(obsRaster20,
                bty = "n", box = F, xaxt="n", yaxt="n",
                col = viridis::viridis(length(colBreaks)),
@@ -1262,7 +1001,8 @@ library(INLA)
                breaks = seq(0,0.1,0.01),
                main = "Predicted (SD)")
   raster::plot(buffer, add=T)
-  mtext("2019 - 2020", outer=F, side = 3, line = -1.5)
+  mtext("2018 - 2020", outer=F, side = 3, line = -1.5)
+  
 dev.off()
 
 #### Calculate estimated value with only fixed effects ####
@@ -1273,39 +1013,41 @@ dev.off()
   bci.gapsAll$fix_int <- model_full$summary.fixed$mean[model_full$names.fixed=="(Intercept)"]
   
   # Curvature
-  bci.gapsAll$fix_C <- bci.gapsAll$Sc_curvMean_9*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_curvMean_9"])
-  bci.gapsAll$fix_C2 <- bci.gapsAll$Sc_curvMean_9^2*(model_full$summary.fixed$mean[model_full$names.fixed=="I(Sc_curvMean_9^2)"])
+  bci.gapsAll$fix_C <- bci.gapsAll$Sc_curvMean_8*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_curvMean_8"])
+  bci.gapsAll$fix_C2 <- bci.gapsAll$Sc_curvMean_8_sq*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_curvMean_8_sq"])
   
   # Slope
-  bci.gapsAll$fix_S <- bci.gapsAll$Sc_slopeMean_15*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_slopeMean_15"])
+  bci.gapsAll$fix_S <- bci.gapsAll$Sc_slopeMean_16*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_slopeMean_16"])
   
   # Height above drainage
-  bci.gapsAll$fix_H2 <- (bci.gapsAll$Sc_drainMean^2)*(model_full$summary.fixed$mean[model_full$names.fixed=="I(Sc_drainMean^2)"])
-  
-  # High precipitation frequency
-  bci.gapsAll$fix_P <- bci.gapsAll$Sc_rainMean*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_rainMean"])
+  bci.gapsAll$fix_H2 <- (bci.gapsAll$Sc_drainMean_sq)*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_drainMean_sq"])
   
   # Soil form
   bci.gapsAll$fix_soilForm <- 0
   
-  bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForme=="MottledHeavyClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormMottledHeavyClay"]
-  bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForme=="PaleSwellingClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormPaleSwellingClay"]
-  bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForme=="RedLightClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormRedLightClay"]
+  bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="MottledHeavyClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormMottledHeavyClay"]
+  bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="PaleSwellingClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormPaleSwellingClay"]
+  bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="RedLightClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormRedLightClay"]
   
   
   # Soil parent material
   bci.gapsAll$fix_soilParent <- 0
   
-  bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParente=="Bohio","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentBohio"]
-  bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParente=="CaimitoMarineSedimentary","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentCaimitoMarineSedimentary"]
-  bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParente=="CaimitoVolcanic","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentCaimitoVolcanic"]
+  bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParent=="Bohio","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentBohio"]
+  bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParent=="CaimitoMarineSedimentary","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentCaimitoMarineSedimentary"]
+  bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParent=="CaimitoVolcanic","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentCaimitoVolcanic"]
 
   # Year 
   bci.gapsAll$fix_year <- 0
   bci.gapsAll[bci.gapsAll$Year=="2020","fix_year"] <- model_full$summary.fixed$mean[model_full$names.fixed=="Year2020"]
   
+  # Age 
+  bci.gapsAll$fix_age <- 0
+  bci.gapsAll[bci.gapsAll$age=="Secondary" & !(is.na(bci.gapsAll$age)),"fix_age"] <- model_full$summary.fixed$mean[model_full$names.fixed=="ageSecondary"]
+  
+  
   # All
-  bci.gapsAll$fix_sum <- bci.gapsAll$fix_int + bci.gapsAll$fix_C + bci.gapsAll$fix_C2 + bci.gapsAll$ fix_S + bci.gapsAll$fix_H2 + bci.gapsAll$fix_P + bci.gapsAll$fix_soilForm + bci.gapsAll$fix_soilParent + bci.gapsAll$fix_year
+  bci.gapsAll$fix_sum <- bci.gapsAll$fix_int + bci.gapsAll$fix_C + bci.gapsAll$fix_C2 + bci.gapsAll$ fix_S + bci.gapsAll$fix_H2 + bci.gapsAll$fix_soilForm + bci.gapsAll$fix_soilParent + bci.gapsAll$fix_age + bci.gapsAll$fix_year
   
   # Predicted value with just fixed effects
   bci.gapsAll$fix_pred <- exp(bci.gapsAll$fix_sum)/(1 + exp(bci.gapsAll$fix_sum))
@@ -1393,9 +1135,10 @@ dev.off()
   fixedResults <- model_full$summary.fixed
   
   fixedNames <- c("Curvature (linear)", "Curvature (quadratic)", "Slope (linear)",                   
-                  "Height above drainage (quadratic)", "High precipitation (linear)",
+                  "Height above drainage (quadratic)",
                   "Soil parent: Bohio", "Soil parent: Caimito marine", "Soil parent: Caimito volcanic",
                   "Soil form: heavy clay", "Soil form: swelling clay", "Soil form: light clay",
+                  "Forest age: Secondary",
                   "Year: 2018-2020")
 
   par(mfrow=c(1,1), mar=c(4,1,1,1))
@@ -1582,8 +1325,12 @@ dev.off()
   buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
   buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
   
-  curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_9.tif")
-  slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_15.tif")
+  # Read plot outline  
+  plotShp <- rgdal::readOGR("D:/BCI_Spatial/BCI50ha/BCI_50ha.shp")
+  plotShp <- sp::spTransform(plotShp, sp::proj4string(buffer))
+  
+  curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_8.tif")
+  slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
   drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
   
   curvRaster <- raster::mask(curvRaster, buffer)
@@ -1596,14 +1343,56 @@ dev.off()
   raster::plot(curvRaster, col = viridis::cividis(128),
                bty="n", box=F, yaxt="n", xaxt="n",
                main = "Curvature")
+  raster::plot(plotShp,add=T, lwd=2, border="white")
+  
   raster::plot(slopeRaster, col = viridis::plasma(128),
                bty="n", box=F, yaxt="n", xaxt="n",
                main = "Slope")
+  raster::plot(plotShp,add=T, lwd=2, border="white")
+  
   raster::plot(drainRaster, col = viridis::viridis(128),
                bty="n", box=F, yaxt="n", xaxt="n",
                main = "Height above drainage")
+  raster::plot(plotShp,add=T, lwd=2, border="white")
+  
+  soil$formCol = NA
+    soil[soil$SoilForm=="BrownFineLoam","formCol"] = wesanderson::wes_palette("Rushmore1",5)[1]
+    soil[soil$SoilForm=="PaleSwellingClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[3]
+    soil[soil$SoilForm=="MottledHeavyClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[4]
+    soil[soil$SoilForm=="RedLightClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[5]
+    
+  soil$parentCol = NA
+    soil[soil$SoilParent=="CaimitoVolcanic","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[1]
+    soil[soil$SoilParent=="Andesite","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[2]
+    soil[soil$SoilParent=="CaimitoMarineSedimentary","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[3]
+    soil[soil$SoilParent=="Bohio","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[4]
+    
+    soil <- sp::spTransform(soil, sp::proj4string(buffer))
+    
   raster::plot(soil,
-               main = "Soil form and parent material")
+               main = "Soil form",
+               col = soil$formCol,
+               border="NA")
+  raster::plot(plotShp,add=T, lwd=2, border="white")
+  
+  raster::plot(soil,
+               main = "Soil parent material",
+               col = soil$parentCol,
+               border="NA")
+  raster::plot(plotShp,add=T, lwd=2, border="white")
+  
+  age$ageCol = NA
+    age[age$AgeClass=="OldGrowth","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[1]
+    age[age$AgeClass=="Secondary","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[2]
+    age[age$AgeClass=="Other","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[3]
+  
+  age <- raster::crop(age,buffer)
+  raster::plot(age ,
+               main = "Forest age",
+               col = age$ageCol,
+               border="NA")
+  raster::plot(plotShp,add=T, lwd=2, border="white")
+  
   
   
   
