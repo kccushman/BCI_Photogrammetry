@@ -38,8 +38,8 @@
   areaSampled18to20tall <- length(allVals18to20tall[!is.na(allVals18to20tall)])/10000
     
 # Total number of new canopy disturbance events
-  length(c(gaps15to18sp[gaps15to18sp$use==T,]$area,
-           gaps18to20sp[gaps18to20sp$use==T,]$area))
+  length(c(gaps15to18sp$area,
+           gaps18to20sp$area))
   
 #### SUMMARY GAP STATS PER YEAR ####
   
@@ -116,8 +116,8 @@
   round(quantile(gapSummary15to18$percentGap,probs = c(0.025,0.975))/nYr15to18,2)
   round(quantile(gapSummary18to20$percentGap,probs = c(0.025,0.975))/nYr18to20,2)
   
-    # % higher in first interval
-    (2.57-2.04)/2.04*100
+    # % higher in second interval
+    (2.06-1.79)/1.79*100
   
   # Mean frequency of gaps per interval--number of gaps
   round(mean(gapSummary15to18$gapsPerHa)/nYr15to18,2)
@@ -127,7 +127,7 @@
   round(quantile(gapSummary18to20$gapsPerHa,probs = c(0.025,0.975))/nYr18to20,2)
   
     # % higher in first interval
-    (1.97-1.84)/1.84*100
+    (1.92-1.64)/1.64*100
 
   
 #### BOOTSTRAPPED SIZE FREQUENCY DISTRIBUTIONS ####
@@ -177,17 +177,18 @@
   szFreq18to20 <- read.table("SizeFreqResults/gaps18to20sizedistbsfit.txt", header = T)
   
   
-  # What distribution has the lowest -log likelihood?
+  # What distribution has the highest likelihood?
+  # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
   
     # 2015 to 2017
-    round(szFreq15to18$weibloglike,0)
-    round(szFreq15to18$powloglike,0)
-    round(szFreq15to18$exploglike,0)
+    round(-szFreq15to18$weibloglike-max(c(-szFreq15to18$weibloglike,-szFreq15to18$powloglike,-szFreq15to18$exploglike)),0) 
+    round(-szFreq15to18$powloglike-max(c(-szFreq15to18$weibloglike,-szFreq15to18$powloglike,-szFreq15to18$exploglike)),0) 
+    round(-szFreq15to18$exploglike-max(c(-szFreq15to18$weibloglike,-szFreq15to18$powloglike,-szFreq15to18$exploglike)),0) 
     
     # 2018 to 2020
-    round(szFreq18to20$weibloglike,0)
-    round(szFreq18to20$powloglike,0)
-    round(szFreq18to20$exploglike,0)
+    round(-szFreq18to20$weibloglike-max(c(-szFreq18to20$weibloglike,-szFreq18to20$powloglike,-szFreq18to20$exploglike)),0) 
+    round(-szFreq18to20$powloglike-max(c(-szFreq18to20$weibloglike,-szFreq18to20$powloglike,-szFreq18to20$exploglike)),0) 
+    round(-szFreq18to20$exploglike-max(c(-szFreq18to20$weibloglike,-szFreq18to20$powloglike,-szFreq18to20$exploglike)),0) 
   
   # Get r-squared values for each
     
@@ -202,8 +203,8 @@
     round(szFreq18to20$expcatadjr2,3)
   
   # Weibull has the lowest -log likelihood in both intervals
-  round(szFreq15to18[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],4)
-  round(szFreq18to20[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],4)
+  round(szFreq15to18[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
+  round(szFreq18to20[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   
   round(szFreq15to18[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
   round(szFreq18to20[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
@@ -218,7 +219,8 @@
   # Divide intervals for plotting
   gapAreaRange <- c(25,mxSz)
   logRange <- log(gapAreaRange)
-  brksRange_log <- c(seq(logRange[1],7,length.out = 15),logRange[2])
+  logMid <- sum(logRange)/2.5
+  brksRange_log <- c(seq(logRange[1],logMid,length.out = 10),seq(logMid,logRange[2],length.out = 3)[-1])
   brksRange <- ceiling(exp(brksRange_log))
   
   brksMins <- brksRange[1:length(brksRange)-1]

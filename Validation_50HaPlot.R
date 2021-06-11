@@ -327,6 +327,11 @@
                   driver = "ESRI Shapefile")
 
 #### plot height value histograms for the 50ha plot ####
+  
+  # Load uncorrected 2015 canopy height raster
+  chm15 <- raster::raster("CHM_2015_QAQC_tin_wBias.tif")
+  
+  # Crop canopy height rasters to 50 ha plot and pull values
   vals09 <- raster::values(raster::crop(chm09,plotShp))
   dens09 <- density(vals09[!is.na(vals09)])
   
@@ -364,12 +369,12 @@
     dens15_50ha <- density(vals15_50ha[!is.na(vals15_50ha)])
   
   # Do sensitivity analysis to find best parameters to use
-    correctionParams <- data.frame(par1 = rep(1:10,10),
-                                   par2 = rep(1:10,each=10),
+    correctionParams <- data.frame(par1 = rep(2:10,10),
+                                   par2 = rep(1:10,each=9),
                                    stat = NA)
     
     for(i in 1:nrow(correctionParams)){
-      toChange <- which((vals15-vals09)> correctionParams$par1[i] & (vals18-vals15) < (-1*correctionParams$par2[i]))
+      toChange <- which((vals15-vals09)>correctionParams$par1[i] & (vals18-vals15) < (-1*correctionParams$par2[i]))
       newVals <- vals09[toChange]
       vals15c <- vals15; vals15c[toChange] <- newVals
       
@@ -380,38 +385,62 @@
     par2 <- correctionParams[which(correctionParams$stat==min(correctionParams$stat)),"par2"]
     
     # BEST: par1 = 5 and par2 = 1
+   
     
-  # Island-wide data with correction
+  # PLOT RESULTS   
+    par(mfrow=c(1,2),mar=c(4,5,2,4))
+    
+  # a. plot sensitivity analysis results  
+    htThreshKruskall <- matrix(data = correctionParams$stat,
+                           nrow = length(2:10),
+                           ncol = length(1:10),
+                           byrow = F,
+                           dimnames = list(2:10,1:10))
+    htThreshKruskall <- htThreshKruskall-min(htThreshKruskall)
+    
+    plotMin <- min(htThreshKruskall)
+    plotMax <- max(htThreshKruskall)
+    plotBreaks <- c(0,2,seq(100,1200,100))
+    
+    library(plot.matrix)
+    plot(htThreshKruskall, breaks=plotBreaks,
+         col = rev(wesanderson::wes_palette("Zissou1", length(plotBreaks)-1, type = "continuous")),
+         ylab = expression("Height increase '09-'15 (m)"),
+         xlab = expression("Height decrease '15-'18 (m)"),
+         main = expression(Delta~"rank sum"))
+    mtext("a", side=3, outer=F, adj = -0.1, line=1.5, cex=1.5)
+    
+  # Distribution of canopy heights with correction
     toChange <- which((vals15-vals09)> par1 & (vals18-vals15)< (-1*par2))
     newVals <- vals09[toChange]
     vals15c <- vals15; vals15c[toChange] <- newVals
     dens15c <- density(vals15c[!is.na(vals15c)])
     
-  par(mfrow=c(1,1), mar=c(4,4,1,1))
   plot(dens15,
-       xlim=c(0,50),
-       main = "Canopy height distribution",
+       xlim=c(0,65),
+       main = NA,
        col="red",lwd=2,
-       xlab="canopy height (m)")
+       xlab="Canopy height (m)")
   lines(dens15c, col="red", lwd=2, lty=2)
-  lines(dens15_50ha, col="red", lwd=2, lty=3)
-  lines(dens09,col="black",lwd=2)
-  lines(dens18,col="blue",lwd=2)
+  lines(dens15_50ha, col="black", lwd=2, lty=1)
+  # lines(dens09,col="black",lwd=2)
+  # lines(dens18,col="blue",lwd=2)
+  # legend(x=30,y=0.055,
+  #        c("2009 (lidar)","2015 (photogram.)","2018 (photogram.)"),
+  #        col=c("black","red","blue"),
+  #        bty="n",
+  #        lwd=2,
+  #        cex=0.9)
   legend(x=30,y=0.055,
-         c("2009 (lidar)","2015 (photogram.)","2018 (photogram.)"),
-         col=c("black","red","blue"),
-         bty="n",
-         lwd=2,
-         cex=0.9)
-  legend(x=0,y=0.055,
          c("Island-wide: original",
-           "Island-wide: proposed correction",
-           "50 ha plot data"),
-         col="red",
-         lty=c(1,2,3),
+           "Island-wide: corrected",
+           "50 ha plot: hi-resolution"),
+         col=c("red","red","black"),
+         lty=c(1,2,1),
          bty="n",
          lwd=2,
-         cex=0.9)
+         cex=1)
+  mtext("b", side=3, outer=F, adj = -0.1, line=1.5, cex=1.5)
   
 #### Correct 50 ha plot and test against Raquel's data ####
   
@@ -577,329 +606,4 @@
                     dsn = "toCheckRaquel",
                     layer = "toCheckRaquel", 
                     driver = "ESRI Shapefile")
-    
-#### Plot errors -- monthly data ####
-    
-    valGapsSzHt <- valGaps15to18[valGaps15to18$area2 >= 25 & valGaps15to18$htDrop <= -5 & !is.na(valGaps15to18$htDrop),]
-    # make a jiggered date field to plot
-    valGapsSzHt$datePlot <-  valGapsSzHt$dateClass + rnorm(mean = 0, sd = 7, n = nrow(valGapsSzHt))
-    
-    
-    par(mar=c(4,4,1,1))
-    
-    # Observed with ht and area agreement
-    plot(area2~datePlot, data=valGapsSzHt[valGapsSzHt$observed==T,],
-         pch=20,
-         col=adjustcolor("grey",0.6),
-         log="y",
-         ylab="Gap area (m2)",
-         xlab = "Date of gap observation (jiggered for plotting)",
-         main = "Monthly gaps (> 25 m2 and with height drop > 5 m)")
-    
-    # BLUE: likely size discrepancy (potential overestimation in monthly data)
-      points(area2~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==c(3,4),],
-             pch=20,
-             col=adjustcolor("lightblue",0.6))
-
-    # RED: false positive in monthly data
-      # Total false positive
-      points(area2~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==2,],
-             pch=20,
-             col=adjustcolor("red",0.6))
-      
-    # PURPLE: mismatch in space
-      # Spatial alignment mismatch
-      points(area2~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==5,],
-             pch=20,
-             col=adjustcolor("purple",0.6))
-
-    # GREEN: monthly data are correct but missed by me
-      # Unclear why Raquel misses this gap
-    points(area2~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==1,],
-           pch=20,
-           col=adjustcolor("green",0.6))
-
-    legend(x=as.Date("2017-01-01"),
-           y=650,
-           bty="n",
-           c("Correctly observed in annual data",
-             "Likely size discrepancy (monthly overestimate?)",
-             "False positive",
-             "Not observed in annual data and correct",
-             "Spatial misalignment with annual data"),
-           col=adjustcolor(c("grey","lightblue","red","green","purple"),c(0.6)),
-          pch=20,
-          pt.cex=1.5,
-          cex=0.8)
-    
-    sum(valGapsSzHt$area2[valGapsSzHt$observed==F])/sum(valGapsSzHt$area2)
-    sum(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck==2])/sum(valGapsSzHt$area2)
-    sum(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck %in% c(3,4)])/sum(valGapsSzHt$area2)
-    sum(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck %in% c(1)])/sum(valGapsSzHt$area2)
-    sum(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck %in% c(5)])/sum(valGapsSzHt$area2)
-    
-    length(valGapsSzHt$area2[valGapsSzHt$observed==F])/length(valGapsSzHt$area2)
-    length(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck==2])/length(valGapsSzHt$area2)
-    length(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck %in% c(3,4)])/length(valGapsSzHt$area2)
-    length(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck %in% c(1)])/length(valGapsSzHt$area2)
-    length(valGapsSzHt$area2[valGapsSzHt$observed==F  & valGapsSzHt$vslChck %in% c(5)])/length(valGapsSzHt$area2)
-    
-    
-    par(mar=c(4,4,1,1))
-    
-    # Observed with ht and area agreement
-    plot(htDrop~datePlot, data=valGapsSzHt[valGapsSzHt$observed==T,],
-         pch=20,
-         col=adjustcolor("grey",0.6),
-         ylab="Gap height drop (m)",
-         xlab = "Date of gap observation (jiggered for plotting)")
-    
-    # BLUE: likely size discrepancy (potential overestimation in monthly data)
-    points(htDrop~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==c(3,4),],
-           pch=20,
-           col=adjustcolor("lightblue",0.6))
-    
-    # RED: false positive in monthly data
-    # Total false positive
-    points(htDrop~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==2,],
-           pch=20,
-           col=adjustcolor("red",0.6))
-    
-    # PURPLE: mismatch in space
-    # Spatial alignment mismatch
-    points(htDrop~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==5,],
-           pch=20,
-           col=adjustcolor("purple",0.6))
-    
-    # GREEN: monthly data are correct but missed by me
-    # Unclear why Raquel misses this gap
-    points(htDrop~datePlot, data=valGapsSzHt[valGapsSzHt$observed==F & valGapsSzHt$vslChck==1,],
-           pch=20,
-           col=adjustcolor("green",0.6))
-    
-    legend(x=as.Date("2017-01-01"),
-           y=-23,
-           bty="n",
-           c("Correctly observed in annual data",
-             "Likely size discrepancy (monthly overestimate?)",
-             "False positive",
-             "Not observed in annual data and correct",
-             "Spatial misalignment with annual data"),
-           col=adjustcolor(c("grey","lightblue","red","green","purple"),c(0.6)),
-           pch=20,
-           pt.cex=1.5,
-           cex=0.8)
-
-#### Plot errors -- island-wide  data ####
-    
-    plotGaps <- rgdal::readOGR("toCheckKC_final/toCheckKC_final.shp")
-    
-    plotGaps@data$perimeter <- NA
-    for(i in 1:length(plotGaps)){
-
-      perims_j <- c()
-      for(j in 1:length(plotGaps[i,]@polygons[[1]]@Polygons)){
-        
-        coordsj <- plotGaps[i,]@polygons[[1]]@Polygons[[j]]@coords
-        
-        lengths_k <- c()
-        for(k in 2:dim(coordsj)[1]){
-          lengths_k[k-1] <- sqrt((coordsj[k,1]-coordsj[k-1,1])^2 + (coordsj[k,2]-coordsj[k-1,2])^2)
-          
-        }
-        perims_j[j] <- sum(lengths_k)
-        
-        if(plotGaps[i,]@polygons[[1]]@Polygons[[j]]@hole==T){
-          perims_j[j] <- 0
-        }
-        
-      }
-      plotGaps[i,"perimeter"] <- sum(perims_j)
-      
-    }
-    
-    
-    plotGaps$ratioCirc <- 4*pi*plotGaps$area/(plotGaps$perimeter^2)
-    
-    par(mar=c(4,4,1,1))
-    
-    # Observed with ht and area agreement
-    plot(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T,],
-         ylim=c(0,0.7),
-         pch=20,
-         col=adjustcolor("grey",0.6),
-         log="x",
-         xlab="Gap area (m2)",
-         ylab = "Gap circularity (4*pi*area/perim^2)",
-         main = "Island-wide gaps")
-    
-    # BLUE: observed by Raquel's data when contraints are not imposed
-    # Observed by Raquel's data are less than 25m2
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==F & plotGaps$obsrvdH==T,],
-           pch=20,
-           col=adjustcolor("lightblue",0.6))
-    # Observed by Raquel's data have ht drop less than 5 m
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==F & !(plotGaps$vslChck==9),],
-           pch=20,
-           col=adjustcolor("darkblue",0.6))
-    # Observed by Raquel's data are less than 25m2 AND have ht drop less than 5m (NONE)
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==F & plotGaps$obsrvdH==F & !(plotGaps$vslChck==9),],
-           pch=20,
-           col=adjustcolor("blue",0.5))
-    
-    # RED: false positive in my data
-    # Total false positive
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==2,],
-           pch=20,
-           col=adjustcolor("red",0.6))
-    # Overestimation of gap area
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==10,],
-           pch=20,
-           col=adjustcolor("brown1",0.6))
-    
-    # PURPLE: mismatch in space/time
-    # Spatial alignment mismatch
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==5,],
-           pch=20,
-           col=adjustcolor("purple",0.6))
-    # Temporal mismatch (i.e. I see beginning of slowly dying tree and Raquel records the later fall)
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(6,8),],
-           pch=20,
-           col=adjustcolor("violet",0.6))
-    
-    # GREEN: my data are correct
-    # Unclear why Raquel misses this gap
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==1,],
-           pch=20,
-           col=adjustcolor("green",0.6))
-    # Decaying tree: total miss
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==7,],
-           pch=20,
-           col=adjustcolor("limegreen",0.6))
-    # Decaying tree: partial miss
-    points(ratioCirc~area2, data=plotGaps@data[plotGaps$vslChck==9,],
-           pch=20,
-           col=adjustcolor("lightgreen",0.6))
-    
-    legend(x=100,
-           y=0.72,
-           bty="n",
-           c("Correctly observed in monthly data",
-             "Observed in monthly data but monthly area < 25 m2",
-             "Observed in monthly data but monthly ht drop < 5 m",
-             "False positive: total error",
-             "False positive: size overestimation",
-             "Not observed in monthly data but correct: discrete disturbance",
-             "Not observed in monthly data but correct: decaying tree totally missed",
-             "Not observed in monthly data but correct: decaying tree partially missed",
-             "Spatial misalignment with montly data",
-             "Temporal misalignment with montly data (decaying tree)"),
-           col=adjustcolor(c("grey","lightblue","darkblue","red","brown1","green","limegreen","lightgreen","purple","violet"),c(0.6)),
-           pch=20,
-           pt.cex=1.5,
-           cex=0.8)
-    
-    
-    # Observed with ht and area agreement
-    plot(ratio~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==T & plotGaps$observedHt==T,],
-         pch=20,
-         col=adjustcolor("grey",0.6),
-         log="x",
-         xlab="Gap area (m2)",
-         ylab = "Old shape metric (area/perim)")
-    
-    # BLUE: observed by Raquel's data when contraints are not imposed
-    # Observed by Raquel's data are less than 25m2
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==F & plotGaps$observedHt==T,],
-           pch=20,
-           col=adjustcolor("lightblue",0.6))
-    # Observed by Raquel's data have ht drop less than 5 m
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==T & plotGaps$observedHt==F & !(plotGaps$vslChck==9),],
-           pch=20,
-           col=adjustcolor("darkblue",0.6))
-    # Observed by Raquel's data are less than 25m2 AND have ht drop less than 5m (NONE)
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==T & plotGaps$observedArea==F & plotGaps$observedHt==F & !(plotGaps$vslChck==9),],
-           pch=20,
-           col=adjustcolor("blue",0.5))
-    
-    # RED: false positive in my data
-    # Total false positive
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==2,],
-           pch=20,
-           col=adjustcolor("red",0.6))
-    # Overestimation of 
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==10,],
-           pch=20,
-           col=adjustcolor("brown1",0.6))
-    
-    # PURPLE: mismatch in space/time
-    # Spatial alignment mismatch
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==5,],
-           pch=20,
-           col=adjustcolor("purple",0.6))
-    # Temporal mismatch (i.e. I see beginning of slowly dying tree and Raquel records the later fall)
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck %in% c(6,8),],
-           pch=20,
-           col=adjustcolor("violet",0.6))
-    
-    # GREEN: my data are correct
-    # Unclear why Raquel misses this gap
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==1,],
-           pch=20,
-           col=adjustcolor("green",0.6))
-    # Decaying tree: total miss
-    points(ratio~area2, data=plotGaps@data[plotGaps$observedAll==F & plotGaps$vslChck==7,],
-           pch=20,
-           col=adjustcolor("limegreen",0.6))
-    # Decaying tree: partial miss
-    points(ratio~area2, data=plotGaps@data[plotGaps$vslChck==9,],
-           pch=20,
-           col=adjustcolor("lightgreen",0.6))
-    
-    legend(x=24,
-           y=4,
-           bty="n",
-           c("Correctly observed in monthly data",
-             "Observed in monthly data but monthly area < 25 m2",
-             "Observed in monthly data but monthly ht drop < 5 m",
-             "False positive: total error",
-             "False positive: size overestimation",
-             "Not observed in monthly data but correct: discrete disturbance",
-             "Not observed in monthly data but correct: decaying tree totally missed",
-             "Not observed in monthly data but correct: decaying tree partially missed",
-             "Spatial misalignment with monthly data",
-             "Temporal misalignment with monthly data (decaying tree)"),
-           col=adjustcolor(c("grey","lightblue","darkblue","red","brown1","green","limegreen","lightgreen","purple","violet"),c(0.6)),
-           pch=20,
-           pt.cex=1.5,
-           cex=0.8)
-    
-  # By area  
-    # Total area not observed
-    sum(plotGaps$area2[plotGaps$observedAll==F])/sum(plotGaps$area2)
-    
-    sum(plotGaps$area2[plotGaps$observedAll==T & plotGaps$observedArea==T & plotGaps$observedHt==T])/sum(plotGaps$area2)
-    sum(plotGaps$area2[plotGaps$observedAll==T])/sum(plotGaps$area2)
-    
-    # False positive area
-    sum(plotGaps$area2[plotGaps$observedAll==F & plotGaps$vslChck %in% c(2,10)])/sum(plotGaps$area2)
-    # Area missing from monthly data
-    sum(plotGaps$area2[plotGaps$observedAll==F & plotGaps$vslChck %in% c(1)])/sum(plotGaps$area2)
-    sum(plotGaps$area2[plotGaps$observedAll==F & plotGaps$vslChck %in% c(7,9)])/sum(plotGaps$area2)
-    # Spatial or temporal mismatch
-    sum(plotGaps$area2[plotGaps$observedAll==F & plotGaps$vslChck %in% c(5,6,8)])/sum(plotGaps$area2)
-    
-  # By number of gaps  
-    # Total area not observed
-    length(plotGaps$area2[plotGaps$observedAll==F])/length(plotGaps$area2)
-    
-    length(plotGaps$area2[plotGaps$observedAll==T & plotGaps$observedArea==T & plotGaps$observedHt==T])/length(plotGaps$area2)
-    length(plotGaps$area2[plotGaps$observedAll==T])/length(plotGaps$area2)
-    
-    # False positive area
-    length(plotGaps$area2[plotGaps$observedAll==F & plotGaps$vslChck %in% c(2,10)])/length(plotGaps$area2)
-    # Area missing from monthly data
-    length(plotGaps$area2[plotGaps$observedAll==F & plotGaps$vslChck %in% c(1,7,9)])/length(plotGaps$area2)
-    # Spatial or temporal mismatch
-    length(plotGaps$area2[plotGaps$observedAll==F & plotGaps$vslChck %in% c(5,6,8)])/length(plotGaps$area2)
     

@@ -97,6 +97,7 @@
     raster::values(chm15c)[toChange] <- newVals
        
 #  Save
+    raster::writeRaster(chm15, "CHM_2015_QAQC_tin_wBias.tif", overwrite=T)
     raster::writeRaster(chm15c, "CHM_2015_QAQC_tin.tif", overwrite=T)
     raster::writeRaster(chm18, "CHM_2018_QAQC_tin.tif", overwrite=T)
     raster::writeRaster(chm20, "CHM_2020_QAQC_tin.tif", overwrite=T)
