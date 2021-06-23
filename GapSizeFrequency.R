@@ -41,6 +41,23 @@
   length(c(gaps15to18sp$area,
            gaps18to20sp$area))
   
+# Area sampled in old growth forest
+  areaOld18 <- raster::mask(d15to18tall, ageUse[ageUse$AgeClass=="OldGrowth",])
+  valsOld18 <- raster::values(areaOld18)
+  areaSampledOld18 <- length(valsOld18[!is.na(valsOld18)])/10000
+  
+  areaSec18 <- raster::mask(d15to18tall, ageUse[ageUse$AgeClass=="Secondary",])
+  valsSec18 <- raster::values(areaSec18)
+  areaSampledSec18 <- length(valsSec18[!is.na(valsSec18)])/10000
+  
+  areaOld20 <- raster::mask(d18to20tall, ageUse[ageUse$AgeClass=="OldGrowth",])
+  valsOld20 <- raster::values(areaOld20)
+  areaSampledOld20 <- length(valsOld20[!is.na(valsOld20)])/10000
+  
+  areaSec20 <- raster::mask(d18to20tall, ageUse[ageUse$AgeClass=="Secondary",])
+  valsSec20 <- raster::values(areaSec20)
+  areaSampledSec20 <- length(valsSec20[!is.na(valsSec20)])/10000
+  
 #### SUMMARY GAP STATS PER YEAR ####
   
   # Define a function to estimate the gap % and #/ha using bootstrapping, 
@@ -139,38 +156,216 @@
   mxSz <- quantile(c(gaps15to18sp$area,
               gaps18to20sp$area),1)
   
+  # find which gap sizes are NA
+  gapPres <- data.frame(minSz = seq(24.5,(mxSz - 0.5),by=1),
+                        maxSz = seq(25.5,(mxSz + 0.5),by=1),
+                        n18 = NA,
+                        n20 = NA)
+  
+  for(i in 1:nrow(gapPres)){
+    gapPres$n18[i] <- length(gaps15to18sp$area[gaps15to18sp$area>gapPres$minSz[i] & gaps15to18sp$area<gapPres$maxSz[i]])
+    gapPres$n20[i] <- length(gaps18to20sp$area[gaps18to20sp$area>gapPres$minSz[i] & gaps18to20sp$area<gapPres$maxSz[i]])
+  }
+  szUse <- gapPres$minSz[(gapPres$n18>0 | gapPres$n20>0)]
   
   allData15to18 <- data.frame(dbh = gaps15to18sp$area,
                               quadnum = gaps15to18sp$block)
   
-  i <- 1
-  datadir <- "SizeFreqResults/"
-  site <- "BCI"
-  census <- "15to18"
-  szFreq15to18 <- doallbootstrapdbhfits(alldata = allData15to18,
-                                        nreps=1000, # number of bootstrap replicates - should be 1000 or so
-                                        alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
-                                        fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
-                                        # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
-                                        filestem="gaps15to18", # this is the beginning of the names of the output files
-                                        ddiv=seq(24.5,(mxSz + 0.5),by=1))
+#### Bootstrapped size frequency by year ####
   
- 
-  allData18to20 <- data.frame(dbh = gaps18to20sp$area,
-                              quadnum = gaps18to20sp$block)
-  i <- 1
-  datadir <- "SizeFreqResults/"
-  site <- "BCI"
-  census <- "18to20"
-  szFreq18to20 <- doallbootstrapdbhfits(alldata = allData18to20,
-                                        nreps=1000, # number of bootstrap replicates - should be 1000 or so
-                                        alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
-                                        fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
-                                        # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
-                                        filestem="gaps18to20", # this is the beginning of the names of the output files
-                                        ddiv=seq(24.5,(mxSz + 0.5),by=1))
-  
-#### READ AND PLOT BOOTSTRAPPED RESULTS ####
+    i <- 1
+    datadir <- "SizeFreqResults/"
+    site <- "BCI"
+    census <- "15to18"
+    szFreq15to18 <- doallbootstrapdbhfits(alldata = allData15to18,
+                                          nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                          alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                          fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                          # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                          filestem="gaps15to18_new", # this is the beginning of the names of the output files
+                                          # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                          ddiv=c(szUse,(mxSz + 0.5)))
+    
+   
+    allData18to20 <- data.frame(dbh = gaps18to20sp$area,
+                                quadnum = gaps18to20sp$block)
+    i <- 1
+    datadir <- "SizeFreqResults/"
+    site <- "BCI"
+    census <- "18to20"
+    szFreq18to20 <- doallbootstrapdbhfits(alldata = allData18to20,
+                                          nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                          alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                          fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                          # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                          filestem="gaps18to20_new", # this is the beginning of the names of the output files
+                                          # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                          ddiv=c(szUse,(mxSz + 0.5)))
+    
+    
+#### Bootstrapped size frequency by forest age ####
+    
+    # Forest age polygon
+      age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+      age$AgeClass <- "Other"
+      age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
+      age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
+      ageUse <- age[!(age$AgeClass=="Other"),]
+      
+    # Find forest age for each gap
+      gaps15to18sp$Age <- sp::over(gaps15to18sp, ageUse[,c("AgeClass")])
+      gaps18to20sp$Age <- sp::over(gaps18to20sp, ageUse[,c("AgeClass")])
+      
+    # Run code for each age
+      
+      oldGrowthGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$Age=="OldGrowth"],
+                                        quadnum = gaps15to18sp$block[gaps15to18sp$Age=="OldGrowth"]),
+                             data.frame(dbh = gaps18to20sp$area[gaps18to20sp$Age=="OldGrowth"],
+                                        quadnum = gaps18to20sp$block[gaps18to20sp$Age=="OldGrowth"]))
+      i <- 1
+      datadir <- "SizeFreqResults/"
+      site <- "BCI"
+      census <- "OldGrowth"
+      szFreq15to18 <- doallbootstrapdbhfits(alldata = oldGrowthGaps,
+                                            nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                            alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                            fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                            # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                            filestem="gapsOldGrowth", # this is the beginning of the names of the output files
+                                            # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                            ddiv=c(szUse,(mxSz + 0.5)))
+      
+      
+      secondaryGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$Age=="Secondary"],
+                                        quadnum = gaps15to18sp$block[gaps15to18sp$Age=="Secondary"]),
+                             data.frame(dbh = gaps18to20sp$area[gaps18to20sp$Age=="Secondary"],
+                                        quadnum = gaps18to20sp$block[gaps18to20sp$Age=="Secondary"]))
+      i <- 1
+      datadir <- "SizeFreqResults/"
+      site <- "BCI"
+      census <- "Secondary"
+      szFreq15to18 <- doallbootstrapdbhfits(alldata = secondaryGaps,
+                                            nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                            alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                            fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                            # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                            filestem="gapsSecondary", # this is the beginning of the names of the output files
+                                            # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                            ddiv=c(szUse,(mxSz + 0.5)))
+      
+#### Bootstrapped size frequency by soil parent material ####
+      
+    # Soil type polygon  
+      soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+      soil <- sp::spTransform(soil,raster::crs(d15to18tall))
+      
+      # Define parent material and soil form from soil class
+      soil$SoilParent <- NA
+      soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
+      soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
+      soil[soil$SOIL=="Fairchild",c("SoilParent")] <- c("Bohio")
+      soil[soil$SOIL=="Gross",c("SoilParent")] <- c("Bohio")
+      soil[soil$SOIL=="Harvard",c("SoilParent")] <- c("CaimitoVolcanic")
+      soil[soil$SOIL=="Hood",c("SoilParent")] <- c("CaimitoVolcanic")
+      soil[soil$SOIL=="Lake",c("SoilParent")] <- c("Andesite")
+      soil[soil$SOIL=="Lutz",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      soil[soil$SOIL=="Marron",c("SoilParent")] <- c("Andesite")
+      soil[soil$SOIL=="Poacher",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      soil[soil$SOIL=="Standley",c("SoilParent")] <- c("Bohio")
+      soil[soil$SOIL=="Wetmore",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      soil[soil$SOIL=="Zetek",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      
+      soil$SoilForm <- NA
+      soil[soil$SOIL=="AVA", c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Barbour", c("SoilForm")] <- c("PaleSwellingClay")
+      soil[soil$SOIL=="Fairchild",c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Gross",c("SoilForm")] <- c("PaleSwellingClay")
+      soil[soil$SOIL=="Harvard",c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Hood",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Lake",c("SoilForm")] <- c("PaleSwellingClay")
+      soil[soil$SOIL=="Lutz",c("SoilForm")] <- c("MottledHeavyClay")
+      soil[soil$SOIL=="Marron",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Poacher",c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Standley",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
+      
+      # Find forest age for each gap
+      gaps15to18sp$SoilParent <- sp::over(gaps15to18sp, soil[,c("SoilParent")])
+      gaps18to20sp$SoilParent <- sp::over(gaps18to20sp, soil[,c("SoilParent")])
+      
+      # Run code for each age
+      
+      andesiteGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$SoilParent=="Andesite"],
+                                        quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="Andesite"]),
+                             data.frame(dbh = gaps18to20sp$area[gaps18to20sp$SoilParent=="Andesite"],
+                                        quadnum = gaps18to20sp$block[gaps18to20sp$SoilParent=="Andesite"]))
+      i <- 1
+      datadir <- "SizeFreqResults/"
+      site <- "BCI"
+      census <- "Andesite"
+      szFreq15to18 <- doallbootstrapdbhfits(alldata = andesiteGaps,
+                                            nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                            alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                            fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                            # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                            filestem="gapsAndesite", # this is the beginning of the names of the output files
+                                            # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                            ddiv=c(szUse,(mxSz + 0.5)))
+      
+      
+      bohioGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$SoilParent=="Bohio"],
+                                        quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="Bohio"]),
+                             data.frame(dbh = gaps18to20sp$area[gaps18to20sp$SoilParent=="Bohio"],
+                                        quadnum = gaps18to20sp$block[gaps18to20sp$SoilParent=="Bohio"]))
+      i <- 1
+      datadir <- "SizeFreqResults/"
+      site <- "BCI"
+      census <- "Bohio"
+      szFreq15to18 <- doallbootstrapdbhfits(alldata = bohioGaps,
+                                            nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                            alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                            fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                            # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                            filestem="gapsBohio", # this is the beginning of the names of the output files
+                                            # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                            ddiv=c(szUse,(mxSz + 0.5)))
+      
+      caimitoVolcanicGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$SoilParent=="CaimitoVolcanic"],
+                                    quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="CaimitoVolcanic"]),
+                         data.frame(dbh = gaps18to20sp$area[gaps18to20sp$SoilParent=="CaimitoVolcanic"],
+                                    quadnum = gaps18to20sp$block[gaps18to20sp$SoilParent=="CaimitoVolcanic"]))
+      i <- 1
+      datadir <- "SizeFreqResults/"
+      site <- "BCI"
+      census <- "CaimitoVolcanic"
+      szFreq15to18 <- doallbootstrapdbhfits(alldata = caimitoVolcanicGaps,
+                                            nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                            alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                            fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                            # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                            filestem="gapsCaimitoVolcanic", # this is the beginning of the names of the output files
+                                            # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                            ddiv=c(szUse,(mxSz + 0.5)))
+      
+      caimitoMarineGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$SoilParent=="CaimitoMarineSedimentary"],
+                                              quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="CaimitoMarineSedimentary"]),
+                                   data.frame(dbh = gaps18to20sp$area[gaps18to20sp$SoilParent=="CaimitoMarineSedimentary"],
+                                              quadnum = gaps18to20sp$block[gaps18to20sp$SoilParent=="CaimitoMarineSedimentary"]))
+      i <- 1
+      datadir <- "SizeFreqResults/"
+      site <- "BCI"
+      census <- "CaimitoMarine"
+      szFreq15to18 <- doallbootstrapdbhfits(alldata = caimitoMarineGaps,
+                                            nreps=1000, # number of bootstrap replicates - should be 1000 or so
+                                            alpha=c(0.05,0.01), # p-values for which to report results; confidence intervals given are for 1-alpha %
+                                            fitfcn=c("weib","pow","exp"), # the types of function to be fitted to the size distribution:
+                                            # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
+                                            filestem="gapsCaimitoMarine", # this is the beginning of the names of the output files
+                                            # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
+                                            ddiv=c(szUse,(mxSz + 0.5)))
+      
+#### Plot bootstrapped results by year ####
   
   # Read distribution results
   szFreq15to18 <- read.table("SizeFreqResults/gaps15to18sizedistbsfit.txt", header = T)
@@ -219,8 +414,8 @@
   # Divide intervals for plotting
   gapAreaRange <- c(25,mxSz)
   logRange <- log(gapAreaRange)
-  logMid <- sum(logRange)/2.5
-  brksRange_log <- c(seq(logRange[1],logMid,length.out = 10),seq(logMid,logRange[2],length.out = 3)[-1])
+  logMid <- sum(logRange)/1.8
+  brksRange_log <- c(seq(logRange[1],logMid,length.out = 20),seq(logMid,logRange[2],length.out = 6)[-1])
   brksRange <- ceiling(exp(brksRange_log))
   
   brksMins <- brksRange[1:length(brksRange)-1]
@@ -264,22 +459,22 @@
     return(yValsWeib)
   }
   
-  getExpEsts <- function(szFreqResults, gapSp, xVals){
-    
-    
-    scaleExp <- 1/(pexp(mxSz,rate = szFreqResults$exppar1est) -
-                     pexp(25, rate = szFreqResults$exppar1est))
-    
-    yValsExp <- scaleExp*dexp(xVals, rate = szFreqResults$exppar1est, log=F)*nrow(gapSp)
-    
-    return(yValsExp)
-  }
+  # getExpEsts <- function(szFreqResults, gapSp, xVals){
+  #   
+  #   
+  #   scaleExp <- 1/(pexp(mxSz,rate = szFreqResults$exppar1est) -
+  #                    pexp(25, rate = szFreqResults$exppar1est))
+  #   
+  #   yValsExp <- scaleExp*dexp(xVals, rate = szFreqResults$exppar1est, log=F)*nrow(gapSp)
+  #   
+  #   return(yValsExp)
+  # }
   
   yValsWeib18 <- getWeibEsts(szFreqResults = szFreq15to18, gapSp = gaps15to18sp, xVals)/nYr15to18/areaSampled15to18tall
   yValsWeib20 <- getWeibEsts(szFreqResults = szFreq18to20, gapSp = gaps18to20sp, xVals)/nYr18to20/areaSampled18to20tall
   
-  yValsExp18 <- getExpEsts(szFreqResults = szFreq15to18, gapSp = gaps15to18sp, xVals)/nYr15to18/areaSampled15to18tall
-  yValsExp20 <- getExpEsts(szFreqResults = szFreq18to20, gapSp = gaps18to20sp, xVals)/nYr18to20/areaSampled18to20tall
+  # yValsExp18 <- getExpEsts(szFreqResults = szFreq15to18, gapSp = gaps15to18sp, xVals)/nYr15to18/areaSampled15to18tall
+  # yValsExp20 <- getExpEsts(szFreqResults = szFreq18to20, gapSp = gaps18to20sp, xVals)/nYr18to20/areaSampled18to20tall
   
   logOption <- "xy"
   
@@ -318,5 +513,155 @@
 
   
 
+  
+  
+#### Plot bootstrapped results by forest age ####
+  
+  # Read distribution results
+  szFreqOld <- read.table("SizeFreqResults/gapsOldGrowthsizedistbsfit.txt", header = T)
+  szFreqSec <- read.table("SizeFreqResults/gapsSecondarysizedistbsfit.txt", header = T)
+  
+  
+  # What distribution has the highest likelihood?
+    # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
+    
+    # Old growth
+    round(-szFreqOld$weibloglike-max(c(-szFreqOld$weibloglike,-szFreqOld$powloglike,-szFreqOld$exploglike)),0) 
+    round(-szFreqOld$powloglike-max(c(-szFreqOld$weibloglike,-szFreqOld$powloglike,-szFreqOld$exploglike)),0) 
+    round(-szFreqOld$exploglike-max(c(-szFreqOld$weibloglike,-szFreqOld$powloglike,-szFreqOld$exploglike)),0) 
+    
+    # Secondary
+    round(-szFreqSec$weibloglike-max(c(-szFreqSec$weibloglike,-szFreqSec$powloglike,-szFreqSec$exploglike)),0) 
+    round(-szFreqSec$powloglike-max(c(-szFreqSec$weibloglike,-szFreqSec$powloglike,-szFreqSec$exploglike)),0) 
+    round(-szFreqSec$exploglike-max(c(-szFreqSec$weibloglike,-szFreqSec$powloglike,-szFreqSec$exploglike)),0) 
+  
+  # Get r-squared values for each
+  
+    # Old growth
+    round(szFreqOld$weibcatadjr2,3)
+    round(szFreqOld$powcatadjr2,3)
+    round(szFreqOld$expcatadjr2,3)
+    
+    # Secondary
+    round(szFreqSec$weibcatadjr2,3)
+    round(szFreqSec$powcatadjr2,3)
+    round(szFreqSec$expcatadjr2,3)
+  
+  # Weibull has the lowest -log likelihood in both intervals
+  round(szFreqOld[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
+  round(szFreqSec[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
+  
+  round(szFreqOld[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
+  round(szFreqSec[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
+  
+  
+  # Make plot of data and best-fit lines
+  
+  # find max gap size
+  mxSz <- max(c(gaps15to18sp$area,
+                gaps18to20sp$area))
+  
+  # Divide intervals for plotting
+  gapAreaRange <- c(25,mxSz)
+  logRange <- log(gapAreaRange)
+  logMid <- sum(logRange)/1.8
+  brksRange_log <- c(seq(logRange[1],logMid,length.out = 20),seq(logMid,logRange[2],length.out = 6)[-1])
+  brksRange <- ceiling(exp(brksRange_log))
+  
+  brksMins <- brksRange[1:length(brksRange)-1]
+  brksMaxs <- brksRange[2:length(brksRange)]
+  brksMids <- (brksMins + brksMaxs)/2
+  
+  # Make vectors of gaps of each area range, normalized by the number of "bins" combined
+  makeGapVectors <- function(gapAreaVector, minarea, maxarea){
+    nArea <- rep(NA,length(minarea))
+    for(i in 1:length(minarea)){
+      nGaps <- length(gapAreaVector[gapAreaVector>=minarea[i] & gapAreaVector<maxarea[i]])
+      szRange <- maxarea[i]-minarea[i]
+      nArea[i] <-nGaps/szRange
+    }
+    return(nArea)
+  }
+  
+  gapSizesOld <- makeGapVectors(gapAreaVector = oldGrowthGaps$dbh,
+                                   minarea = brksMins,
+                                   maxarea = brksMaxs)/(areaSampledOld18*nYr15to18 + areaSampledOld20*nYr18to20)
+  
+  gapSizesSec <- makeGapVectors(gapAreaVector = secondaryGaps$dbh,
+                                   minarea = brksMins,
+                                   maxarea = brksMaxs)/(areaSampledSec18*nYr15to18 + areaSampledSec20*nYr18to20)
+  
+  
+  # Get correct fitted y-values for each year, adjusted for truncated distributions
+  xVals <- seq(gapAreaRange[1],gapAreaRange[2],length.out = 1000)
+  
+  getWeibEsts <- function(szFreqResults, gapSp, xVals){
+    
+    scaleWeib <- 1/(pweibull(mxSz,
+                             shape= szFreqResults$weibpar1est,
+                             scale = szFreqResults$weibpar2est) -
+                      pweibull(25,
+                               shape= szFreqResults$weibpar1est,
+                               scale = szFreqResults$weibpar2est))
+    yValsWeib <- scaleWeib*dweibull(xVals,
+                                    shape= szFreqResults$weibpar1est,
+                                    scale = szFreqResults$weibpar2est)*nrow(gapSp)
+    return(yValsWeib)
+  }
+  
+  # getExpEsts <- function(szFreqResults, gapSp, xVals){
+  #   
+  #   
+  #   scaleExp <- 1/(pexp(mxSz,rate = szFreqResults$exppar1est) -
+  #                    pexp(25, rate = szFreqResults$exppar1est))
+  #   
+  #   yValsExp <- scaleExp*dexp(xVals, rate = szFreqResults$exppar1est, log=F)*nrow(gapSp)
+  #   
+  #   return(yValsExp)
+  # }
+  
+  yValsWeibOld <- getWeibEsts(szFreqResults = szFreqOld, gapSp = oldGrowthGaps, xVals)/(0.5*(nYr15to18+nYr18to20))/(areaSampledOld18+areaSampledOld20)
+  yValsWeibSec <- getWeibEsts(szFreqResults = szFreqSec, gapSp = secondaryGaps, xVals)/(0.5*(nYr15to18+nYr18to20))/(areaSampledSec18+areaSampledSec20)
+  
+  # yValsExp18 <- getExpEsts(szFreqResults = szFreqOld, gapSp = gapsOldsp, xVals)/nYrOld/areaSampledOldtall
+  # yValsExp20 <- getExpEsts(szFreqResults = szFreqSec, gapSp = gapsSecsp, xVals)/nYrSec/areaSampledSectall
+  
+  logOption <- "xy"
+  
+  yRange <- range(c(gapSizesOld,gapSizesSec)) + c(1e-7,0)
+  
+  #Define colors
+  colOld <- "darkgreen"
+  colSec <- "lightgreen"
+  
+  par(las = 1, mar=c(4,5,2,1))
+  plot(x = brksMids, y = gapSizesOld,
+       xlim=range(brksMids),
+       ylim=yRange,
+       col = adjustcolor(colOld,0.6),
+       log = logOption,
+       pch=19,
+       cex.axis = 0.8,
+       ylab = expression("Disturbance frequency (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
+       xlab = expression("Disturbance area (m"^"2"~")"))
+  
+  points(x = brksMids, y = gapSizesSec,
+         col = adjustcolor(colSec,0.6), pch=19)
+  
+  legend(x=30,y=0.0001,
+         c("Old growth","Secondary"),
+         col=adjustcolor(c(colOld,colSec),0.6),
+         pch=19, cex=1,
+         bty="n")
+  
+  lines(x = xVals, y = yValsWeibOld, col = adjustcolor(colOld,0.6), lwd=2)
+  lines(x = xVals, y = yValsWeibSec, col = adjustcolor(colSec,0.6), lwd=2)
+  
+  
+  
+  
+  
+  
+  
   
   
