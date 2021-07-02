@@ -369,8 +369,8 @@
     dens15_50ha <- density(vals15_50ha[!is.na(vals15_50ha)])
   
   # Do sensitivity analysis to find best parameters to use
-    correctionParams <- data.frame(par1 = rep(2:10,10),
-                                   par2 = rep(1:10,each=9),
+    correctionParams <- data.frame(par1 = rep(seq(2,10,0.5),length(seq(1,10,0.5))),
+                                   par2 = rep(seq(1,10,0.5),each=length(seq(2,10,0.5))),
                                    stat = NA)
     
     for(i in 1:nrow(correctionParams)){
@@ -381,9 +381,10 @@
       correctionParams$stat[i] <- kruskal.test(list(vals15c,vals15_50ha))$statistic
     }
     
-    par1 <- correctionParams[which(correctionParams$stat==min(correctionParams$stat)),"par1"]
-    par2 <- correctionParams[which(correctionParams$stat==min(correctionParams$stat)),"par2"]
+    #par1 <- correctionParams[which(correctionParams$stat==min(correctionParams$stat)),"par1"]
+    #par2 <- correctionParams[which(correctionParams$stat==min(correctionParams$stat)),"par2"]
     
+
     # BEST: par1 = 5 and par2 = 1
    
     
@@ -392,15 +393,15 @@
     
   # a. plot sensitivity analysis results  
     htThreshKruskall <- matrix(data = correctionParams$stat,
-                           nrow = length(2:10),
-                           ncol = length(1:10),
+                           nrow = length(seq(2,10,0.5)),
+                           ncol = length(seq(1,10,0.5)),
                            byrow = F,
-                           dimnames = list(2:10,1:10))
+                           dimnames = list(seq(2,10,0.5),seq(1,10,0.5)))
     htThreshKruskall <- htThreshKruskall-min(htThreshKruskall)
     
     plotMin <- min(htThreshKruskall)
     plotMax <- max(htThreshKruskall)
-    plotBreaks <- c(0,2,seq(100,1200,100))
+    plotBreaks <- c(0,1,2,4,8,16,24,seq(100,1200,100))
     
     library(plot.matrix)
     plot(htThreshKruskall, breaks=plotBreaks,

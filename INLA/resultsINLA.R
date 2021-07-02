@@ -3,6 +3,7 @@ library(INLA)
 load("INLA/INLA_prelim_40m_tin.RData")
 load("INLA/INLA_fullModelResult.RData")
 load("INLA/INLA_fullModelResult_separate.RData")
+load("INLA/INLA_fullModelResult_noLargeGaps.RData")
 
   # Make an ID value for each cell
   bci.gapsAll$Order <- 1:nrow(bci.gapsAll)
@@ -22,8 +23,8 @@ load("INLA/INLA_fullModelResult_separate.RData")
 
 
 # smoothScales <- c(1,2,3,4,6,8,12,16,24,32,48,64)
-# curvScale <- 8
-# slopeScale <- 24
+# curvScale <- 2
+# slopeScale <- 16
 
 
 #### Calculate predicted values and residuals ####
@@ -40,24 +41,24 @@ load("INLA/INLA_fullModelResult_separate.RData")
     bci.gapsAll$fix_int <- model_full$summary.fixed$mean[model_full$names.fixed=="(Intercept)"]
     
     # Curvature
-    bci.gapsAll$fix_C <- bci.gapsAll$Sc_curvMean_8*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_curvMean_8"])
+    bci.gapsAll$fix_C <- bci.gapsAll$Sc_curvMean_2*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_curvMean_2"])
     
     
     # Slope
-    bci.gapsAll$fix_S <- bci.gapsAll$Sc_slopeMean_24*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_slopeMean_24"])
-    bci.gapsAll$fix_S2 <- bci.gapsAll$Sc_slopeMean_24_sq*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_slopeMean_24_sq"])
+    bci.gapsAll$fix_S <- bci.gapsAll$Sc_slopeMean_16*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_slopeMean_16"])
+    bci.gapsAll$fix_S2 <- bci.gapsAll$Sc_slopeMean_16_Sq*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_slopeMean_16_Sq"])
     
     # Height above drainage
     bci.gapsAll$fix_H <- bci.gapsAll$Sc_drainMean*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_drainMean"])
-    bci.gapsAll$fix_H2 <- bci.gapsAll$Sc_drainMean_sq*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_drainMean_sq"])
+    bci.gapsAll$fix_H2 <- bci.gapsAll$Sc_drainMean_Sq*(model_full$summary.fixed$mean[model_full$names.fixed=="Sc_drainMean_Sq"])
     
-    # # Soil form
-    # bci.gapsAll$fix_soilForm <- 0
-    # 
-    # bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="MottledHeavyClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormMottledHeavyClay"]
-    # bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="PaleSwellingClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormPaleSwellingClay"]
-    # bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="RedLightClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormRedLightClay"]
-    # 
+    # Soil form
+    bci.gapsAll$fix_soilForm <- 0
+
+    bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="MottledHeavyClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormMottledHeavyClay"]
+    bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="PaleSwellingClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormPaleSwellingClay"]
+    bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="RedLightClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormRedLightClay"]
+
     
     # Soil parent material
     bci.gapsAll$fix_soilParent <- 0
@@ -76,7 +77,7 @@ load("INLA/INLA_fullModelResult_separate.RData")
     
     
     # All
-    bci.gapsAll$fix_sum <- bci.gapsAll$fix_int + bci.gapsAll$fix_C + bci.gapsAll$fix_S + bci.gapsAll$fix_S2 + bci.gapsAll$fix_H + bci.gapsAll$fix_H2 +bci.gapsAll$fix_soilParent + bci.gapsAll$fix_age + bci.gapsAll$fix_year
+    bci.gapsAll$fix_sum <- bci.gapsAll$fix_int + bci.gapsAll$fix_C + bci.gapsAll$fix_S + bci.gapsAll$fix_S2 + bci.gapsAll$fix_H + bci.gapsAll$fix_H2 + bci.gapsAll$fix_soilParent + bci.gapsAll$fix_soilForm + bci.gapsAll$fix_age + bci.gapsAll$fix_year
     
     # Predicted value with just fixed effects
     bci.gapsAll$fix_pred <- exp(bci.gapsAll$fix_sum)/(1 + exp(bci.gapsAll$fix_sum))
@@ -706,59 +707,59 @@ dev.off()
                                    ymx = raster::extent(bci.gaps20)@ymax)
   predSdRaster20[is.na(predMeanRaster20)] <- NA
   
-  # Plot rasters
-  colBreaks <- seq(0,0.50,0.05)
-
-  
-  # 2015-2108
-  jpeg(height=3000,width=2000,file = "Figure S10. Raster patterns.jpg")
-  par(mfrow=c(4,3))
-  raster::plot(obsRaster18,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Observed")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predMeanRaster18,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Predicted (mean)")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predSdRaster18,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(seq(0,0.1,0.01))),
-               breaks = seq(0,0.1,0.01),
-               main = "Predicted (SD)")
-  raster::plot(buffer, add=T)
-  mtext("2015 - 2018", outer=F, side = 3, line = -1.5)
-  
-  # 2018-2020
-  raster::plot(obsRaster20,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Observed")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predMeanRaster20,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(colBreaks)),
-               breaks = colBreaks,
-               main = "Predicted (mean)")
-  raster::plot(buffer, add=T)
-  
-  raster::plot(predSdRaster20,
-               bty = "n", box = F, xaxt="n", yaxt="n",
-               col = viridis::viridis(length(seq(0,0.1,0.01))),
-               breaks = seq(0,0.1,0.01),
-               main = "Predicted (SD)")
-  raster::plot(buffer, add=T)
-  mtext("2018 - 2020", outer=F, side = 3, line = -1.5)
-  
-dev.off()
+  # # Plot rasters
+  # colBreaks <- seq(0,0.50,0.05)
+  # 
+  # 
+#   # 2015-2108
+#   jpeg(height=3000,width=2000,file = "Figure S10. Raster patterns.jpg")
+#   par(mfrow=c(4,3))
+#   raster::plot(obsRaster18,
+#                bty = "n", box = F, xaxt="n", yaxt="n",
+#                col = viridis::viridis(length(colBreaks)),
+#                breaks = colBreaks,
+#                main = "Observed")
+#   raster::plot(buffer, add=T)
+#   
+#   raster::plot(predMeanRaster18,
+#                bty = "n", box = F, xaxt="n", yaxt="n",
+#                col = viridis::viridis(length(colBreaks)),
+#                breaks = colBreaks,
+#                main = "Predicted (mean)")
+#   raster::plot(buffer, add=T)
+#   
+#   raster::plot(predSdRaster18,
+#                bty = "n", box = F, xaxt="n", yaxt="n",
+#                col = viridis::viridis(length(seq(0,0.1,0.01))),
+#                breaks = seq(0,0.1,0.01),
+#                main = "Predicted (SD)")
+#   raster::plot(buffer, add=T)
+#   mtext("2015 - 2018", outer=F, side = 3, line = -1.5)
+#   
+#   # 2018-2020
+#   raster::plot(obsRaster20,
+#                bty = "n", box = F, xaxt="n", yaxt="n",
+#                col = viridis::viridis(length(colBreaks)),
+#                breaks = colBreaks,
+#                main = "Observed")
+#   raster::plot(buffer, add=T)
+#   
+#   raster::plot(predMeanRaster20,
+#                bty = "n", box = F, xaxt="n", yaxt="n",
+#                col = viridis::viridis(length(colBreaks)),
+#                breaks = colBreaks,
+#                main = "Predicted (mean)")
+#   raster::plot(buffer, add=T)
+#   
+#   raster::plot(predSdRaster20,
+#                bty = "n", box = F, xaxt="n", yaxt="n",
+#                col = viridis::viridis(length(seq(0,0.1,0.01))),
+#                breaks = seq(0,0.1,0.01),
+#                main = "Predicted (SD)")
+#   raster::plot(buffer, add=T)
+#   mtext("2018 - 2020", outer=F, side = 3, line = -1.5)
+#   
+# dev.off()
 
 #### Figure 5: Make plots of average spatial pattern across all years ####
 
@@ -819,58 +820,6 @@ dev.off()
     # Just fixed effects
     summary(lm(gapPropCens~fix_pred, data = bci.gapsAll[bci.gapsAll$Year=="2020" & !is.na(bci.gapsAll$gapPropCens),]))
   
-#### Figure 7: Low canopy area and average spatial pattern ####
-  
-  blockData <- read.csv("bootstrapBlocks.csv")
-  lo09 <- raster::raster("binaryLoCanopy.tif")
-
-  blockData$propFix <- NA
-  blockData$propObs <- NA
-  blockData$propLow <- NA
-  
-  for(i in 1:nrow(blockData)){
-    gapFix <- raster::crop(avgPredictedRaster, raster::extent(blockData$xmin[i],
-                                                       blockData$xmax[i],
-                                                       blockData$ymin[i],
-                                                       blockData$ymax[i]))
-    blockData$propFix[i] <- mean(gapFix@data@values, na.rm=T)
-    
-    gapObs <- raster::crop(avgObservedRaster, raster::extent(blockData$xmin[i],
-                                                              blockData$xmax[i],
-                                                              blockData$ymin[i],
-                                                              blockData$ymax[i]))
-    blockData$propObs[i] <- mean(gapObs@data@values, na.rm=T)
-    
-    loSub <- raster::crop(lo09, raster::extent(blockData$xmin[i],
-                                                       blockData$xmax[i],
-                                                       blockData$ymin[i],
-                                                       blockData$ymax[i]))
-    blockData$propLow[i] <- length(loSub@data@values[!is.na(loSub@data@values) & loSub@data@values==0])/length(loSub@data@values[!is.na(loSub@data@values) & loSub@data@values==1])
-    print(i)
-  }
-  
-  par(mfrow=c(1,2),mar=c(4,4,1,1))
-  plot(propLow~propObs, data = blockData[blockData$area>100000,],
-       log = "xy",
-       xlim=c(0.01,0.055),
-       ylim=c(0.02,0.25),
-       pch = 19, 
-       xlab = "Average observed disturbance frequency",
-       ylab = "Proportion of area with canopy < 10 m")
-  text("a", x = 0.01, y = 0.25)
-  plot(propLow~propFix, data = blockData[blockData$area>100000,],
-       pch = 19, 
-       xlim=c(0.005,0.018),
-       ylim=c(0.02,0.25),
-       log = "xy",
-       xlab = "Average predicted disturbance frequency",
-       ylab = NA)
-  text("b", x = 0.005, y = 0.25)
-  
-  summary(lm(log(propLow)~log(propObs), data = blockData[blockData$area>100000,]))
-  summary(lm(log(propLow)~log(propFix), data = blockData[blockData$area>100000,]))
-  
-  
 #### Figure 6: Fixed effects sizes ####  
   fixedResults <- model_full$summary.fixed
   
@@ -878,19 +827,25 @@ dev.off()
   fixedResults1 <- model_full1$summary.fixed
   fixedResults2 <- model_full2$summary.fixed
   
+  # main model and second interval without large gaps
+  fixedResults_alt <- model_full_alt$summary.fixed
+  fixedResults2_alt <- model_full2_alt$summary.fixed
   
+  
+  # VERSION 1: main figure with only full model
   
   fixedNames <- c("Curvature (linear)", "Slope (linear)", "Slope (quadratic)",                    
                   "Height above drainage (linear)","Height above drainage (quadratic)",
                   "Soil parent: Andesite", "Soil parent: Caimito marine", "Soil parent: Caimito volcanic",
+                  "Soil form: Heavy clay", "Soil form: Swelling clay", "Soil form: Light clay",
                   "Forest age: Secondary",
                   "Year: 2015-2018")
-
+  
   par(mfrow=c(1,1), mar=c(4,1,1,1))
-  plot(x =fixedResults[2:nrow(fixedResults),"mean"],
+  plot(x = fixedResults[2:nrow(fixedResults),"mean"],
        y = nrow(fixedResults):2,
        xlim = range(fixedResults[2:nrow(fixedResults),c(3,5)]) + c(0,0.6),
-       ylim=c(2,11),
+       ylim=c(2,nrow(fixedResults)),
        pch = 19, 
        cex = 1,
        xlab = "Fixed effect",
@@ -902,40 +857,95 @@ dev.off()
          angle = 90, code=3,
          length = 0.05)
   
-  points(x = fixedResults1[2:nrow(fixedResults),"mean"],
-       y = nrow(fixedResults):2 - 0.2,
+  abline(v=0, lty=2)
+  text(fixedNames,
+       x = fixedResults[2:nrow(fixedResults),"0.975quant"]+0.005,
+       y = nrow(fixedResults):2,
+       pos = 4)
+  
+  # VERSION 2: separate results for each year
+  col18 <- "blue"
+  col20 <- "#d95f02"
+  
+  fixedNames <- c("Curvature (linear)", "Slope (linear)", "Slope (quadratic)",                    
+                  "Height above drainage (linear)","Height above drainage (quadratic)",
+                  "Soil parent: Andesite", "Soil parent: Caimito marine", "Soil parent: Caimito volcanic",
+                  "Soil form: Heavy clay", "Soil form: Swelling clay", "Soil form: Light clay",
+                  "Forest age: Secondary",
+                  "Year: 2015-2018")
+
+  par(mfrow=c(1,1), mar=c(4,1,1,1))
+  plot(x = fixedResults[2:nrow(fixedResults),"mean"],
+       y = 1.2*nrow(fixedResults):2,
+       xlim = range(fixedResults[2:nrow(fixedResults),c(3,5)]) + c(-0.4,0.6),
+       ylim=c(2,1.2*nrow(fixedResults)),
        pch = 19, 
        cex = 1,
-       col = "blue")
+       xlab = "Fixed effect",
+       ylab = NA, yaxt = "n")
+  arrows(x0 = fixedResults[2:nrow(fixedResults),"0.025quant"],
+         x1 = fixedResults[2:nrow(fixedResults),"0.975quant"],
+         y0 = 1.2*nrow(fixedResults):2,
+         y1 = 1.2*nrow(fixedResults):2,
+         angle = 90, code=3,
+         length = 0.05)
+  
+  points(x = fixedResults1[2:nrow(fixedResults),"mean"],
+       y = 1.2*nrow(fixedResults):2 - 0.2,
+       pch = 19, 
+       cex = 1,
+       col = col18)
   arrows(x0 = fixedResults1[2:nrow(fixedResults),"0.025quant"],
          x1 = fixedResults1[2:nrow(fixedResults),"0.975quant"],
-         y0 = nrow(fixedResults):2- 0.2,
-         y1 = nrow(fixedResults):2- 0.2,
+         y0 = 1.2*nrow(fixedResults):2- 0.2,
+         y1 = 1.2*nrow(fixedResults):2- 0.2,
          angle = 90, code=3,
          length = 0.05,
-         col="blue")
+         col = col18)
   
   points(x = fixedResults2[2:nrow(fixedResults),"mean"],
-         y = nrow(fixedResults):2 - 0.4,
+         y = 1.2*nrow(fixedResults):2 - 0.4,
          pch = 19, 
          cex = 1,
-         col = "lightblue")
+         col = col20)
   arrows(x0 = fixedResults2[2:nrow(fixedResults),"0.025quant"],
          x1 = fixedResults2[2:nrow(fixedResults),"0.975quant"],
-         y0 = nrow(fixedResults):2- 0.4,
-         y1 = nrow(fixedResults):2- 0.4,
+         y0 = 1.2*nrow(fixedResults):2- 0.4,
+         y1 = 1.2*nrow(fixedResults):2- 0.4,
          angle = 90, code=3,
          length = 0.05,
-         col="lightblue")
+         col = col20)
+  
+  points(x = fixedResults2_alt[2:nrow(fixedResults),"mean"],
+         y = 1.2*nrow(fixedResults):2 - 0.6,
+         pch = 1, 
+         cex = 1,
+         col = col20)
+  arrows(x0 = fixedResults2_alt[2:nrow(fixedResults),"0.025quant"],
+         x1 = fixedResults2_alt[2:nrow(fixedResults),"0.975quant"],
+         y0 = 1.2*nrow(fixedResults):2- 0.6,
+         y1 = 1.2*nrow(fixedResults):2- 0.6,
+         angle = 90, code=3,
+         length = 0.05,
+         lty=2,
+         col = col20)
   
   
   abline(v=0, lty=2)
   text(fixedNames,
         x = fixedResults[2:nrow(fixedResults),"0.975quant"]+0.005,
-       y = nrow(fixedResults):2,
+       y = 1.2*nrow(fixedResults):2,
        pos = 4)
   
-  
+  legend(x = -1.2,
+         y = 1.2*nrow(fixedResults),
+         c("Full model",
+           "2015-2018 only",
+           "2018-2020 only",
+           "2018-2020 only (no blowdown)"),
+         bty="n",
+         col = c("black", col18, col20, col20),
+         pch=c(19,19,19,1))
   
 #### Figure 4: Raster plots of landscape predictors ####
   
@@ -1119,14 +1129,14 @@ dev.off()
   
   par(mfrow=c(2,3), mar=c(0,4,0,1), oma=c(5,1,3,1))
   
-  hist(bci.gapsAll$curvMean_8[!is.na(bci.gapsAll$gapPropCens)],
-       xlim=range(bci.gapsAll$curvMean_8[!is.na(bci.gapsAll$gapPropCens)]),
+  hist(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)],
+       xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
        border="white",col="black",
        ylim=c(0,6000),
        main=NA, xaxt="n")
   
-  hist(bci.gapsAll$slopeMean_24[!is.na(bci.gapsAll$gapPropCens)],
-       xlim=range(bci.gapsAll$slopeMean_24[!is.na(bci.gapsAll$gapPropCens)]),
+  hist(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)],
+       xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
        border="white",col="black",
        ylim=c(0,6000),
        main=NA, xaxt="n", yaxt="n", ylab=NA)
@@ -1137,9 +1147,9 @@ dev.off()
        ylim=c(0,6000),
        main=NA, xaxt="n", yaxt="n", ylab=NA)
   
-  plot(y = curvAll[order(bci.gapsAll$curvMean_8)],
-       x = bci.gapsAll$curvMean_8[order(bci.gapsAll$curvMean_8)],
-       xlim=range(bci.gapsAll$curvMean_8[!is.na(bci.gapsAll$gapPropCens)]),
+  plot(y = curvAll[order(bci.gapsAll$curvMean_2)],
+       x = bci.gapsAll$curvMean_2[order(bci.gapsAll$curvMean_2)],
+       xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
        ylim=c(-0.4,0.3), 
        ylab = "Fixed effect",
@@ -1149,9 +1159,9 @@ dev.off()
   mtext("Curvature (LaPlacian convexity)",side=1,outer=F, line=3, cex = 0.8)
   
   
-  plot(y = slopeAll[order(bci.gapsAll$slopeMean_24)],
-       x = bci.gapsAll$slopeMean_24[order(bci.gapsAll$slopeMean_24)],       
-       xlim=range(bci.gapsAll$slopeMean_24[!is.na(bci.gapsAll$gapPropCens)]),
+  plot(y = slopeAll[order(bci.gapsAll$slopeMean_16)],
+       x = bci.gapsAll$slopeMean_16[order(bci.gapsAll$slopeMean_16)],       
+       xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
        ylim=c(-0.4,0.3),
        ylab = NA,
@@ -1188,7 +1198,7 @@ dev.off()
   # predicted values with just fixed effects  
     hist(bci.gapsAll$fix_pred[!is.na(bci.gapsAll$gapPropCens)])
 
-#### MEETING PREP: aggregate and look at R2 ####          
+#### Figure S?: aggregate and look at R2 ####          
     
   #Create rasters where all non-NA values are 1
     predMeanRaster18n <- predMeanRaster18
@@ -1270,3 +1280,296 @@ dev.off()
           lwd=2)
     
     mtext("Spatial resolution (ha)", side=1, outer=T, line=-1)
+
+#### Define forest age and soil type polygons ####
+    # Forest age polygon
+    age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+    age$AgeClass <- "Other"
+    age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
+    age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
+    ageUse <- age[!(age$AgeClass=="Other"),]
+    
+    # Soil type polygon  
+    soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+    soil <- sp::spTransform(soil,raster::crs(age))
+    
+    # Define parent material and soil form from soil class
+    soil$SoilParent <- NA
+    soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
+    soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
+    soil[soil$SOIL=="Fairchild",c("SoilParent")] <- c("Bohio")
+    soil[soil$SOIL=="Gross",c("SoilParent")] <- c("Bohio")
+    soil[soil$SOIL=="Harvard",c("SoilParent")] <- c("CaimitoVolcanic")
+    soil[soil$SOIL=="Hood",c("SoilParent")] <- c("CaimitoVolcanic")
+    soil[soil$SOIL=="Lake",c("SoilParent")] <- c("Andesite")
+    soil[soil$SOIL=="Lutz",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+    soil[soil$SOIL=="Marron",c("SoilParent")] <- c("Andesite")
+    soil[soil$SOIL=="Poacher",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+    soil[soil$SOIL=="Standley",c("SoilParent")] <- c("Bohio")
+    soil[soil$SOIL=="Wetmore",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+    soil[soil$SOIL=="Zetek",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+    
+    soil$SoilForm <- NA
+    soil[soil$SOIL=="AVA", c("SoilForm")] <- c("RedLightClay")
+    soil[soil$SOIL=="Barbour", c("SoilForm")] <- c("PaleSwellingClay")
+    soil[soil$SOIL=="Fairchild",c("SoilForm")] <- c("RedLightClay")
+    soil[soil$SOIL=="Gross",c("SoilForm")] <- c("PaleSwellingClay")
+    soil[soil$SOIL=="Harvard",c("SoilForm")] <- c("RedLightClay")
+    soil[soil$SOIL=="Hood",c("SoilForm")] <- c("BrownFineLoam")
+    soil[soil$SOIL=="Lake",c("SoilForm")] <- c("PaleSwellingClay")
+    soil[soil$SOIL=="Lutz",c("SoilForm")] <- c("MottledHeavyClay")
+    soil[soil$SOIL=="Marron",c("SoilForm")] <- c("BrownFineLoam")
+    soil[soil$SOIL=="Poacher",c("SoilForm")] <- c("RedLightClay")
+    soil[soil$SOIL=="Standley",c("SoilForm")] <- c("BrownFineLoam")
+    soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
+    soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
+    
+#### Figure 7: Low canopy area and average spatial pattern ####
+    
+# Raster of low canopy area in 2009
+  lo09 <- raster::raster("binaryLoCanopy.tif") # pixels with value 1 are => 10 m height, 0 are < 10 m
+  
+# Make raster of overall sampling effort
+  avgRasterN <- 0.5*raster::calc(raster::stack(predMeanRaster18n,predMeanRaster20n),sum, na.rm=T)
+    
+# Make raster of low canopy proportion using the same sampling as the INLA analysis
+  loCrop <- raster::crop(lo09, raster::extent(bci.gaps18))
+  rasterAll09 <- loCrop
+  rasterAll09[!is.na(raster::values(rasterAll09))] <- 1
+  resampleAll09 <- raster::aggregate(rasterAll09, cellSize, fun= sum)
+  resampleHi09 <- raster::aggregate(loCrop, cellSize, fun= sum)
+  rasterLo09 <- (resampleAll09-resampleHi09)/resampleAll09
+    
+# Create data frame to store results  
+  loResults <- data.frame(agBy = 1:20,
+                          fixR2 = NA,
+                          obsR2 = NA)
+  
+  for(i in 1:nrow(loResults)){
+    
+    # Aggregate low canopy area raster
+    agLo09 <- raster::aggregate(rasterLo09, fact = loResults$agBy[i], fun = mean, na.rm=T)
+    
+    # Aggregate average fixed effects raster
+    agFix <- raster::aggregate(avgPredictedRaster, fact = loResults$agBy[i], fun = mean, na.rm=T)
+    
+    # Aggregate average observed disturance raster
+    agObs <- raster::aggregate(avgObservedRaster, fact = loResults$agBy[i], fun = mean, na.rm=T)
+    
+    # Aggregate sampling effort
+    agN <- raster::aggregate(avgRasterN, fact = loResults$agBy[i], fun = sum, na.rm=T)
+      
+    # Find observations with 90% of values present
+    minObs <- 0.9*loResults$agBy[i]^2
+    useObs <- raster::values(agN)>minObs
+    
+    # Calculate R2 values
+    loResults$fixR2[i] <- summary(lm(raster::values(agLo09)[useObs]~raster::values(agFix)[useObs]))$r.squared
+    loResults$obsR2[i] <- summary(lm(raster::values(agLo09)[useObs]~raster::values(agObs)[useObs]))$r.squared
+  
+  }
+  
+  
+  # Get forest age and soil type values for each pixel from polygons for best spatial scale
+    agScale <- loResults$agBy[which(loResults$fixR2==max(loResults$fixR2))]
+    
+    # Aggregate low canopy area raster
+      agLo09 <- raster::aggregate(rasterLo09, fact = agScale, fun = mean, na.rm=T)
+    # Aggregate average fixed effects raster
+      agFix <- raster::aggregate(avgPredictedRaster, fact = agScale, fun = mean, na.rm=T)
+    # Aggregate average observed disturance raster
+      agObs <- raster::aggregate(avgObservedRaster, fact = agScale, fun = mean, na.rm=T)
+    # Aggregate sampling effort
+      agN <- raster::aggregate(avgRasterN, fact = agScale, fun = sum, na.rm=T)
+    # Find observations with 90% of values present
+      minObs <- 0.9*loResults$agBy[i]^2
+      useObs <- raster::values(agN)>minObs
+  
+    # Make forest age raster
+      agAge <- agLo09
+      agAge[ageUse[ageUse$AgeClass=="OldGrowth",]] <- 1
+      agAge[ageUse[ageUse$AgeClass=="Secondary",]] <- 2
+      
+    # Make soil parent material raster
+      agParent <- agLo09
+      agParent[soil[soil$SoilParent=="CaimitoVolcanic",]] <- 1
+      agParent[soil[soil$SoilParent=="Andesite",]] <- 2
+      agParent[soil[soil$SoilParent=="Bohio",]] <- 3
+      agParent[soil[soil$SoilParent=="CaimitoMarineSedimentary",]] <- 4
+      
+    # Make soil form raster
+      agForm <- agLo09
+      agForm[soil[soil$SoilForm=="RedLightClay",]] <- 1
+      agForm[soil[soil$SoilForm=="PaleSwellingClay",]] <- 2
+      agForm[soil[soil$SoilForm=="BrownFineLoam",]] <- 3
+      agForm[soil[soil$SoilForm=="MottledHeavyClay",]] <- 4
+      
+    # Combine all into data frame
+      bestAgResults <- data.frame(agLo09 = raster::values(agLo09),
+                                  agFix = raster::values(agFix),
+                                  agObs = raster::values(agObs),
+                                  agAge = raster::values(agAge),
+                                  agParent = raster::values(agParent),
+                                  agForm = raster::values(agForm),
+                                  agN = raster::values(agN))
+      # Only keep rows with enough observations
+      bestAgResults <- bestAgResults[useObs,]
+      # Rename age, parent material, soil form codes
+      bestAgResults[bestAgResults$agAge==1,"agAge"] <- "OldGrowth"
+      bestAgResults[bestAgResults$agAge==2,"agAge"] <- "Secondary"
+      bestAgResults[bestAgResults$agParent==1,"agParent"] <- "CaimitoVolcanic"
+      bestAgResults[bestAgResults$agParent==2,"agParent"] <- "Andesite"
+      bestAgResults[bestAgResults$agParent==3,"agParent"] <- "Bohio"
+      bestAgResults[bestAgResults$agParent==4,"agParent"] <- "CaimitoMarineSedimentary"
+      bestAgResults[bestAgResults$agForm==1,"agForm"] <- "RedLightClay"
+      bestAgResults[bestAgResults$agForm==2,"agForm"] <- "PaleSwellingClay"
+      bestAgResults[bestAgResults$agForm==3,"agForm"] <- "BrownFineLoam"
+      bestAgResults[bestAgResults$agForm==4,"agForm"] <- "MottledHeavyClay"
+      
+
+  # Plot results
+  
+  # Significance with aggregation scale    
+    par(mfrow=c(1,1), mar=c(4,4,1,1), oma=c(1,1,1,1), las=1)
+    
+    xVals <- (loResults$agBy*40)^2/10000
+    
+    plot(x = xVals,
+         y = loResults$fixR2,
+         ylim=range(loResults[,c("fixR2","obsR2")]),
+         xlab = NA,
+         ylab = "Observed variation explained (R^2)",
+         type = "l",
+         col = "blue",
+         lwd=2)
+    lines(x = xVals,
+          y = loResults$obsR2,
+          col="lightblue",
+          lwd=2)
+    legend(x = 0,
+           y = 0.8,
+           c("Predicted frequency (fixed effects)",
+             "Average observed frequency"),
+           col=c("blue","lightblue"),
+           lwd=2,
+           bty="n")
+  
+    mtext("Spatial resolution (ha)", side=1, outer=T, line=-1)
+    
+  # Correlation with best scale
+    par(mfrow=c(3,2), mar=c(2,2,0,0), oma=c(4,4,1,1))
+    
+    # By soil form
+    plot(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="RedLightClay",],
+         xlim=range(bestAgResults[,c("agFix")]),
+         ylim=range(bestAgResults[,c("agLo09")]),
+         col =wesanderson::wes_palette("Rushmore1",5)[5],
+         pch=19,
+         cex=2,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="BrownFineLoam",],
+           col = wesanderson::wes_palette("Rushmore1",5)[1],
+           pch=19,
+           cex=2)
+    points(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="PaleSwellingClay",],
+           col = wesanderson::wes_palette("Rushmore1",5)[3],
+           pch=19,
+           cex=2)
+    points(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="MottledHeavyClay",],
+           col = wesanderson::wes_palette("Rushmore1",5)[4],
+           pch=19,
+           cex=2)
+    
+    plot(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="RedLightClay",],
+         xlim=range(bestAgResults[,c("agObs")]),
+         ylim=range(bestAgResults[,c("agLo09")]),
+         col = wesanderson::wes_palette("Rushmore1",5)[5],
+         pch=19,
+         cex=2,
+         xlab = NA, ylab=NA, yaxt="n",xaxt="n")
+    points(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="BrownFineLoam",],
+           col = wesanderson::wes_palette("Rushmore1",5)[1],
+           pch=19,
+           cex=2)
+    points(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="PaleSwellingClay",],
+           col = wesanderson::wes_palette("Rushmore1",5)[3],
+           pch=19,
+           cex=2)
+    points(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="MottledHeavyClay",],
+           col = wesanderson::wes_palette("Rushmore1",5)[4],
+           pch=19,
+           cex=2)
+    
+    # By soil parent material
+    plot(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults[,c("agFix")]),
+         ylim=range(bestAgResults[,c("agLo09")]),
+         col = wesanderson::wes_palette("Chevalier1",4)[1],
+         pch=19,
+         cex=2,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="CaimitoMarineSedimentary",],
+           col = wesanderson::wes_palette("Chevalier1",4)[3],
+           pch=19,
+           cex=2)
+    points(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="Andesite",],
+           col = wesanderson::wes_palette("Chevalier1",4)[2],
+           pch=19,
+           cex=2)
+    points(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="Bohio",],
+           col = wesanderson::wes_palette("Chevalier1",4)[4],
+           pch=19,
+           cex=2)
+    
+    plot(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults[,c("agObs")]),
+         ylim=range(bestAgResults[,c("agLo09")]),
+         col = wesanderson::wes_palette("Chevalier1",4)[1],
+         pch=19,
+         cex=2,
+         xlab = NA, ylab=NA, yaxt="n",xaxt="n")
+    points(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="CaimitoMarineSedimentary",],
+           col = wesanderson::wes_palette("Chevalier1",4)[3],
+           pch=19,
+           cex=2)
+    points(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="Andesite",],
+           col = wesanderson::wes_palette("Chevalier1",4)[2],
+           pch=19,
+           cex=2)
+    points(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="Bohio",],
+           col = wesanderson::wes_palette("Chevalier1",4)[4],
+           pch=19,
+           cex=2)
+    
+    # Plot by forest age
+    plot(agLo09~agFix, data = bestAgResults[bestAgResults$agAge=="OldGrowth",],
+         xlim=range(bestAgResults[,c("agFix")]),
+         ylim=range(bestAgResults[,c("agLo09")]),
+         col = wesanderson::wes_palette("Moonrise2",4)[1],
+         pch=19,
+         cex=2,
+         xlab = NA, ylab=NA)
+    points(agLo09~agFix, data = bestAgResults[bestAgResults$agAge=="Secondary",],
+           col = wesanderson::wes_palette("Moonrise2",4)[2],
+           pch=19,
+           cex=2)
+    mtext("Predicted frequency (fixed effects)",
+          side=1, outer=F, line=2.5)
+    
+    plot(agLo09~agObs, data = bestAgResults[bestAgResults$agAge=="OldGrowth",],
+         xlim=range(bestAgResults[,c("agObs")]),
+         ylim=range(bestAgResults[,c("agLo09")]),
+         col = wesanderson::wes_palette("Moonrise2",4)[1],
+         pch=19,
+         cex=2,
+         xlab = NA, ylab=NA, yaxt="n")
+    points(agLo09~agObs, data = bestAgResults[bestAgResults$agAge=="Secondary",],
+           col = wesanderson::wes_palette("Moonrise2",4)[2],
+           pch=19,
+           cex=2)
+    mtext("Average observed frequency",
+          side=1, outer=F, line=2.5)
+    par(las=0)
+    mtext("Proportion of low canopy", side=2, outer=T, line=1.5)
+    par(las=1)
