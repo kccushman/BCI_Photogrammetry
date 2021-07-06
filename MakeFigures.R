@@ -105,7 +105,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     cor18to20 <- makePlotRaster(cor18to20, buffer)
     
   # Make plot of corrected and uncorrected height change
-    colBrks <- c(-300,-200,-30,-20,-10,-3,3,10,20,30,200)
+    colBrks <- c(-300,-200,-30,-20,-10,-5,5,10,20,30,200)
     colPal <- colorRampPalette(c("grey","red","orangered","darksalmon","khaki2",
                                   "white",
                                   "skyblue1","skyblue3","cornflowerblue","darkblue"))
@@ -144,7 +144,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
 
 
 #### Figure S2 (2015 data correction): in "Validation_50HaPlot.R" ####
-#### Figure S3: Results from disturbance validation in 50 ha plot ####
+#### Figure S5: Results from disturbance validation in 50 ha plot ####
     
 ## Panel a: plot monthly disturbances
     valGaps15to18 <- rgdal::readOGR("toCheckRaquel/toCheckRaquel.shp")
@@ -318,40 +318,6 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
              pt.cex=1,
              cex=0.7)
 
-    
-    # By area  
-    # Total area in true gaps-- from comparison with monthly data OR confirmed visually
-    sum(plotGaps$area2[plotGaps$obsrvdAl==T | plotGaps$vslChck %in% c(1,4:9)])/sum(plotGaps$area2)
-    
-    sum(plotGaps$area2[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T])/sum(plotGaps$area2)
-    sum(plotGaps$area2[plotGaps$obsrvdAl==T])/sum(plotGaps$area2)
-    
-    # False positive area
-    sum(plotGaps$area2[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(2,10)])/sum(plotGaps$area2)
-    
-    # Area missing from monthly data
-    sum(plotGaps$area2[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(1)])/sum(plotGaps$area2)
-    sum(plotGaps$area2[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(7,9)])/sum(plotGaps$area2)
-    # Spatial or temporal mismatch
-    sum(plotGaps$area2[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(5,6,8)])/sum(plotGaps$area2)
-    
-    # By number of gaps
-    # Total area in true gaps-- from comparison with monthly data OR confirmed visually
-    length(plotGaps$area2[plotGaps$obsrvdAl==T | plotGaps$vslChck %in% c(1,4:9)])/length(plotGaps$area2)
-    
-    # Total area not observed
-    length(plotGaps$area2[plotGaps$obsrvdAl==F])/length(plotGaps$area2)
-    
-    length(plotGaps$area2[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T])/length(plotGaps$area2)
-    length(plotGaps$area2[plotGaps$obsrvdAl==T])/length(plotGaps$area2)
-    
-    # False positive area
-    length(plotGaps$area2[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(2,10)])/length(plotGaps$area2)
-    # Area missing from monthly data
-    length(plotGaps$area2[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(1,7,9)])/length(plotGaps$area2)
-    # Spatial or temporal mismatch
-    length(plotGaps$area2[plotGaps$obsrvdAl==F & plotGaps$vslChck %in% c(5,6,8)])/length(plotGaps$area2)
-   
   ## Stacked barplots
     # Monthly data
     monthlySums <- as.table(matrix(c(sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(0,5)])/sum(valGapsSzHt$area2),
@@ -368,6 +334,10 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     barplot(t(monthlySums),
             col=adjustcolor(c("grey","red","blue","orange","purple"),c(0.6)),
             names.arg = c("Gap area", "Gap number"))
+    mtext("c", adj = 0.1, outer=T)
+    par(las=0)
+    mtext("Proportion of gaps", side = 2, outer=T)
+    par(las=1)
     
     # Interannual data
     annualSums <- as.table(matrix(c(sum(plotGaps@data$area2[(plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T & !(plotGaps$vslChck==9)) | (plotGaps$vslChck %in% c(5,8))])/sum(plotGaps$area2),
@@ -396,9 +366,9 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
                               "red","orange"),c(0.6)),
             names.arg = c("Gap area", "Gap number"),
             yaxt="n")
+    mtext("d", adj = 0.6, outer=T)
     
 
-     
 #### Figure S4. Smoothing scale example plots ####
 
     # Read polygon buffer 25 m inland from lake
@@ -409,27 +379,27 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     dem1 <- raster::crop(dem1, raster::extent(c(626000,627000,1012500,1013500)))
     dem2 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/DEM_smooth_",8,".tif")) 
     dem2 <- raster::crop(dem2, raster::extent(c(626000,627000,1012500,1013500)))
-    dem3 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/DEM_smooth_",24,".tif")) 
+    dem3 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/DEM_smooth_",16,".tif")) 
     dem3 <- raster::crop(dem3, raster::extent(c(626000,627000,1012500,1013500)))
-    dem4 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/DEM_smooth_",48,".tif")) 
+    dem4 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/DEM_smooth_",32,".tif")) 
     dem4 <- raster::crop(dem4, raster::extent(c(626000,627000,1012500,1013500)))
     
     curv1 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",2,".tif")) 
     curv1 <- raster::crop(curv1, raster::extent(c(626000,627000,1012500,1013500)))
     curv2 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",8,".tif")) 
     curv2 <- raster::crop(curv2, raster::extent(c(626000,627000,1012500,1013500)))
-    curv3 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",24,".tif")) 
+    curv3 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",16,".tif")) 
     curv3 <- raster::crop(curv3, raster::extent(c(626000,627000,1012500,1013500)))
-    curv4 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",48,".tif")) 
+    curv4 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",32,".tif")) 
     curv4 <- raster::crop(curv4, raster::extent(c(626000,627000,1012500,1013500)))
     
     slope1 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",2,".tif")) 
     slope1 <- raster::crop(slope1, raster::extent(c(626000,627000,1012500,1013500)))
     slope2 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",8,".tif")) 
     slope2 <- raster::crop(slope2, raster::extent(c(626000,627000,1012500,1013500)))
-    slope3 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",24,".tif")) 
+    slope3 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",16,".tif")) 
     slope3 <- raster::crop(slope3, raster::extent(c(626000,627000,1012500,1013500)))
-    slope4 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",48,".tif")) 
+    slope4 <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",32,".tif")) 
     slope4 <- raster::crop(slope4, raster::extent(c(626000,627000,1012500,1013500)))
     
     legendWidth = 2
@@ -474,7 +444,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
                  bty="n", box=F,
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
-    mtext(expression(sigma~"= 24"),side=2,outer=F, cex=2)
+    mtext(expression(sigma~"= 16"),side=2,outer=F, cex=2)
     raster::plot(curv3,xaxt = "n", yaxt="n",
                  bty="n", box=F,
                  col = viridis::cividis(128),axis.args=list(cex.axis=legendCex),
@@ -489,7 +459,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
                  bty="n", box=F,
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
-    mtext(expression(sigma~"= 48"),side=2,outer=F, cex=2)
+    mtext(expression(sigma~"= 32"),side=2,outer=F, cex=2)
     mtext(expression("Elevation (m)"),side=1,outer=F, cex=2, line=2)
     raster::plot(curv4,xaxt = "n", yaxt="n",
                  bty="n", box=F,
@@ -508,8 +478,8 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     
     
 #### Figure S5. Spatial averaging at scale of INLA analysis ####
-    curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_8.tif")
-    slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_24.tif")
+    curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_2.tif")
+    slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
     drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
     
     curvCrop <- raster::crop(curvRaster, raster::extent(c(626000,627000,1012500,1013500)))
@@ -583,14 +553,14 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     plotBreaks <- seq(0,plotMax+2,2)
     
     library(plot.matrix)
-    par(mar=c(4,5,2,8))
+    par(mar=c(4,5,2,8), mfrow=c(1,1))
     plot(meanQuad_DIC, breaks = plotBreaks,
          col = rev(wesanderson::wes_palette("Zissou1", length(plotBreaks), type = "continuous")),
          ylab = expression("Curvature scale ("~sigma~")"),
          xlab = expression("Slope scale ("~sigma~")"),
          main = expression(Delta~"DIC score"))
     
-#### Figure S#: Location of corrected 2015 island-wide data ####
+#### Figure S4: Location of corrected 2015 island-wide data ####
     chm15_raw <- raster::raster("CHM_2015_QAQC_tin_wBias.tif")
     chm15_cor <- raster::raster("CHM_2015_QAQC_tin.tif")
     
@@ -621,7 +591,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
                  col = c("orange","grey","lightgreen"))
     
     
-#### Figure S#: Example of height change correction around gaps ####
+#### Figure S3: Example of height change correction around gaps ####
     plotShp <- rgdal::readOGR("D:/BCI_Spatial/BCI50ha/BCI_50ha.shp")
     plotShp <- sp::spTransform(plotShp, "+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
     
@@ -1361,7 +1331,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
            bty="n",
            lwd=2)    
     
-#### Figure S#: Proportion of area with height decrease >=5 vs initial canopy height ####
+#### Figure S6: Proportion of area with height decrease >=5 vs initial canopy height ####
 
 # Look at initial canopy height and transitions per height class
 
@@ -1461,11 +1431,15 @@ legend(x=35,y=0.06,
 
 
 # Plot probability of becoming a gap for area in each height bin
+col18 <- "blue"
+col20 <- "#d95f02"
+
 par(mfrow=c(1,1), mar=c(4,4,1,1))
 plot(propGap15/nYr15to18~start,
      data = propGap,
+     col = col18,
      type="l",
-     ylim=c(0,0.06),
+     ylim=c(0,0.045),
      xlim=c(5,50),
      xlab = "Initial canopy height (m)",
      ylab = "Proportion of area",
@@ -1473,13 +1447,12 @@ plot(propGap15/nYr15to18~start,
      lwd=2)
 
 lines(propGap18/nYr18to20~start, data=propGap,
-      col="red", lwd=2)
+      col=col20, lwd=2)
 
-
-legend(x=25,y=0.06,
+legend(x=5,y=0.04,
        bty="n",
        c("2015-2018","2018-2020"),
-       col=c("black","red"), lwd=2, lty=c(1,2,1))
+       col=c(col18,col20), lwd=2, lty=c(1,1))
 
 
 

@@ -316,6 +316,28 @@
   }  
     
     
+#### CALCULATE MEAN HT CHANGE IN EACH GAP #####
+  
+  gaps15to18sp$htDrop <- NA
+  valsGap <- raster::values(gaps15to18)
+  valsHt <- raster::values(d15to18)
+  
+  for(i in 1:length(gaps15to18sp)){
+    gapCells <- which(valsGap==gaps15to18sp$gap_id[i] & !is.na(valsGap))
+    htCells <- valsHt[gapCells]
+    gaps15to18sp$htDrop[i] <- mean(htCells)
+  }
+  
+  gaps18to20sp$htDrop <- NA
+  valsGap <- raster::values(gaps18to20)
+  valsHt <- raster::values(d18to20)
+  
+  for(i in 1:length(gaps18to20sp)){
+    gapCells <- which(valsGap==gaps18to20sp$gap_id[i] & !is.na(valsGap))
+    htCells <- valsHt[gapCells]
+    gaps18to20sp$htDrop[i] <- mean(htCells)
+  }
+  
 #### SAVE GAP POLYGONS ####
     
     # Save gap shapefiles

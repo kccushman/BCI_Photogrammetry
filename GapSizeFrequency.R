@@ -30,7 +30,7 @@
   allVals18to20 <- raster::values(d18to20)
   areaSampled18to20 <- length(allVals18to20[!is.na(allVals18to20)])/10000  
   
-# Only area greater than 5 m height initially
+# Only area greater than 10 m height initially
   allVals15to18tall <- raster::values(d15to18tall)
   areaSampled15to18tall <- length(allVals15to18tall[!is.na(allVals15to18tall)])/10000
   
@@ -41,7 +41,14 @@
   length(c(gaps15to18sp$area,
            gaps18to20sp$area))
   
-# Area sampled in old growth forest
+# Area sampled in old growth and secondary forest [> 10 m height]
+  # Forest age polygon
+    age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+    age$AgeClass <- "Other"
+    age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
+    age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
+    ageUse <- age[!(age$AgeClass=="Other"),]
+  
   areaOld18 <- raster::mask(d15to18tall, ageUse[ageUse$AgeClass=="OldGrowth",])
   valsOld18 <- raster::values(areaOld18)
   areaSampledOld18 <- length(valsOld18[!is.na(valsOld18)])/10000
@@ -83,7 +90,8 @@
         # count and save non-NA pixels in block
           valGap <- raster::values(blockGap)
           valAll <- raster::values(blockAll)
-          bootBlocks$nGap[i] <- length(valGap[!is.na(valGap)])
+          
+          bootBlocks$nGap[i] <- length(valGap[!is.na(valGap) & !is.na(valAll)]) # only count gap pixels > 10 m height initially
           bootBlocks$nAll[i] <- length(valAll[!is.na(valAll)])
           
         # save unique gap IDs in a list
@@ -134,7 +142,7 @@
   round(quantile(gapSummary18to20$percentGap,probs = c(0.025,0.975))/nYr18to20,2)
   
     # % higher in second interval
-    (2.06-1.79)/1.79*100
+    (2.05-1.79)/1.79*100
   
   # Mean frequency of gaps per interval--number of gaps
   round(mean(gapSummary15to18$gapsPerHa)/nYr15to18,2)
@@ -166,10 +174,14 @@
     gapPres$n18[i] <- length(gaps15to18sp$area[gaps15to18sp$area>gapPres$minSz[i] & gaps15to18sp$area<gapPres$maxSz[i]])
     gapPres$n20[i] <- length(gaps18to20sp$area[gaps18to20sp$area>gapPres$minSz[i] & gaps18to20sp$area<gapPres$maxSz[i]])
   }
-  szUse <- gapPres$minSz[(gapPres$n18>0 | gapPres$n20>0)]
+  szUse <- unique(c(gapPres$minSz[(gapPres$n18>0 | gapPres$n20>0)],gapPres$maxSz[(gapPres$n18>0 | gapPres$n20>0)]))
+  szUse <- szUse[order(szUse)]
   
   allData15to18 <- data.frame(dbh = gaps15to18sp$area,
                               quadnum = gaps15to18sp$block)
+  
+  allData18to20 <- data.frame(dbh = gaps18to20sp$area,
+                              quadnum = gaps18to20sp$block)
   
 #### Bootstrapped size frequency by year ####
   
@@ -184,11 +196,10 @@
                                           # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                           filestem="gaps15to18_new", # this is the beginning of the names of the output files
                                           # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                          ddiv=c(szUse,(mxSz + 0.5)))
+                                          ddiv=szUse)
     
    
-    allData18to20 <- data.frame(dbh = gaps18to20sp$area,
-                                quadnum = gaps18to20sp$block)
+
     i <- 1
     datadir <- "SizeFreqResults/"
     site <- "BCI"
@@ -200,7 +211,7 @@
                                           # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                           filestem="gaps18to20_new", # this is the beginning of the names of the output files
                                           # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                          ddiv=c(szUse,(mxSz + 0.5)))
+                                          ddiv=szUse)
     
     
 #### Bootstrapped size frequency by forest age ####
@@ -233,7 +244,7 @@
                                             # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                             filestem="gapsOldGrowth", # this is the beginning of the names of the output files
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                            ddiv=c(szUse,(mxSz + 0.5)))
+                                            ddiv=szUse)
       
       
       secondaryGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$Age=="Secondary"],
@@ -251,7 +262,7 @@
                                             # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                             filestem="gapsSecondary", # this is the beginning of the names of the output files
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                            ddiv=c(szUse,(mxSz + 0.5)))
+                                            ddiv=szUse)
       
 #### Bootstrapped size frequency by soil parent material ####
       
@@ -311,8 +322,7 @@
                                             # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                             filestem="gapsAndesite", # this is the beginning of the names of the output files
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                            ddiv=c(szUse,(mxSz + 0.5)))
-      
+                                            ddiv=szUse)      
       
       bohioGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$SoilParent=="Bohio"],
                                         quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="Bohio"]),
@@ -329,7 +339,7 @@
                                             # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                             filestem="gapsBohio", # this is the beginning of the names of the output files
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                            ddiv=c(szUse,(mxSz + 0.5)))
+                                            ddiv=szUse)
       
       caimitoVolcanicGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$SoilParent=="CaimitoVolcanic"],
                                     quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="CaimitoVolcanic"]),
@@ -346,7 +356,7 @@
                                             # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                             filestem="gapsCaimitoVolcanic", # this is the beginning of the names of the output files
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                            ddiv=c(szUse,(mxSz + 0.5)))
+                                            ddiv=szUse)
       
       caimitoMarineGaps <- rbind(data.frame(dbh = gaps15to18sp$area[gaps15to18sp$SoilParent=="CaimitoMarineSedimentary"],
                                               quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="CaimitoMarineSedimentary"]),
@@ -363,15 +373,13 @@
                                             # "weib"= 2-parameter Weibull, "pow" = power function (1 parameter), "exp"=negative exponential (1 parameter)
                                             filestem="gapsCaimitoMarine", # this is the beginning of the names of the output files
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
-                                            ddiv=c(szUse,(mxSz + 0.5)))
-      
+                                            ddiv=szUse)      
 #### Plot bootstrapped results by year ####
   
   # Read distribution results
   szFreq15to18 <- read.table("SizeFreqResults/gaps15to18sizedistbsfit.txt", header = T)
   szFreq18to20 <- read.table("SizeFreqResults/gaps18to20sizedistbsfit.txt", header = T)
-  
-  
+
   # What distribution has the highest likelihood?
   # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
   
@@ -478,13 +486,13 @@
   
   logOption <- "xy"
   
-  yRange <- range(c(gapSizes15to18/nYr15to18,gapSizes18to20/nYr18to20)) + c(1e-7,0)
+  yRange <- range(c(gapSizes15to18/nYr15to18,gapSizes18to20/nYr18to20)) + c(1e-7,0.03)
   
   #Define colors
-  col18 <- "black"
+  col18 <- "blue"
   col20 <- "#d95f02"
   
-  par(las = 1, mar=c(4,5,2,1))
+  par(las = 1, mar=c(3,5,1,3), oma=c(1,1,1,0), mfrow=c(1,2))
   plot(x = brksMids, y = gapSizes15to18/nYr15to18,
        xlim=range(brksMids),
        ylim=yRange,
@@ -493,12 +501,14 @@
        pch=19,
        cex.axis = 0.8,
        ylab = expression("Disturbance frequency (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
-       xlab = expression("Disturbance area (m"^"2"~")"))
+       xlab = NA)
+  mtext(expression("Disturbance area (m"^"2"~")"), side=1,outer = T)
+  text("a", x = range(brksMids)[1], y = yRange[2])
   
   points(x = brksMids, y = gapSizes18to20/nYr18to20,
          col = adjustcolor(col20,0.6), pch=19)
   
-  legend(x=30,y=0.0001,
+  legend(x=25,y=0.00001,
          c("2015 - 2018","2018 - 2020"),
          col=adjustcolor(c(col18,col20),0.6),
          pch=19, cex=1,
@@ -507,14 +517,24 @@
   lines(x = xVals, y = yValsWeib18, col = adjustcolor(col18,0.6), lwd=2)
   lines(x = xVals, y = yValsWeib20, col = adjustcolor(col20,0.6), lwd=2)
   
+  plot(x = gaps15to18sp$area,
+       y = -gaps15to18sp$htDrop,
+       log="xy",
+       xlim=range(c(gaps15to18sp$area,gaps18to20sp$area)),
+       ylim=-range(c(gaps15to18sp$htDrop,gaps18to20sp$htDrop)),
+       ylab= "Average height decrease (m)",
+       col = adjustcolor(col18,0.2),
+       cex = 0.3,
+       pch=19)
+  text("b",
+       x = min(c(gaps15to18sp$area,gaps18to20sp$area)),
+       y = -max(c(gaps15to18sp$htDrop,gaps18to20sp$htDrop)))
+  points(x = gaps18to20sp$area,
+       y = -gaps18to20sp$htDrop,
+       col = adjustcolor(col20,0.2),
+       cex = 0.3,
+       pch=19)
 
-
-  
-
-  
-
-  
-  
 #### Plot bootstrapped results by forest age ####
   
   # Read distribution results
