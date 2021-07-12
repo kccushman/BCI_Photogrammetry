@@ -798,10 +798,16 @@ dev.off()
                main = "All years: fixed effects only")  
   raster::plot(predMeanRaster18,
                col=viridis::viridis(50),
+               breaks = seq(range(raster::values(predMeanRaster20),na.rm=T)[1],
+                            range(raster::values(predMeanRaster20),na.rm=T)[2],
+                            length.out = 50),
                bty="n", box=F, xaxt="n", yaxt="n",
                main = "Predicted (fixed + random) 2015-2018")  
   raster::plot(predMeanRaster20,
                col=viridis::viridis(50),
+               breaks = seq(range(raster::values(predMeanRaster20),na.rm=T)[1],
+                            range(raster::values(predMeanRaster20),na.rm=T)[2],
+                            length.out = 50),
                bty="n", box=F, xaxt="n", yaxt="n",
                main = "Predicted (fixed + random) 2018-2020")  
   
