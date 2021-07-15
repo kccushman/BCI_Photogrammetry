@@ -793,9 +793,8 @@ dev.off()
   
   par(mfrow=c(1,1), mar=c(2,2,1,2), oma=c(0,0,0,0))
   raster::plot(avgPredictedRaster,
-               col=viridis::viridis(50),
-               bty="n", box=F, xaxt="n", yaxt="n",
-               main = "All years: fixed effects only")  
+               col=viridis::cividis(50),
+               bty="n", box=F, xaxt="n", yaxt="n")  
   raster::plot(predMeanRaster18,
                col=viridis::viridis(50),
                breaks = seq(range(raster::values(predMeanRaster20),na.rm=T)[1],
@@ -1237,20 +1236,6 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   
 
   
-#### MEETING PREP: look at distribution of random vs. fixed effects ####  
-  # summed fixed effects
-    hist(bci.gapsAll$fix_sum[!is.na(bci.gapsAll$gapPropCens)])
-  # random effects
-    hist(model_full$summary.random[[1]]$mean[!is.na(bci.gapsAll_Order$gapPropCens)],
-         breaks=seq(-3,4.6,0.2),
-         col="black",border="white",
-         xlab="Random effects",main=NA)
-  
-  # total predicted values
-    hist(bci.gapsAll$pred[!is.na(bci.gapsAll$gapPropCens)])
-  # predicted values with just fixed effects  
-    hist(bci.gapsAll$fix_pred[!is.na(bci.gapsAll$gapPropCens)])
-
 #### Figure 7: aggregate and look at R2 ####          
     
   #Create rasters where all non-NA values are 1
@@ -1265,36 +1250,162 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
   # Create data frame to store results  
     agResults <- data.frame(agBy = 1:20,
-                            fixR2_18 = NA,
-                            allR2_18 = NA,
-                            fixR2_20 = NA,
-                            allR2_20 = NA)
+                            fixR_18 = NA,
+                            fixR_18lo = NA,
+                            fixR_18hi = NA,
+                            allR_18 = NA,
+                            allR_18lo = NA,
+                            allR_18hi = NA,
+                            fixR_20 = NA,
+                            fixR_20lo = NA,
+                            fixR_20hi = NA,
+                            allR_20 = NA,
+                            allR_20lo = NA,
+                            allR_20hi = NA)
     
     for(i in 1:nrow(agResults)){
       
-      agPred18_all <- raster::aggregate(predMeanRaster18, fact = agResults$agBy[i], fun = mean, na.rm=T)
-      agPred18_all_n <- raster::aggregate(predMeanRaster18n, fact = agResults$agBy[i], fun = sum, na.rm=T)
-      agPred18_fix <- raster::aggregate(fixRaster18, fact = agResults$agBy[i], fun = mean, na.rm=T)
-      agPred18_fix_n <- raster::aggregate(fixRaster18n, fact = agResults$agBy[i], fun = sum, na.rm=T)
-      agObs18 <- raster::aggregate(obsRaster18, fact = agResults$agBy[i], fun = mean, na.rm=T)
-      
+      # Get a matrix of observed cells
       minObs <- 0.75*agResults$agBy[i]^2
-      useObs <- raster::values(agPred18_all_n)>minObs
       
-      agResults$fixR2_18[i] <- summary(lm(raster::values(agPred18_fix)[useObs]~raster::values(agObs18)[useObs]))$r.squared
-      agResults$allR2_18[i] <- summary(lm(raster::values(agPred18_all)[useObs]~raster::values(agObs18)[useObs]))$r.squared
+      agPred18_all <- raster::aggregate(predMeanRaster18, fact = agResults$agBy[i], fun = mean, na.rm=T)
+      agPred18_fix <- raster::aggregate(fixRaster18, fact = agResults$agBy[i], fun = mean, na.rm=T)
+      agObs18 <- raster::aggregate(obsRaster18, fact = agResults$agBy[i], fun = mean, na.rm=T)
+      agPred18_all_n <- raster::aggregate(predMeanRaster18n, fact = agResults$agBy[i], fun = sum, na.rm=T)
+      
+      # Get matrix of values for each aggregated raster
+      agPred18_all_mat <- raster::values(agPred18_all, format = "matrix")
+      agPred18_fix_mat <- raster::values(agPred18_fix, format = "matrix")
+      agObs18_mat <- raster::values(agObs18, format = "matrix")
+      nMat <- raster::values(agPred18_all_n, format = "matrix")
+      
+        # matrix of cells that need to be combined
+        combineMat <- which(nMat<minObs, arr.ind = T)
+        
+        while(nrow(combineMat)>0){
+        
+          # get surrounding cells for each matrix
+            rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+            rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+            cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+            cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+            
+            agPred18_all_mat_j <- agPred18_all_mat[rows,cols]
+            agPred18_fix_mat_j <- agPred18_fix_mat[rows,cols]
+            agObs18_mat_j <- agObs18_mat[rows,cols]
+            nMat_j <- nMat[rows,cols]
+              # set cell of interest to 0
+              nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+          
+          # Only proceed if there are non-NA neighboring cells
+          if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){  
+              
+            # find neighboring cell with most nearby observations
+              new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+              
+            
+            # replace value for new cell with a weighted mean of all other values
+              agPred18_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_all_mat_j[new_j[1],new_j[2]],agPred18_all_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              agPred18_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_fix_mat_j[new_j[1],new_j[2]],agPred18_fix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              agObs18_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs18_mat_j[new_j[1],new_j[2]],agObs18_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+              
+            # replace neighborhood in original matrices
+              agPred18_all_mat[rows,cols] <- agPred18_all_mat_j
+              agPred18_fix_mat[rows,cols] <- agPred18_fix_mat_j
+              agObs18_mat[rows,cols] <- agObs18_mat_j
+              nMat[rows,cols] <- nMat_j
+          }
+              
+          # Replace original observation with NaN
+            agPred18_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            agPred18_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            agObs18_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            nMat[combineMat[1,1],combineMat[1,2]] <- NaN
+            
+          # Redefine combineMat
+            combineMat <- which(nMat<minObs, arr.ind = T)
+        }
+        
+      agResults$fixR_18[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$estimate
+      agResults$fixR_18lo[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[1]
+      agResults$fixR_18hi[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[2]
+      agResults$allR_18[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_all_mat))$estimate
+      agResults$allR_18lo[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_all_mat))$conf.int[1]
+      agResults$allR_18hi[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_all_mat))$conf.int[2]
+      
       
       agPred20_all <- raster::aggregate(predMeanRaster20, fact = agResults$agBy[i], fun = mean, na.rm=T)
-      agPred20_all_n <- raster::aggregate(predMeanRaster20n, fact = agResults$agBy[i], fun = sum, na.rm=T)
       agPred20_fix <- raster::aggregate(fixRaster20, fact = agResults$agBy[i], fun = mean, na.rm=T)
-      agPred20_fix_n <- raster::aggregate(fixRaster20n, fact = agResults$agBy[i], fun = sum, na.rm=T)
       agObs20 <- raster::aggregate(obsRaster20, fact = agResults$agBy[i], fun = mean, na.rm=T)
+      agPred20_all_n <- raster::aggregate(predMeanRaster20n, fact = agResults$agBy[i], fun = sum, na.rm=T)
       
-      minObs <- 0.5*agResults$agBy[i]^2
-      useObs <- raster::values(agPred20_all_n)>minObs
+      # Get matrix of values for each aggregated raster
+      agPred20_all_mat <- raster::values(agPred20_all, format = "matrix")
+      agPred20_fix_mat <- raster::values(agPred20_fix, format = "matrix")
+      agObs20_mat <- raster::values(agObs20, format = "matrix")
+      nMat <- raster::values(agPred20_all_n, format = "matrix")
       
-      agResults$fixR2_20[i] <- summary(lm(raster::values(agPred20_fix)[useObs]~raster::values(agObs20)[useObs]))$r.squared
-      agResults$allR2_20[i] <- summary(lm(raster::values(agPred20_all)[useObs]~raster::values(agObs20)[useObs]))$r.squared
+      # matrix of cells that need to be combined
+      combineMat <- which(nMat<minObs, arr.ind = T)
+      
+      while(nrow(combineMat)>0){
+        
+        # get surrounding cells for each matrix
+        rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+        rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+        cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+        cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+        
+        agPred20_all_mat_j <- agPred20_all_mat[rows,cols]
+        agPred20_fix_mat_j <- agPred20_fix_mat[rows,cols]
+        agObs20_mat_j <- agObs20_mat[rows,cols]
+        nMat_j <- nMat[rows,cols]
+        # set cell of interest to 0
+        nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+        
+        # Only proceed if there are non-NA neighboring cells
+        if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){
+          
+          # find neighboring cell with most nearby observations
+          new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+          
+          
+          # replace value for new cell with a weighted mean of all other values
+          agPred20_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred20_all_mat_j[new_j[1],new_j[2]],agPred20_all_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                 w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agPred20_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred20_fix_mat_j[new_j[1],new_j[2]],agPred20_fix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                 w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agObs20_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs20_mat_j[new_j[1],new_j[2]],agObs20_mat[combineMat[1,1],combineMat[1,2]]),
+                                                            w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+          
+          # replace neighborhood in original matrices
+          agPred20_all_mat[rows,cols] <- agPred20_all_mat_j
+          agPred20_fix_mat[rows,cols] <- agPred20_fix_mat_j
+          agObs20_mat[rows,cols] <- agObs20_mat_j
+          nMat[rows,cols] <- nMat_j
+        }
+        
+        # Replace original observation with NaN
+        agPred20_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agPred20_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agObs20_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        nMat[combineMat[1,1],combineMat[1,2]] <- NaN
+      
+        # Redefine combineMat
+        combineMat <- which(nMat<minObs, arr.ind = T)
+      }
+      
+      agResults$fixR_20[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$estimate
+      agResults$fixR_20lo[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[1]
+      agResults$fixR_20hi[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[2]
+      agResults$allR_20[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_all_mat))$estimate
+      agResults$allR_20lo[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_all_mat))$conf.int[1]
+      agResults$allR_20hi[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_all_mat))$conf.int[2]
       
     }
     
@@ -1305,39 +1416,55 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     xVals <- (agResults$agBy*40)^2/10000
     
     plot(x = xVals,
-         y = agResults$fixR2_18,
+         y = agResults$fixR_18,
          ylim=c(0,1.02),
          xlab = NA,
          ylab = "Observed variation explained (R^2)",
          type = "l",
          col = col18,
-         lwd=2)
+         lwd=1)
     text("a. Fixed effects only", x = 0, y = 1.02, adj=0)
     lines(x = xVals,
-         y = agResults$fixR2_20,
+         y = agResults$fixR_20,
          col=col20,
-         lwd=2)
+         lwd=1)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(agResults$fixR_18lo,rev(agResults$fixR_18hi)),
+            col=adjustcolor(col18,0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(agResults$fixR_20lo,rev(agResults$fixR_20hi)),
+            col=adjustcolor(col20,0.15),
+            border=NA)
     
     plot(x = xVals,
-         y = agResults$allR2_18,
+         y = agResults$allR_18,
          ylim=c(0,1.02),
          yaxt="n",
          xlab = NA,
          ylab = NA,
          type = "l",
          col = col18,
-         lwd=2)
+         lwd=1)
     text("b. Fixed + random effects", x = 0, y = 1.02, adj=0)
     lines(x = xVals,
-          y = agResults$allR2_20,
+          y = agResults$allR_20,
           col=col20,
-          lwd=2)
+          lwd=1)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(agResults$allR_18lo,rev(agResults$allR_18hi)),
+            col=adjustcolor(col18,0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(agResults$allR_20lo,rev(agResults$allR_20hi)),
+            col=adjustcolor(col20,0.15),
+            border=NA)
     legend(c("2015-2018",
              "2018-2020"),
            x=20,y=0.85,
            col=c(col18,col20),
            bty="n",
-           lwd=2)
+           lwd=1)
     
     mtext("Spatial resolution (ha)", side=1, outer=T, line=-1)
 
@@ -1407,63 +1534,120 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   chmCrop <- raster::crop(chm09, raster::extent(bci.gaps18))
   rasterchm09 <- raster::aggregate(chmCrop, cellSize, fun= mean, na.rm=T)
   
-  # Separate by forest age
-  rasterchm09_old <- raster::mask(rasterchm09,ageUse[ageUse$AgeClass=="OldGrowth",])
-  rasterchm09_sec <- raster::mask(rasterchm09,ageUse[ageUse$AgeClass=="Secondary",])
-  
 # Create data frame to store results  
   loResults <- data.frame(agBy = 1:20,
-                          fixR2lo = NA,
-                          obsR2lo = NA,
-                          fixR2chm = NA,
-                          obsR2chm = NA,
-                          fixR2chm_old = NA,
-                          obsR2chm_old = NA,
-                          fixR2chm_sec = NA,
-                          obsR2chm_sec = NA,
+                          fixRlo = NA,
+                          fixRlo_lo = NA,
+                          fixRlo_hi = NA,
+                          obsRlo = NA,
+                          obsRlo_lo = NA,
+                          obsRlo_hi = NA,
+                          fixRchm = NA,
+                          fixRchm_lo = NA,
+                          fixRchm_hi = NA,
+                          obsRchm = NA,
+                          obsRchm_lo = NA,
+                          obsRchm_hi = NA,
                           N = NA)
   
-  for(i in 1:nrow(loResults)){
+  for(i in 1:nrow(agResults)){
     
-    # Aggregate low canopy area raster
-    agLo09 <- raster::aggregate(rasterLo09, fact = loResults$agBy[i], fun = mean, na.rm=T)
-    
-    # Aggregate mean canopy height raster
-    agChm09 <- raster::aggregate(rasterchm09, fact = loResults$agBy[i], fun = mean, na.rm=T)
-    
-    # Aggregate mean canopy height raster--old growth
-    agChm09old <- raster::aggregate(rasterchm09_old , fact = loResults$agBy[i], fun = mean, na.rm=T)
-    
-    # Aggregate mean canopy height raster--secondary
-    agChm09sec <- raster::aggregate(rasterchm09_sec , fact = loResults$agBy[i], fun = mean, na.rm=T)
-    
-    # Aggregate average fixed effects raster
-    agFix <- raster::aggregate(avgPredictedRaster, fact = loResults$agBy[i], fun = mean, na.rm=T)
-    
-    # Aggregate average observed disturance raster
-    agObs <- raster::aggregate(avgObservedRaster, fact = loResults$agBy[i], fun = mean, na.rm=T)
-    
-    # Aggregate sampling effort
-    agN <- raster::aggregate(avgRasterN, fact = loResults$agBy[i], fun = sum, na.rm=T)
-      
-    # Find observations with 90% of values present
+    # Get a matrix of observed cells
     minObs <- 0.75*loResults$agBy[i]^2
-    useObs <- raster::values(agN)>minObs
     
-    # Count good observations
-    loResults$N[i] <- length(useObs[useObs==T])
+    # Aggregate rasters
+      # Aggregate low canopy area raster
+      agLo09 <- raster::aggregate(rasterLo09, fact = loResults$agBy[i], fun = mean, na.rm=T)
+      # Aggregate mean canopy height raster
+      agChm09 <- raster::aggregate(rasterchm09, fact = loResults$agBy[i], fun = mean, na.rm=T)
+      # Aggregate average fixed effects raster
+      agFix <- raster::aggregate(avgPredictedRaster, fact = loResults$agBy[i], fun = mean, na.rm=T)
+      # Aggregate average observed disturbance raster
+      agObs <- raster::aggregate(avgObservedRaster, fact = loResults$agBy[i], fun = mean, na.rm=T)
+      # Aggregate sampling effort
+      agN <- raster::aggregate(avgRasterN, fact = loResults$agBy[i], fun = sum, na.rm=T)
     
-    # Calculate R2 values
-    loResults$fixR2lo[i] <- summary(lm(raster::values(agLo09)[useObs]~raster::values(agFix)[useObs]))$r.squared
-    loResults$obsR2lo[i] <- summary(lm(raster::values(agLo09)[useObs]~raster::values(agObs)[useObs]))$r.squared
-    loResults$fixR2chm[i] <- summary(lm(raster::values(agChm09)[useObs]~raster::values(agFix)[useObs]))$r.squared
-    loResults$obsR2chm[i] <- summary(lm(raster::values(agChm09)[useObs]~raster::values(agObs)[useObs]))$r.squared
-    loResults$fixR2chm_old[i] <- summary(lm(raster::values(agChm09old)[useObs]~raster::values(agFix)[useObs]))$r.squared
-    loResults$obsR2chm_old[i] <- summary(lm(raster::values(agChm09old)[useObs]~raster::values(agObs)[useObs]))$r.squared
-    loResults$fixR2chm_sec[i] <- summary(lm(raster::values(agChm09sec)[useObs]~raster::values(agFix)[useObs]))$r.squared
-    loResults$obsR2chm_sec[i] <- summary(lm(raster::values(agChm09sec)[useObs]~raster::values(agObs)[useObs]))$r.squared
+    # Get matrix of values for each aggregated raster
+      agLo09_mat <- raster::values(agLo09, format = "matrix")
+      agChm09_mat <- raster::values(agChm09, format = "matrix")
+      agFix_mat <- raster::values(agFix, format = "matrix")
+      agObs_mat <- raster::values(agObs, format = "matrix")
+      nMat <- raster::values(agN, format = "matrix")
+    
+    # matrix of cells that need to be combined
+    combineMat <- which(nMat<minObs & nMat>0, arr.ind = T)
+    
+    while(nrow(combineMat)>0){
+      
+      # get surrounding cells for each matrix
+      rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+      rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+      cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+      cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+      
+      agLo09_mat_j <- agLo09_mat[rows,cols]
+      agChm09_mat_j <- agChm09_mat[rows,cols]
+      agFix_mat_j <- agFix_mat[rows,cols]
+      agObs_mat_j <- agObs_mat[rows,cols]
+      nMat_j <- nMat[rows,cols]
+      
+      # set cell of interest to 0
+      nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- 0
+      
+      # Only proceed if there are non-NA neighboring cells
+      if(length(c(nMat_j)[c(nMat_j)>0])>0){  
+        
+        # find neighboring cell with most nearby observations
+        new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+        
+        # replace value for new cell with a weighted mean of all other values
+        agLo09_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agLo09_mat_j[new_j[1],new_j[2]],agLo09_mat[combineMat[1,1],combineMat[1,2]]),
+                                                               w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        agChm09_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agChm09_mat_j[new_j[1],new_j[2]],agChm09_mat[combineMat[1,1],combineMat[1,2]]),
+                                                               w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        agFix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agFix_mat_j[new_j[1],new_j[2]],agFix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                             w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        agObs_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs_mat_j[new_j[1],new_j[2]],agObs_mat[combineMat[1,1],combineMat[1,2]]),
+                                                             w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+
+        nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+        
+        # replace neighborhood in original matrices
+        agLo09_mat[rows,cols] <- agLo09_mat_j
+        agChm09_mat[rows,cols] <- agChm09_mat_j
+        agFix_mat[rows,cols] <- agFix_mat_j
+        agObs_mat[rows,cols] <- agObs_mat_j
+        nMat[rows,cols] <- nMat_j
+      }
+      
+      # Replace original observation with NaN
+      agLo09_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      agChm09_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      agFix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      agObs_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      nMat[combineMat[1,1],combineMat[1,2]] <- 0
+      
+      # Redefine combineMat
+      combineMat <- which(nMat<minObs & nMat >0, arr.ind = T)
+    }
+    
+    valsKeep <- which(c(nMat)>minObs)
+    loResults$fixRlo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$estimate
+    loResults$fixRlo_lo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[1]
+    loResults$fixRlo_hi[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[2]
+    loResults$obsRlo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$estimate
+    loResults$obsRlo_lo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[1]
+    loResults$obsRlo_hi[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[2]
+    
+    loResults$fixRchm[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$estimate
+    loResults$fixRchm_lo[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat[valsKeep]))$conf.int[1]
+    loResults$fixRchm_hi[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[2]
+    loResults$obsRchm[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$estimate
+    loResults$obsRchm_lo[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[1]
+    loResults$obsRchm_hi[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[2]
     
   }
+  
   
   # Plot results
   
@@ -1473,72 +1657,74 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     xVals <- ((loResults$agBy*40)^2)/10000
     
     plot(x = xVals,
-         y = loResults$fixR2lo,
-         ylim=c(0,1.02),
+         y = loResults$fixRlo,
+         ylim=c(-1,1.02),
          xlab = NA,
          ylab = NA,
          type = "l",
          col = "blue",
          lwd=2)
     par(las=0)
-    mtext(expression("Observed variation explained (R  "^"2"~")"),
+    mtext(expression("Pearson correlation (r)"),
           side=2, outer=T, line=2)
     par(las=1)
     text("a. Proportion of low canopy area",
          x = 0,
          y = 1.02, adj=0)
+    abline(h=0,lty=2)
     lines(x = xVals,
-          y = loResults$obsR2lo,
+          y = loResults$obsRlo,
           col="lightblue",
           lwd=2)
-  
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$fixRlo_lo,rev(loResults$fixRlo_hi)),
+            col=adjustcolor("blue",0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$obsRlo_lo,rev(loResults$obsRlo_hi)),
+            col=adjustcolor("lightblue",0.4),
+            border=NA)
+    legend(x = 0,
+           y = 0,
+           c("Predicted frequency (fixed effects)",
+             "Average observed frequency"),
+           col=c("blue","lightblue"),
+           lty=c(1,1),
+           lwd=2,
+           bty="n")
+    
     plot(x = xVals,
-         y = loResults$fixR2chm,
-         ylim=c(0,1.02),
+         y = loResults$fixRchm,
+         yaxt="n",
+         ylim=c(-1,1.02),
          xlab = NA,
          ylab = NA,
-         yaxt="n",
          type = "l",
          col = "blue",
          lwd=2)
+    par(las=0)
+    abline(h=0,lty=2)
+
+    par(las=1)
     lines(x = xVals,
-          y = loResults$obsR2chm,
+          y = loResults$obsRchm,
           col="lightblue",
           lwd=2)
-    lines(x = xVals,
-          y = loResults$fixR2chm_old,
-          col="blue",
-          lwd=2, lty=2)
-    lines(x = xVals,
-          y = loResults$obsR2chm_old,
-          col="lightblue",
-          lwd=2, lty=2)
-    lines(x = xVals,
-          y = loResults$fixR2chm_sec,
-          col="blue",
-          lwd=2, lty=3)
-    lines(x = xVals,
-          y = loResults$obsR2chm_sec,
-          col="lightblue",
-          lwd=2, lty=3)
-    lines(x = xVals,
-          y = loResults$obsR2chm,
-          col="lightblue",
-          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$fixRchm_lo,rev(loResults$fixRchm_hi)),
+            col=adjustcolor("blue",0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$obsRchm_lo,rev(loResults$obsRchm_hi)),
+            col=adjustcolor("lightblue",0.4),
+            border=NA)
+    
+  
+
     text("b. Mean canopy height",
          x = 0,
          y = 1.02, adj=0)
-    legend(x = 0,
-           y = 0.9,
-           c("Predicted frequency (fixed effects)",
-             "Average observed frequency",
-             "All forest",
-             "Old growth forest",
-             "Secondary forest"),
-           col=c("blue","lightblue","black","black","black"),
-           lty=c(1,1,1,2,3),
-           lwd=2,
-           bty="n")
+
     
     mtext("Spatial resolution (ha)", side=1, outer=T, line=-1)
     
@@ -1548,312 +1734,954 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
     # Get forest age and soil type values for each pixel
     
-    # Choose one aggregation scale
-    agScale <- 4; PtCex <- 0.8
-    
-    agScale <- 8; PtCex <- 1
-    
-    agScale <- loResults$agBy[which(loResults$fixR2lo==max(loResults$fixR2lo))]; PtCex <- 2
-    
-    
+    # Scale 1
+    agScale_1 <- 4
+
     # Aggregate low canopy area raster
-    agLo09 <- raster::aggregate(rasterLo09, fact = agScale, fun = mean, na.rm=T)
+    agLo09_1 <- raster::aggregate(rasterLo09, fact = agScale_1, fun = mean, na.rm=T)
     # Aggregate mean canopy height raster
-    agChm09 <- raster::aggregate(rasterchm09, fact = agScale, fun = mean, na.rm=T)
+    agChm09_1 <- raster::aggregate(rasterchm09, fact = agScale_1, fun = mean, na.rm=T)
     # Aggregate average fixed effects raster
-    agFix <- raster::aggregate(avgPredictedRaster, fact = agScale, fun = mean, na.rm=T)
+    agFix_1 <- raster::aggregate(avgPredictedRaster, fact = agScale_1, fun = mean, na.rm=T)
     # Aggregate average observed disturance raster
-    agObs <- raster::aggregate(avgObservedRaster, fact = agScale, fun = mean, na.rm=T)
+    agObs_1 <- raster::aggregate(avgObservedRaster, fact = agScale_1, fun = mean, na.rm=T)
     # Aggregate sampling effort
-    agN <- raster::aggregate(avgRasterN, fact = agScale, fun = sum, na.rm=T)
+    agN_1 <- raster::aggregate(avgRasterN, fact = agScale_1, fun = sum, na.rm=T)
     # Find observations with 90% of values present
-    minObs <- 0.75*loResults$agBy[agScale]^2
-    useObs <- raster::values(agN)>minObs
+    minObs_1 <- 0.75*loResults$agBy[agScale_1]^2
+    useObs_1 <- raster::values(agN_1)>minObs_1
     
     # Make forest age raster
-    agAge <- agLo09
-    agAge[ageUse[ageUse$AgeClass=="OldGrowth",]] <- 1
-    agAge[ageUse[ageUse$AgeClass=="Secondary",]] <- 2
+    agAge_1 <- agLo09_1
+    agAge_1[ageUse[ageUse$AgeClass=="OldGrowth",]] <- 1
+    agAge_1[ageUse[ageUse$AgeClass=="Secondary",]] <- 2
     
     # Make soil parent material raster
-    agParent <- agLo09
-    agParent[soil[soil$SoilParent=="CaimitoVolcanic",]] <- 1
-    agParent[soil[soil$SoilParent=="Andesite",]] <- 2
-    agParent[soil[soil$SoilParent=="Bohio",]] <- 3
-    agParent[soil[soil$SoilParent=="CaimitoMarineSedimentary",]] <- 4
+    agParent_1 <- agLo09_1
+    agParent_1[soil[soil$SoilParent=="CaimitoVolcanic",]] <- 1
+    agParent_1[soil[soil$SoilParent=="Andesite",]] <- 2
+    agParent_1[soil[soil$SoilParent=="Bohio",]] <- 3
+    agParent_1[soil[soil$SoilParent=="CaimitoMarineSedimentary",]] <- 4
     
     # Make soil form raster
-    agForm <- agLo09
-    agForm[soil[soil$SoilForm=="RedLightClay",]] <- 1
-    agForm[soil[soil$SoilForm=="PaleSwellingClay",]] <- 2
-    agForm[soil[soil$SoilForm=="BrownFineLoam",]] <- 3
-    agForm[soil[soil$SoilForm=="MottledHeavyClay",]] <- 4
+    agForm_1 <- agLo09_1
+    agForm_1[soil[soil$SoilForm=="RedLightClay",]] <- 1
+    agForm_1[soil[soil$SoilForm=="PaleSwellingClay",]] <- 2
+    agForm_1[soil[soil$SoilForm=="BrownFineLoam",]] <- 3
+    agForm_1[soil[soil$SoilForm=="MottledHeavyClay",]] <- 4
     
     # Combine all into data frame
-    bestAgResults <- data.frame(agLo09 = raster::values(agLo09),
-                                agChm09 = raster::values(agChm09),
-                                agFix = raster::values(agFix),
-                                agObs = raster::values(agObs),
-                                agAge = raster::values(agAge),
-                                agParent = raster::values(agParent),
-                                agForm = raster::values(agForm),
-                                agN = raster::values(agN))
+    bestAgResults_1 <- data.frame(agLo09 = raster::values(agLo09_1),
+                                agChm09 = raster::values(agChm09_1),
+                                agFix = raster::values(agFix_1),
+                                agObs = raster::values(agObs_1),
+                                agAge = raster::values(agAge_1),
+                                agParent = raster::values(agParent_1),
+                                agForm = raster::values(agForm_1),
+                                agN = raster::values(agN_1))
     # Only keep rows with enough observations
-    bestAgResults <- bestAgResults[useObs,]
+    bestAgResults_1 <- bestAgResults_1[useObs_1,]
     # Rename age, parent material, soil form codes
-    bestAgResults[bestAgResults$agAge==1,"agAge"] <- "OldGrowth"
-    bestAgResults[bestAgResults$agAge==2,"agAge"] <- "Secondary"
-    bestAgResults[bestAgResults$agParent==1,"agParent"] <- "CaimitoVolcanic"
-    bestAgResults[bestAgResults$agParent==2,"agParent"] <- "Andesite"
-    bestAgResults[bestAgResults$agParent==3,"agParent"] <- "Bohio"
-    bestAgResults[bestAgResults$agParent==4,"agParent"] <- "CaimitoMarineSedimentary"
-    bestAgResults[bestAgResults$agForm==1,"agForm"] <- "RedLightClay"
-    bestAgResults[bestAgResults$agForm==2,"agForm"] <- "PaleSwellingClay"
-    bestAgResults[bestAgResults$agForm==3,"agForm"] <- "BrownFineLoam"
-    bestAgResults[bestAgResults$agForm==4,"agForm"] <- "MottledHeavyClay"
+    bestAgResults_1[bestAgResults_1$agAge==1,"agAge"] <- "OldGrowth"
+    bestAgResults_1[bestAgResults_1$agAge==2,"agAge"] <- "Secondary"
+    bestAgResults_1[bestAgResults_1$agParent==1,"agParent"] <- "CaimitoVolcanic"
+    bestAgResults_1[bestAgResults_1$agParent==2,"agParent"] <- "Andesite"
+    bestAgResults_1[bestAgResults_1$agParent==3,"agParent"] <- "Bohio"
+    bestAgResults_1[bestAgResults_1$agParent==4,"agParent"] <- "CaimitoMarineSedimentary"
+    bestAgResults_1[bestAgResults_1$agForm==1,"agForm"] <- "RedLightClay"
+    bestAgResults_1[bestAgResults_1$agForm==2,"agForm"] <- "PaleSwellingClay"
+    bestAgResults_1[bestAgResults_1$agForm==3,"agForm"] <- "BrownFineLoam"
+    bestAgResults_1[bestAgResults_1$agForm==4,"agForm"] <- "MottledHeavyClay"
+    
+    # Scale 2
+    agScale_2 <- 8
+    
+    # Aggregate low canopy area raster
+    agLo09_2 <- raster::aggregate(rasterLo09, fact = agScale_2, fun = mean, na.rm=T)
+    # Aggregate mean canopy height raster
+    agChm09_2 <- raster::aggregate(rasterchm09, fact = agScale_2, fun = mean, na.rm=T)
+    # Aggregate average fixed effects raster
+    agFix_2 <- raster::aggregate(avgPredictedRaster, fact = agScale_2, fun = mean, na.rm=T)
+    # Aggregate average observed disturance raster
+    agObs_2 <- raster::aggregate(avgObservedRaster, fact = agScale_2, fun = mean, na.rm=T)
+    # Aggregate sampling effort
+    agN_2 <- raster::aggregate(avgRasterN, fact = agScale_2, fun = sum, na.rm=T)
+    # Find observations with 90% of values present
+    minObs_2 <- 0.75*loResults$agBy[agScale_2]^2
+    useObs_2 <- raster::values(agN_2)>minObs_2
+    
+    # Make forest age raster
+    agAge_2 <- agLo09_2
+    agAge_2[ageUse[ageUse$AgeClass=="OldGrowth",]] <- 1
+    agAge_2[ageUse[ageUse$AgeClass=="Secondary",]] <- 2
+    
+    # Make soil parent material raster
+    agParent_2 <- agLo09_2
+    agParent_2[soil[soil$SoilParent=="CaimitoVolcanic",]] <- 1
+    agParent_2[soil[soil$SoilParent=="Andesite",]] <- 2
+    agParent_2[soil[soil$SoilParent=="Bohio",]] <- 3
+    agParent_2[soil[soil$SoilParent=="CaimitoMarineSedimentary",]] <- 4
+    
+    # Make soil form raster
+    agForm_2 <- agLo09_2
+    agForm_2[soil[soil$SoilForm=="RedLightClay",]] <- 1
+    agForm_2[soil[soil$SoilForm=="PaleSwellingClay",]] <- 2
+    agForm_2[soil[soil$SoilForm=="BrownFineLoam",]] <- 3
+    agForm_2[soil[soil$SoilForm=="MottledHeavyClay",]] <- 4
+    
+    # Combine all into data frame
+    bestAgResults_2 <- data.frame(agLo09 = raster::values(agLo09_2),
+                                  agChm09 = raster::values(agChm09_2),
+                                  agFix = raster::values(agFix_2),
+                                  agObs = raster::values(agObs_2),
+                                  agAge = raster::values(agAge_2),
+                                  agParent = raster::values(agParent_2),
+                                  agForm = raster::values(agForm_2),
+                                  agN = raster::values(agN_2))
+    # Only keep rows with enough observations
+    bestAgResults_2 <- bestAgResults_2[useObs_2,]
+    # Rename age, parent material, soil form codes
+    bestAgResults_2[bestAgResults_2$agAge==1,"agAge"] <- "OldGrowth"
+    bestAgResults_2[bestAgResults_2$agAge==2,"agAge"] <- "Secondary"
+    bestAgResults_2[bestAgResults_2$agParent==1,"agParent"] <- "CaimitoVolcanic"
+    bestAgResults_2[bestAgResults_2$agParent==2,"agParent"] <- "Andesite"
+    bestAgResults_2[bestAgResults_2$agParent==3,"agParent"] <- "Bohio"
+    bestAgResults_2[bestAgResults_2$agParent==4,"agParent"] <- "CaimitoMarineSedimentary"
+    bestAgResults_2[bestAgResults_2$agForm==1,"agForm"] <- "RedLightClay"
+    bestAgResults_2[bestAgResults_2$agForm==2,"agForm"] <- "PaleSwellingClay"
+    bestAgResults_2[bestAgResults_2$agForm==3,"agForm"] <- "BrownFineLoam"
+    bestAgResults_2[bestAgResults_2$agForm==4,"agForm"] <- "MottledHeavyClay"
+    
+    # Scale 3
+    agScale_3 <- 20
+    
+    # Aggregate low canopy area raster
+    agLo09_3 <- raster::aggregate(rasterLo09, fact = agScale_3, fun = mean, na.rm=T)
+    # Aggregate mean canopy height raster
+    agChm09_3 <- raster::aggregate(rasterchm09, fact = agScale_3, fun = mean, na.rm=T)
+    # Aggregate average fixed effects raster
+    agFix_3 <- raster::aggregate(avgPredictedRaster, fact = agScale_3, fun = mean, na.rm=T)
+    # Aggregate average observed disturance raster
+    agObs_3 <- raster::aggregate(avgObservedRaster, fact = agScale_3, fun = mean, na.rm=T)
+    # Aggregate sampling effort
+    agN_3 <- raster::aggregate(avgRasterN, fact = agScale_3, fun = sum, na.rm=T)
+    # Find observations with 90% of values present
+    minObs_3 <- 0.75*loResults$agBy[agScale_3]^2
+    useObs_3 <- raster::values(agN_3)>minObs_3
+    
+    # Make forest age raster
+    agAge_3 <- agLo09_3
+    agAge_3[ageUse[ageUse$AgeClass=="OldGrowth",]] <- 1
+    agAge_3[ageUse[ageUse$AgeClass=="Secondary",]] <- 2
+    
+    # Make soil parent material raster
+    agParent_3 <- agLo09_3
+    agParent_3[soil[soil$SoilParent=="CaimitoVolcanic",]] <- 1
+    agParent_3[soil[soil$SoilParent=="Andesite",]] <- 2
+    agParent_3[soil[soil$SoilParent=="Bohio",]] <- 3
+    agParent_3[soil[soil$SoilParent=="CaimitoMarineSedimentary",]] <- 4
+    
+    # Make soil form raster
+    agForm_3 <- agLo09_3
+    agForm_3[soil[soil$SoilForm=="RedLightClay",]] <- 1
+    agForm_3[soil[soil$SoilForm=="PaleSwellingClay",]] <- 2
+    agForm_3[soil[soil$SoilForm=="BrownFineLoam",]] <- 3
+    agForm_3[soil[soil$SoilForm=="MottledHeavyClay",]] <- 4
+    
+    # Combine all into data frame
+    bestAgResults_3 <- data.frame(agLo09 = raster::values(agLo09_3),
+                                  agChm09 = raster::values(agChm09_3),
+                                  agFix = raster::values(agFix_3),
+                                  agObs = raster::values(agObs_3),
+                                  agAge = raster::values(agAge_3),
+                                  agParent = raster::values(agParent_3),
+                                  agForm = raster::values(agForm_3),
+                                  agN = raster::values(agN_3))
+    # Only keep rows with enough observations
+    bestAgResults_3 <- bestAgResults_3[useObs_3,]
+    # Rename age, parent material, soil form codes
+    bestAgResults_3[bestAgResults_3$agAge==1,"agAge"] <- "OldGrowth"
+    bestAgResults_3[bestAgResults_3$agAge==2,"agAge"] <- "Secondary"
+    bestAgResults_3[bestAgResults_3$agParent==1,"agParent"] <- "CaimitoVolcanic"
+    bestAgResults_3[bestAgResults_3$agParent==2,"agParent"] <- "Andesite"
+    bestAgResults_3[bestAgResults_3$agParent==3,"agParent"] <- "Bohio"
+    bestAgResults_3[bestAgResults_3$agParent==4,"agParent"] <- "CaimitoMarineSedimentary"
+    bestAgResults_3[bestAgResults_3$agForm==1,"agForm"] <- "RedLightClay"
+    bestAgResults_3[bestAgResults_3$agForm==2,"agForm"] <- "PaleSwellingClay"
+    bestAgResults_3[bestAgResults_3$agForm==3,"agForm"] <- "BrownFineLoam"
+    bestAgResults_3[bestAgResults_3$agForm==4,"agForm"] <- "MottledHeavyClay"
     
     
-    
-  # Correlation with best scale
-    par(mfrow=c(3,4), mar=c(2,2,1,0), oma=c(4,4,1,1))
+  # Plot 1: Low canopy with predicted values from fixed effects
+    PtCex_1 <- 0.8
+    PtCex_2 <- 1
+    PtCex_3 <- 2
+    par(mfrow=c(3,3), mar=c(2,3,1,0), oma=c(4,4,1,1))
     
     # By soil form
-    plot(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="RedLightClay",],
-         xlim=range(bestAgResults[,c("agFix")]),
-         ylim=range(bestAgResults[,c("agLo09")]),
+    plot(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
-         main = "Low canopy: predicted ",
+         main = "2.56 ha resolution",
          pch=19,
-         cex=PtCex,
+         cex=PtCex_1,
          xlab = NA, ylab=NA,
          xaxt="n")
-    points(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="BrownFineLoam",],
+    points(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="BrownFineLoam",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
            pch=19,
-           cex=PtCex)
-    points(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="PaleSwellingClay",],
+           cex=PtCex_1)
+    points(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="PaleSwellingClay",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
            pch=19,
-           cex=PtCex)
-    points(agLo09~agFix, data = bestAgResults[bestAgResults$agForm=="MottledHeavyClay",],
+           cex=PtCex_1)
+    points(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="MottledHeavyClay",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
            pch=19,
-           cex=PtCex)
-    legend(x=min(bestAgResults[,c("agFix")]),
-           y=max(bestAgResults[,c("agLo09")]),
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agFix")]),
+           y=max(bestAgResults_1[,c("agLo09")]),
            c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
            col=adjustcolor(c(colBro,colMot,colPal,colRed),0.6),
            pch=19, pt.cex=1.5,
            bty="n")
-    
-    plot(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="RedLightClay",],
-         xlim=range(bestAgResults[,c("agObs")]),
-         ylim=range(bestAgResults[,c("agLo09")]),
+  
+    plot(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_2[,c("agFix")]),
+         ylim=range(bestAgResults_2[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
-         main = "Low canopy: observed",
+         main = "10.24 ha resolution",
          pch=19,
-         cex=PtCex,
-         xlab = NA, ylab=NA, yaxt="n",xaxt="n")
-    points(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="BrownFineLoam",],
-           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
-           pch=19,
-           cex=PtCex)
-    points(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="PaleSwellingClay",],
-           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
-           pch=19,
-           cex=PtCex)
-    points(agLo09~agObs, data = bestAgResults[bestAgResults$agForm=="MottledHeavyClay",],
-           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
-           pch=19,
-           cex=PtCex)
-    
-    plot(agChm09~agFix, data = bestAgResults[bestAgResults$agForm=="RedLightClay",],
-         xlim=range(bestAgResults[,c("agFix")]),
-         ylim=range(bestAgResults[,c("agChm09")]),
-         col =adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
-         main = "Mean height: predicted ",
-         pch=19,
-         cex=PtCex,
+         cex=PtCex_2,
          xlab = NA, ylab=NA,
          xaxt="n")
-    points(agChm09~agFix, data = bestAgResults[bestAgResults$agForm=="BrownFineLoam",],
+    points(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="BrownFineLoam",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agFix, data = bestAgResults[bestAgResults$agForm=="PaleSwellingClay",],
+           cex=PtCex_2)
+    points(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="PaleSwellingClay",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agFix, data = bestAgResults[bestAgResults$agForm=="MottledHeavyClay",],
+           cex=PtCex_2)
+    points(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="MottledHeavyClay",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
            pch=19,
-           cex=PtCex)
+           cex=PtCex_2)
     
-    plot(agChm09~agObs, data = bestAgResults[bestAgResults$agForm=="RedLightClay",],
-         xlim=range(bestAgResults[,c("agObs")]),
-         ylim=range(bestAgResults[,c("agChm09")]),
+    plot(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
-         main = "Mean height: observed",
+         main = "64.00 ha resolution",
          pch=19,
-         cex=PtCex,
-         xlab = NA, ylab=NA, yaxt="n",xaxt="n")
-    points(agChm09~agObs, data = bestAgResults[bestAgResults$agForm=="BrownFineLoam",],
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="BrownFineLoam",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agObs, data = bestAgResults[bestAgResults$agForm=="PaleSwellingClay",],
+           cex=PtCex_3)
+    points(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="PaleSwellingClay",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agObs, data = bestAgResults[bestAgResults$agForm=="MottledHeavyClay",],
+           cex=PtCex_3)
+    points(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="MottledHeavyClay",],
            col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
            pch=19,
-           cex=PtCex)
+           cex=PtCex_3)
     
     # By soil parent material
-    plot(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="CaimitoVolcanic",],
-         xlim=range(bestAgResults[,c("agFix")]),
-         ylim=range(bestAgResults[,c("agLo09")]),
+    plot(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
          pch=19,
-         cex=PtCex,
+         cex=PtCex_1,
          xlab = NA, ylab=NA,xaxt="n")
-    points(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="CaimitoMarineSedimentary",],
+    points(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoMarineSedimentary",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
            pch=19,
-           cex=PtCex)
-    points(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="Andesite",],
+           cex=PtCex_1)
+    points(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="Andesite",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
            pch=19,
-           cex=PtCex)
-    points(agLo09~agFix, data = bestAgResults[bestAgResults$agParent=="Bohio",],
+           cex=PtCex_1)
+    points(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="Bohio",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
            pch=19,
-           cex=PtCex)
-    legend(x=min(bestAgResults[,c("agFix")]),
-           y=max(bestAgResults[,c("agLo09")]),
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agFix")]),
+           y=max(bestAgResults_1[,c("agLo09")]),
            c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
            col=adjustcolor(c(colAnd,colBoh,colMar,colVol),1),
            pch=19, pt.cex=1.5,
            bty="n")
     
-    plot(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="CaimitoVolcanic",],
-         xlim=range(bestAgResults[,c("agObs")]),
-         ylim=range(bestAgResults[,c("agLo09")]),
+    plot(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_2[,c("agFix")]),
+         ylim=range(bestAgResults_2[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
          pch=19,
-         cex=PtCex,
-         xlab = NA, ylab=NA, yaxt="n",xaxt="n")
-    points(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="CaimitoMarineSedimentary",],
-           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
-           pch=19,
-           cex=PtCex)
-    points(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="Andesite",],
-           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
-           pch=19,
-           cex=PtCex)
-    points(agLo09~agObs, data = bestAgResults[bestAgResults$agParent=="Bohio",],
-           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
-           pch=19,
-           cex=PtCex)
-    
-    plot(agChm09~agFix, data = bestAgResults[bestAgResults$agParent=="CaimitoVolcanic",],
-         xlim=range(bestAgResults[,c("agFix")]),
-         ylim=range(bestAgResults[,c("agChm09")]),
-         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
-         pch=19,
-         cex=PtCex,
+         cex=PtCex_2,
          xlab = NA, ylab=NA,xaxt="n")
-    points(agChm09~agFix, data = bestAgResults[bestAgResults$agParent=="CaimitoMarineSedimentary",],
+    points(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoMarineSedimentary",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agFix, data = bestAgResults[bestAgResults$agParent=="Andesite",],
+           cex=PtCex_2)
+    points(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="Andesite",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agFix, data = bestAgResults[bestAgResults$agParent=="Bohio",],
+           cex=PtCex_2)
+    points(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="Bohio",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
            pch=19,
-           cex=PtCex)
+           cex=PtCex_2)
     
-    plot(agChm09~agObs, data = bestAgResults[bestAgResults$agParent=="CaimitoVolcanic",],
-         xlim=range(bestAgResults[,c("agObs")]),
-         ylim=range(bestAgResults[,c("agChm09")]),
+    plot(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
          pch=19,
-         cex=PtCex,
-         xlab = NA, ylab=NA, yaxt="n",xaxt="n")
-    points(agChm09~agObs, data = bestAgResults[bestAgResults$agParent=="CaimitoMarineSedimentary",],
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoMarineSedimentary",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agObs, data = bestAgResults[bestAgResults$agParent=="Andesite",],
+           cex=PtCex_3)
+    points(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="Andesite",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
            pch=19,
-           cex=PtCex)
-    points(agChm09~agObs, data = bestAgResults[bestAgResults$agParent=="Bohio",],
+           cex=PtCex_3)
+    points(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="Bohio",],
            col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
            pch=19,
-           cex=PtCex)
+           cex=PtCex_3)
     
     # Plot by forest age
-    plot(agLo09~agFix, data = bestAgResults[bestAgResults$agAge=="OldGrowth",],
-         xlim=range(bestAgResults[,c("agFix")]),
-         ylim=range(bestAgResults[,c("agLo09")]),
+    plot(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
          pch=19,
-         cex=PtCex,
+         cex=PtCex_1,
          xlab = NA, ylab=NA)
-    points(agLo09~agFix, data = bestAgResults[bestAgResults$agAge=="Secondary",],
+    points(agLo09~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
            col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
            pch=19,
-           cex=PtCex)
-    legend(x=min(bestAgResults[,c("agFix")]),
-           y=max(bestAgResults[,c("agLo09")]),
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agFix")]),
+           y=max(bestAgResults_1[,c("agLo09")]),
            c("Old growth","Secondary"),
            col=adjustcolor(c(colOld,colSec),0.6),
            pch=19, pt.cex=1.5,
            bty="n")
     
-    plot(agLo09~agObs, data = bestAgResults[bestAgResults$agAge=="OldGrowth",],
-         xlim=range(bestAgResults[,c("agObs")]),
-         ylim=range(bestAgResults[,c("agLo09")]),
+    plot(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_2[,c("agFix")]),
+         ylim=range(bestAgResults_2[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
          pch=19,
-         cex=PtCex,
-         xlab = NA, ylab=NA, yaxt="n")
-    points(agLo09~agObs, data = bestAgResults[bestAgResults$agAge=="Secondary",],
-           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
-           pch=19,
-           cex=PtCex)
-    
-    plot(agChm09~agFix, data = bestAgResults[bestAgResults$agAge=="OldGrowth",],
-         xlim=range(bestAgResults[,c("agFix")]),
-         ylim=range(bestAgResults[,c("agChm09")]),
-         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
-         pch=19,
-         cex=PtCex,
+         cex=PtCex_2,
          xlab = NA, ylab=NA)
-    points(agChm09~agFix, data = bestAgResults[bestAgResults$agAge=="Secondary",],
+    points(agLo09~agFix, data = bestAgResults_2[bestAgResults_2$agAge=="Secondary",],
            col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
            pch=19,
-           cex=PtCex)
+           cex=PtCex_2)
     
-    plot(agChm09~agObs, data = bestAgResults[bestAgResults$agAge=="OldGrowth",],
-         xlim=range(bestAgResults[,c("agObs")]),
-         ylim=range(bestAgResults[,c("agChm09")]),
+    plot(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
          pch=19,
-         cex=PtCex,
-         xlab = NA, ylab=NA, yaxt="n")
-    points(agChm09~agObs, data = bestAgResults[bestAgResults$agAge=="Secondary",],
+         cex=PtCex_3,
+         xlab = NA, ylab=NA)
+    points(agLo09~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
            col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
            pch=19,
-           cex=PtCex)
+           cex=PtCex_3)
     
-    mtext("Predicted or observed disturbance frequency",
+    mtext("Predicted disturbance frequency (fixed effects only)",
           side=1, outer=T, line=1)
     par(las=0)
-    mtext("Standing forest structure in 2009", side=2, outer=T, line=1.5)
+    mtext("Low canopy area in 2009", side=2, outer=T, line=1.5)
     par(las=1)
+    
+    # Plot 2: Low canopy vs observed values
+    par(mfrow=c(3,3), mar=c(2,3,1,0), oma=c(4,4,1,1))
+    
+    # By soil form
+    plot(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "2.56 ha resolution",
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agObs")]),
+           y=max(bestAgResults_1[,c("agLo09")]),
+           c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+           col=adjustcolor(c(colBro,colMot,colPal,colRed),0.6),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_2[,c("agObs")]),
+         ylim=range(bestAgResults_2[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "10.24 ha resolution",
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "64.00 ha resolution",
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    # By soil parent material
+    plot(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agObs")]),
+           y=max(bestAgResults_1[,c("agLo09")]),
+           c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
+           col=adjustcolor(c(colAnd,colBoh,colMar,colVol),1),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_2[,c("agObs")]),
+         ylim=range(bestAgResults_2[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    # Plot by forest age
+    plot(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA)
+    points(agLo09~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agObs")]),
+           y=max(bestAgResults_1[,c("agLo09")]),
+           c("Old growth","Secondary"),
+           col=adjustcolor(c(colOld,colSec),0.6),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_2[,c("agObs")]),
+         ylim=range(bestAgResults_2[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA)
+    points(agLo09~agObs, data = bestAgResults_2[bestAgResults_2$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agLo09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA)
+    points(agLo09~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    mtext("Average observed disturbance frequency",
+          side=1, outer=T, line=1)
+    par(las=0)
+    mtext("Low canopy area in 2009", side=2, outer=T, line=1.5)
+    par(las=1)
+    
+    # Plot 3: Mean canopy height with predicted values from fixed effects
+    PtCex_1 <- 0.8
+    PtCex_2 <- 1
+    PtCex_3 <- 2
+    par(mfrow=c(3,3), mar=c(2,3,1,0), oma=c(4,4,1,1))
+    
+    # By soil form
+    plot(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "2.56 ha resolution",
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agFix")]),
+           y=max(bestAgResults_1[,c("agChm09")]),
+           c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+           col=adjustcolor(c(colBro,colMot,colPal,colRed),0.6),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_2[,c("agFix")]),
+         ylim=range(bestAgResults_2[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "10.24 ha resolution",
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "64.00 ha resolution",
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    # By soil parent material
+    plot(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agFix")]),
+           y=max(bestAgResults_1[,c("agChm09")]),
+           c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
+           col=adjustcolor(c(colAnd,colBoh,colMar,colVol),1),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_2[,c("agFix")]),
+         ylim=range(bestAgResults_2[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    # Plot by forest age
+    plot(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA)
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agFix")]),
+           y=max(bestAgResults_1[,c("agChm09")]),
+           c("Old growth","Secondary"),
+           col=adjustcolor(c(colOld,colSec),0.6),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_2[,c("agFix")]),
+         ylim=range(bestAgResults_2[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA)
+    points(agChm09~agFix, data = bestAgResults_2[bestAgResults_2$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA)
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    mtext("Predicted disturbance frequency (fixed effects only)",
+          side=1, outer=T, line=1)
+    par(las=0)
+    mtext("Mean canopy height in 2009", side=2, outer=T, line=1.5)
+    par(las=1)
+    
+    # Plot 3: Mean canopy height vs observed values
+    par(mfrow=c(3,3), mar=c(2,3,1,0), oma=c(4,4,1,1))
+    
+    # By soil form
+    plot(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "2.56 ha resolution",
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agObs")]),
+           y=max(bestAgResults_1[,c("agChm09")]),
+           c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+           col=adjustcolor(c(colBro,colMot,colPal,colRed),0.6),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_2[,c("agObs")]),
+         ylim=range(bestAgResults_2[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "10.24 ha resolution",
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="RedLightClay",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
+         main = "64.00 ha resolution",
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,
+         xaxt="n")
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="BrownFineLoam",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[1],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="PaleSwellingClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[3],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agForm=="MottledHeavyClay",],
+           col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[4],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    # By soil parent material
+    plot(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agObs")]),
+           y=max(bestAgResults_1[,c("agChm09")]),
+           c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
+           col=adjustcolor(c(colAnd,colBoh,colMar,colVol),1),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_2[,c("agObs")]),
+         ylim=range(bestAgResults_2[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_2)
+    points(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoVolcanic",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA,xaxt="n")
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="CaimitoMarineSedimentary",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[3],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="Andesite",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agParent=="Bohio",],
+           col = adjustcolor(wesanderson::wes_palette("Chevalier1",4)[4],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    # Plot by forest age
+    plot(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         xlab = NA, ylab=NA)
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=min(bestAgResults_1[,c("agObs")]),
+           y=max(bestAgResults_1[,c("agChm09")]),
+           c("Old growth","Secondary"),
+           col=adjustcolor(c(colOld,colSec),0.6),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_2[,c("agObs")]),
+         ylim=range(bestAgResults_2[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_2,
+         xlab = NA, ylab=NA)
+    points(agChm09~agObs, data = bestAgResults_2[bestAgResults_2$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_2)
+    
+    plot(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         xlab = NA, ylab=NA)
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    mtext("Average observed disturbance frequency",
+          side=1, outer=T, line=1)
+    par(las=0)
+    mtext("Mean canopy height in 2009", side=2, outer=T, line=1.5)
+    par(las=1)    
