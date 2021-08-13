@@ -20,6 +20,11 @@ library(INLA)
     # remove these gaps from base raster  
     d18to20tall_alt <- raster::mask(d18to20tall, gaps18to20sp[gaps18to20sp$gap_id%in%bigIDs,], inverse=T)
 
+  # Canopy height raster at the beginning of each interval
+    chm15 <- raster::raster("CHM_2015_QAQC_tin.tif")
+    chm18 <- raster::raster("CHM_2018_QAQC_tin.tif")
+    
+    
   # Forest age polygon
     age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
       age$AgeClass <- "Other"
@@ -64,9 +69,10 @@ library(INLA)
 
   # Aspect raster
     aspectRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif")
+    # resample to same extent as gap rasters (adds NA area to edges)
+    aspectRaster <- raster::resample(aspectRaster, gaps18to20)
     
-    
-  # Distance above drainage raster
+  aspect# Distance above drainage raster
     drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
     # resample to same extent as gap rasters (adds NA area to edges)
     drainRaster <- raster::resample(drainRaster, gaps18to20)
@@ -265,7 +271,7 @@ library(INLA)
         bci.gaps18[bci.gaps18$age == "Other" & !is.na(bci.gaps18$age),c("age","gapProp")] <- NA
         bci.gaps20[bci.gaps20$age == "Other" & !is.na(bci.gaps20$age),c("age","gapProp")] <- NA
         
-#### Quantify aspect, height above drainage, and proportion of 2009 low canopy in each cell ####
+#### Quantify aspect, height above drainage, and initial canopy height in each cell ####
       
   # Define a function to take the mean and median topographic variable within each cell
     quantTopo <- function(gapPoly, topoLayer, cellSz, nX, nY){
@@ -309,10 +315,8 @@ library(INLA)
                               nY = nCellY)
       
       bci.gaps18$drainMean <- drainQuant$meanVal
-      #bci.gaps18$drainMed <- drainQuant$medVal
       bci.gaps20$drainMean <- drainQuant$meanVal
-      #bci.gaps20$drainMed <- drainQuant$medVal
-      
+
     # Height above nearest drainage--squared
       drainQuantSq <- quantTopo(gapPoly = bci.gaps18,
                               topoLayer = drainRasterSq,
@@ -321,10 +325,8 @@ library(INLA)
                               nY = nCellY)
       
       bci.gaps18$drainMean_Sq <- drainQuantSq$meanVal
-      #bci.gaps18$drainMed_Sq <- drainQuantSq$medVal
       bci.gaps20$drainMean_Sq <- drainQuantSq$meanVal
-      #bci.gaps20$drainMed_Sq <- drainQuantSq$medVal  
-      
+
     # Height above nearest drainage--log
       drainQuantLog <- quantTopo(gapPoly = bci.gaps18,
                               topoLayer = drainRasterLog,
@@ -333,9 +335,53 @@ library(INLA)
                               nY = nCellY)
       
       bci.gaps18$drainMean_Log <- drainQuantLog$meanVal
-      #bci.gaps18$drainMed_Log <- drainQuantLog$medVal
       bci.gaps20$drainMean_Log <- drainQuantLog$meanVal
-      #bci.gaps20$drainMed_Log <- drainQuantLog$medVal   
+
+    # Initial canopy height -- linear
+      canopyHt15 <- quantTopo(gapPoly = bci.gaps18,
+                              topoLayer = chm15,
+                              cellSz = cellSize,
+                              nX = nCellX,
+                              nY = nCellY)
+      
+      bci.gaps18$initialHt <- canopyHt15$meanVal
+      
+      canopyHt18 <- quantTopo(gapPoly = bci.gaps18,
+                              topoLayer = chm18,
+                              cellSz = cellSize,
+                              nX = nCellX,
+                              nY = nCellY)
+      
+      bci.gaps20$initialHt <- canopyHt18$meanVal
+
+      
+    #Initial canopy height -- log
+      chm15log <- chm15
+      chm15vals <- raster::values(chm15)
+      chm15log[chm15vals<=0 & !is.na(chm15vals)] <- 0.001
+      chm15log <- log(chm15log)
+      
+      chm18log <- chm18
+      chm18vals <- raster::values(chm18)
+      chm18log[chm18vals<=0 & !is.na(chm18vals)] <- 0.001
+      chm18log <- log(chm18log)
+      
+      canopyHt15log <- quantTopo(gapPoly = bci.gaps18,
+                                 topoLayer = chm15log,
+                                 cellSz = cellSize,
+                                 nX = nCellX,
+                                 nY = nCellY)
+      
+      bci.gaps18$initialHtlog <- canopyHt15log$meanVal
+      
+      canopyHt18log <- quantTopo(gapPoly = bci.gaps18,
+                                 topoLayer = chm18log,
+                                 cellSz = cellSize,
+                                 nX = nCellX,
+                                 nY = nCellY)
+      
+      bci.gaps20$initialHtlog <- canopyHt18log$meanVal
+      
       
 #### Calculate curvature and slope across a range of smoothing values ####
 
@@ -461,7 +507,7 @@ library(INLA)
     bci.gapsAll <- bci.gapsAll[,!medCols]
     
     # Scale topographic covariates
-    for(i in c(10:60)){
+    for(i in c(10:62)){
       bci.gapsAll$new <- NA
       bci.gapsAll[!is.na(bci.gapsAll$age),"new"] <- scale(bci.gapsAll[!is.na(bci.gapsAll$age),i])
       names(bci.gapsAll)[names(bci.gapsAll)=="new"] <- paste0("Sc_",names(bci.gapsAll)[i])
@@ -990,3 +1036,56 @@ library(INLA)
                       control.family = list(beta.censor.value = cens))
   
   save(model_full_alt, model_full2_alt, file = "INLA/INLA_fullModelResult_noLargeGaps.RData")
+### Run full model with initial canopy height ####
+  
+  library(INLA)
+  load("INLA/INLA_prelim_40m_tin.RData")
+  
+  curvScale <- 2
+  slopeScale <- 16
+  
+  # Make an ID value for each cell
+  bci.gapsAll$Order <- 1:nrow(bci.gapsAll)
+  
+  # Reorder so that INLA thinks there is one spatial pattern
+  newOrder <- c()
+  for(i in 1:nCellX){
+    # Interval 1
+    newOrder <- c(newOrder,(1 + (i-1)*(nCellY)):(i*nCellY))
+    # Interval 2
+    newOrder <- c(newOrder,(1 + (i-1)*(nCellY) + nCellX*nCellY):(i*nCellY + nCellX*nCellY))
+  }
+  
+  # Reorder and make a new ID column
+  bci.gapsAll_Order <- bci.gapsAll[newOrder,]
+  bci.gapsAll_Order$ID <- 1:nrow(bci.gapsAll_Order)
+  
+  # Reorder factors so that "base" level is the group with the most data
+  bci.gapsAll_Order$soilParent <- relevel(as.factor(bci.gapsAll_Order$soilParent), "Bohio")
+  bci.gapsAll_Order$soilForm <- relevel(as.factor(bci.gapsAll_Order$soilForm), "BrownFineLoam")
+  bci.gapsAll_Order$age <- relevel(as.factor(bci.gapsAll_Order$age), "OldGrowth")
+  bci.gapsAll_Order$Year <- relevel(as.factor(bci.gapsAll_Order$Year), "2020")
+  
+  # Run the best models with full spatial autocorrelation AND add initial canopy height
+  fixed_full_ht <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + soilParent + soilForm + age + Year + Sc_initialHt")
+  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
+  form_full_ht <- formula(paste0("gapPropCens ~ ",fixed_full_ht," + ",random_full))
+  
+  model_full_ht <- inla(form_full_ht,
+                     family = "beta",
+                     data = bci.gapsAll_Order,
+                     control.compute = list(dic = TRUE),
+                     control.family = list(beta.censor.value = cens))
+  
+  fixed_full_htlog <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + soilParent + soilForm + age + Year + Sc_initialHtlog")
+  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
+  form_full_htlog <- formula(paste0("gapPropCens ~ ",fixed_full_htlog," + ",random_full))
+  
+  model_full_htlog <- inla(form_full_htlog,
+                        family = "beta",
+                        data = bci.gapsAll_Order,
+                        control.compute = list(dic = TRUE),
+                        control.family = list(beta.censor.value = cens))
+  
+  save(model_full_ht, model_full_htlog, file = "INLA/INLA_fullModelResult_initialHt.RData")
+  
