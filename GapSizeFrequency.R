@@ -520,23 +520,36 @@
                                             ddiv=szUse) 
       
 #### Plot bootstrapped results by year ####
+      
+  col18 <- "blue"
+  col20 <- "#d95f02"    
   
   # Read distribution results
   szFreq15to18 <- read.table("SizeFreqResults/gaps15to18sizedistbsfit.txt", header = T)
   szFreq18to20 <- read.table("SizeFreqResults/gaps18to20sizedistbsfit.txt", header = T)
 
-  # What distribution has the highest likelihood?
+  # Calculate AIC values for each model
   # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
   
+  szFreq15to18$weibAIC <-  -2*(-1*szFreq15to18$weibloglike) + 2*2
+  szFreq15to18$powAIC <-  -2*(-1*szFreq15to18$powloglike) + 2*1
+  szFreq15to18$expAIC <-  -2*(-1*szFreq15to18$exploglike) + 2*1
+  
+  szFreq18to20$weibAIC <-  -2*(-1*szFreq18to20$weibloglike) + 2*2
+  szFreq18to20$powAIC <-  -2*(-1*szFreq18to20$powloglike) + 2*1
+  szFreq18to20$expAIC <-  -2*(-1*szFreq18to20$exploglike) + 2*1
+  
+  # Find the delta AIC
+  
     # 2015 to 2017
-    round(-szFreq15to18$weibloglike-max(c(-szFreq15to18$weibloglike,-szFreq15to18$powloglike,-szFreq15to18$exploglike)),0) 
-    round(-szFreq15to18$powloglike-max(c(-szFreq15to18$weibloglike,-szFreq15to18$powloglike,-szFreq15to18$exploglike)),0) 
-    round(-szFreq15to18$exploglike-max(c(-szFreq15to18$weibloglike,-szFreq15to18$powloglike,-szFreq15to18$exploglike)),0) 
+    round(szFreq15to18$weibAIC-min(c(szFreq15to18$weibAIC,szFreq15to18$powAIC,szFreq15to18$expAIC)),0) 
+    round(szFreq15to18$powAIC-min(c(szFreq15to18$weibAIC,szFreq15to18$powAIC,szFreq15to18$expAIC)),0) 
+    round(szFreq15to18$expAIC-min(c(szFreq15to18$weibAIC,szFreq15to18$powAIC,szFreq15to18$expAIC)),0) 
     
     # 2018 to 2020
-    round(-szFreq18to20$weibloglike-max(c(-szFreq18to20$weibloglike,-szFreq18to20$powloglike,-szFreq18to20$exploglike)),0) 
-    round(-szFreq18to20$powloglike-max(c(-szFreq18to20$weibloglike,-szFreq18to20$powloglike,-szFreq18to20$exploglike)),0) 
-    round(-szFreq18to20$exploglike-max(c(-szFreq18to20$weibloglike,-szFreq18to20$powloglike,-szFreq18to20$exploglike)),0) 
+    round(szFreq18to20$weibAIC-min(c(szFreq18to20$weibAIC,szFreq18to20$powAIC,szFreq18to20$expAIC)),0) 
+    round(szFreq18to20$powAIC-min(c(szFreq18to20$weibAIC,szFreq18to20$powAIC,szFreq18to20$expAIC)),0) 
+    round(szFreq18to20$expAIC-min(c(szFreq18to20$weibAIC,szFreq18to20$powAIC,szFreq18to20$expAIC)),0) 
   
   # Get r-squared values for each
     
@@ -550,7 +563,7 @@
     round(szFreq18to20$powcatadjr2,3)
     round(szFreq18to20$expcatadjr2,3)
   
-  # Weibull has the lowest -log likelihood in both intervals
+  # Weibull has the lowest -AIC in both intervals
   round(szFreq15to18[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   round(szFreq18to20[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   
@@ -660,12 +673,14 @@
   lines(x = xVals, y = yValsWeib20, col = adjustcolor(col20,0.6), lwd=2)
   
   
-  smooth18 <- loess.smooth(x = gaps15to18sp$area,
-                           y = -gaps15to18sp$htDrop,
-                           degree=1, span = 1.2)
-  smooth20 <- loess.smooth(x = gaps18to20sp$area,
-                           y = -gaps18to20sp$htDrop,
-                           degree=1, span = 1.2)
+  smooth18 <- ksmooth(x = gaps15to18sp$area,
+                      y = -gaps15to18sp$htDrop,
+                      bandwidth = 8,
+                      x.points = quantile(gaps15to18sp$area, probs = seq(0,1,0.025)))
+  smooth20 <- ksmooth(x = gaps18to20sp$area,
+                      y = -gaps18to20sp$htDrop,
+                      bandwidth = 8,
+                      x.points = quantile(gaps18to20sp$area, probs = seq(0,1,0.025)))
   
   plot(x = gaps15to18sp$area,
        y = -gaps15to18sp$htDrop,
@@ -673,7 +688,7 @@
        xlim=range(c(gaps15to18sp$area,gaps18to20sp$area)),
        ylim=-range(c(gaps15to18sp$htDrop,gaps18to20sp$htDrop)),
        ylab= "Average height decrease (m)",
-       col = adjustcolor(col18,0.2),
+       col = adjustcolor(col18,0.05),
        cex = 0.3,
        pch=19)
   text("b",
@@ -681,11 +696,11 @@
        y = -max(c(gaps15to18sp$htDrop,gaps18to20sp$htDrop)))
   points(x = gaps18to20sp$area,
        y = -gaps18to20sp$htDrop,
-       col = adjustcolor(col20,0.2),
+       col = adjustcolor(col20,0.05),
        cex = 0.3,
        pch=19)
-  lines(smooth18, col=col18,lwd=2)
-  lines(smooth20, col=col20,lwd=2)
+  lines(smooth18, col=col18,lwd=3)
+  lines(smooth20, col=col20,lwd=3)
   
 #### Plot bootstrapped results by forest age ####
   
@@ -693,39 +708,33 @@
   szFreqOld <- read.table("SizeFreqResults/gapsOldGrowthsizedistbsfit.txt", header = T)
   szFreqSec <- read.table("SizeFreqResults/gapsSecondarysizedistbsfit.txt", header = T)
   
+  # Calculate AIC values for each model
+  # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
   
-  # What distribution has the highest likelihood?
-    # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
-    
-    # Old growth
-    round(-szFreqOld$weibloglike-max(c(-szFreqOld$weibloglike,-szFreqOld$powloglike,-szFreqOld$exploglike)),0) 
-    round(-szFreqOld$powloglike-max(c(-szFreqOld$weibloglike,-szFreqOld$powloglike,-szFreqOld$exploglike)),0) 
-    round(-szFreqOld$exploglike-max(c(-szFreqOld$weibloglike,-szFreqOld$powloglike,-szFreqOld$exploglike)),0) 
-    
-    # Secondary
-    round(-szFreqSec$weibloglike-max(c(-szFreqSec$weibloglike,-szFreqSec$powloglike,-szFreqSec$exploglike)),0) 
-    round(-szFreqSec$powloglike-max(c(-szFreqSec$weibloglike,-szFreqSec$powloglike,-szFreqSec$exploglike)),0) 
-    round(-szFreqSec$exploglike-max(c(-szFreqSec$weibloglike,-szFreqSec$powloglike,-szFreqSec$exploglike)),0) 
+  szFreqOld$weibAIC <-  -2*(-1*szFreqOld$weibloglike) + 2*2
+  szFreqOld$powAIC <-  -2*(-1*szFreqOld$powloglike) + 2*1
+  szFreqOld$expAIC <-  -2*(-1*szFreqOld$exploglike) + 2*1
   
-  # Get r-squared values for each
+  szFreqSec$weibAIC <-  -2*(-1*szFreqSec$weibloglike) + 2*2
+  szFreqSec$powAIC <-  -2*(-1*szFreqSec$powloglike) + 2*1
+  szFreqSec$expAIC <-  -2*(-1*szFreqSec$exploglike) + 2*1
   
-    # Old growth
-    round(szFreqOld$weibcatadjr2,3)
-    round(szFreqOld$powcatadjr2,3)
-    round(szFreqOld$expcatadjr2,3)
-    
-    # Secondary
-    round(szFreqSec$weibcatadjr2,3)
-    round(szFreqSec$powcatadjr2,3)
-    round(szFreqSec$expcatadjr2,3)
+  # Find the delta AIC
   
-  # Weibull has the lowest -log likelihood in both intervals
+  round(szFreqOld$weibAIC-min(c(szFreqOld$weibAIC,szFreqOld$powAIC,szFreqOld$expAIC)),0) 
+  round(szFreqOld$powAIC-min(c(szFreqOld$weibAIC,szFreqOld$powAIC,szFreqOld$expAIC)),0) 
+  round(szFreqOld$expAIC-min(c(szFreqOld$weibAIC,szFreqOld$powAIC,szFreqOld$expAIC)),0) 
+  
+  round(szFreqSec$weibAIC-min(c(szFreqSec$weibAIC,szFreqSec$powAIC,szFreqSec$expAIC)),0) 
+  round(szFreqSec$powAIC-min(c(szFreqSec$weibAIC,szFreqSec$powAIC,szFreqSec$expAIC)),0) 
+  round(szFreqSec$expAIC-min(c(szFreqSec$weibAIC,szFreqSec$powAIC,szFreqSec$expAIC)),0) 
+  
+  # Weibull has the lowest AIC in both intervals
   round(szFreqOld[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   round(szFreqSec[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   
   round(szFreqOld[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
   round(szFreqSec[,c("weibpar2est","weibpar2lo1","weibpar2hi1")],2)
-  
   
   # Make plot of data and best-fit lines
   
@@ -806,14 +815,14 @@
   colOld <- wesanderson::wes_palette("Moonrise2",4)[1]
   colSec <- wesanderson::wes_palette("Moonrise2",4)[2]
   
-  par(las = 1, mar=c(3,4,2,1),oma=c(2,2,1,1), mfrow=c(1,3))
+  par(las = 1, mar=c(3,2,2,1),oma=c(2,4,1,1), mfrow=c(1,3))
   plot(x = brksMids, y = gapSizesOld,
        xlim=range(brksMids),
        ylim=yRange,
        col = adjustcolor(colOld,0.6),
        log = logOption,
        pch=19,
-       cex.axis = 1,
+       cex.axis = 1.2,
        ylab = NA,
        xlab = NA,
        main = "Forest age")
@@ -821,15 +830,15 @@
         side=1, outer=T)
   par(las=0)
   mtext(expression("Disturbance frequency (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
-        side=2, outer=T)
+        side=2, outer=T, line=1.5)
   par(las=1)
   points(x = brksMids, y = gapSizesSec,
          col = adjustcolor(colSec,0.6), pch=19)
   
-  legend(x=30,y=0.0001,
+  legend(x=20,y=0.000005,
          c("Old growth","Secondary"),
          col=adjustcolor(c(colOld,colSec),0.6),
-         pch=19, cex=1,
+         pch=19, cex=1.2,
          bty="n")
   
   lines(x = xVals, y = yValsWeibOld, col = adjustcolor(colOld,0.6), lwd=2)
@@ -844,32 +853,45 @@
   szFreqMar <- read.table("SizeFreqResults/gapsCaimitoMarinesizedistbsfit.txt", header = T)
   szFreqVol <- read.table("SizeFreqResults/gapsCaimitoVolcanicsizedistbsfit.txt", header = T)
   
-  
-  
-  # What distribution has the highest likelihood?
+  # Calculate AIC values for each model
   # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
   
-  # Andesite
-  round(-szFreqAnd$weibloglike-max(c(-szFreqAnd$weibloglike,-szFreqAnd$powloglike,-szFreqAnd$exploglike)),0) 
-  round(-szFreqAnd$powloglike-max(c(-szFreqAnd$weibloglike,-szFreqAnd$powloglike,-szFreqAnd$exploglike)),0) 
-  round(-szFreqAnd$exploglike-max(c(-szFreqAnd$weibloglike,-szFreqAnd$powloglike,-szFreqAnd$exploglike)),0) 
+  szFreqAnd$weibAIC <-  -2*(-1*szFreqAnd$weibloglike) + 2*2
+  szFreqAnd$powAIC <-  -2*(-1*szFreqAnd$powloglike) + 2*1
+  szFreqAnd$expAIC <-  -2*(-1*szFreqAnd$exploglike) + 2*1
   
-  # Bohio
-  round(-szFreqBoh$weibloglike-max(c(-szFreqBoh$weibloglike,-szFreqBoh$powloglike,-szFreqBoh$exploglike)),0) 
-  round(-szFreqBoh$powloglike-max(c(-szFreqBoh$weibloglike,-szFreqBoh$powloglike,-szFreqBoh$exploglike)),0) 
-  round(-szFreqBoh$exploglike-max(c(-szFreqBoh$weibloglike,-szFreqBoh$powloglike,-szFreqBoh$exploglike)),0) 
+  szFreqBoh$weibAIC <-  -2*(-1*szFreqBoh$weibloglike) + 2*2
+  szFreqBoh$powAIC <-  -2*(-1*szFreqBoh$powloglike) + 2*1
+  szFreqBoh$expAIC <-  -2*(-1*szFreqBoh$exploglike) + 2*1
   
-  # Caimito marine
-  round(-szFreqMar$weibloglike-max(c(-szFreqMar$weibloglike,-szFreqMar$powloglike,-szFreqMar$exploglike)),0) 
-  round(-szFreqMar$powloglike-max(c(-szFreqMar$weibloglike,-szFreqMar$powloglike,-szFreqMar$exploglike)),0) 
-  round(-szFreqMar$exploglike-max(c(-szFreqMar$weibloglike,-szFreqMar$powloglike,-szFreqMar$exploglike)),0) 
+  szFreqMar$weibAIC <-  -2*(-1*szFreqMar$weibloglike) + 2*2
+  szFreqMar$powAIC <-  -2*(-1*szFreqMar$powloglike) + 2*1
+  szFreqMar$expAIC <-  -2*(-1*szFreqMar$exploglike) + 2*1
   
-  # Caimito volcanic
-  round(-szFreqVol$weibloglike-max(c(-szFreqVol$weibloglike,-szFreqVol$powloglike,-szFreqVol$exploglike)),0) 
-  round(-szFreqVol$powloglike-max(c(-szFreqVol$weibloglike,-szFreqVol$powloglike,-szFreqVol$exploglike)),0) 
-  round(-szFreqVol$exploglike-max(c(-szFreqVol$weibloglike,-szFreqVol$powloglike,-szFreqVol$exploglike)),0) 
-
-  # Weibull has the lowest -log likelihood in all categories
+  szFreqVol$weibAIC <-  -2*(-1*szFreqVol$weibloglike) + 2*2
+  szFreqVol$powAIC <-  -2*(-1*szFreqVol$powloglike) + 2*1
+  szFreqVol$expAIC <-  -2*(-1*szFreqVol$exploglike) + 2*1
+  
+  
+  # Find the delta AIC
+  
+  round(szFreqAnd$weibAIC-min(c(szFreqAnd$weibAIC,szFreqAnd$powAIC,szFreqAnd$expAIC)),0) 
+  round(szFreqAnd$powAIC-min(c(szFreqAnd$weibAIC,szFreqAnd$powAIC,szFreqAnd$expAIC)),0) 
+  round(szFreqAnd$expAIC-min(c(szFreqAnd$weibAIC,szFreqAnd$powAIC,szFreqAnd$expAIC)),0) 
+  
+  round(szFreqBoh$weibAIC-min(c(szFreqBoh$weibAIC,szFreqBoh$powAIC,szFreqBoh$expAIC)),0) 
+  round(szFreqBoh$powAIC-min(c(szFreqBoh$weibAIC,szFreqBoh$powAIC,szFreqBoh$expAIC)),0) 
+  round(szFreqBoh$expAIC-min(c(szFreqBoh$weibAIC,szFreqBoh$powAIC,szFreqBoh$expAIC)),0) 
+  
+  round(szFreqMar$weibAIC-min(c(szFreqMar$weibAIC,szFreqMar$powAIC,szFreqMar$expAIC)),0) 
+  round(szFreqMar$powAIC-min(c(szFreqMar$weibAIC,szFreqMar$powAIC,szFreqMar$expAIC)),0) 
+  round(szFreqMar$expAIC-min(c(szFreqMar$weibAIC,szFreqMar$powAIC,szFreqMar$expAIC)),0) 
+  
+  round(szFreqVol$weibAIC-min(c(szFreqVol$weibAIC,szFreqVol$powAIC,szFreqVol$expAIC)),0) 
+  round(szFreqVol$powAIC-min(c(szFreqVol$weibAIC,szFreqVol$powAIC,szFreqVol$expAIC)),0) 
+  round(szFreqVol$expAIC-min(c(szFreqVol$weibAIC,szFreqVol$powAIC,szFreqVol$expAIC)),0) 
+  
+  # Weibull has the lowest AIC in all categories
   round(szFreqAnd[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   round(szFreqBoh[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   round(szFreqMar[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
@@ -961,10 +983,11 @@
   plot(x = brksMids, y = gapSizesAnd,
        xlim=range(brksMids),
        ylim=yRange,
+       yaxt="n",
        col = adjustcolor(colAnd,0.6),
        log = logOption,
        pch=19,
-       cex.axis = 1,
+       cex.axis = 1.2,
        ylab = NA,
        xlab = NA,
        main = "Soil parent material")
@@ -975,10 +998,10 @@
   points(x = brksMids, y = gapSizesVol,
          col = adjustcolor(colVol,0.6), pch=19)
   
-  legend(x=30,y=0.0001,
+  legend(x=20,y=0.000005,
          c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
          col=adjustcolor(c(colAnd,colBoh,colMar,colVol),0.6),
-         pch=19, cex=1,
+         pch=19, cex=1.2,
          bty="n")
   
   lines(x = xVals, y = yValsWeibAnd, col = adjustcolor(colAnd,0.6), lwd=2)
@@ -996,30 +1019,46 @@
   szFreqRed <- read.table("SizeFreqResults/lightClayGapssizedistbsfit.txt", header = T)
   
   
-  # What distribution has the highest likelihood?
+  # Calculate AIC values for each model
   # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
   
-  # Brown fine loam
-  round(-szFreqBro$weibloglike-max(c(-szFreqBro$weibloglike,-szFreqBro$powloglike,-szFreqBro$exploglike)),0) 
-  round(-szFreqBro$powloglike-max(c(-szFreqBro$weibloglike,-szFreqBro$powloglike,-szFreqBro$exploglike)),0) 
-  round(-szFreqBro$exploglike-max(c(-szFreqBro$weibloglike,-szFreqBro$powloglike,-szFreqBro$exploglike)),0) 
+  szFreqBro$weibAIC <-  -2*(-1*szFreqBro$weibloglike) + 2*2
+  szFreqBro$powAIC <-  -2*(-1*szFreqBro$powloglike) + 2*1
+  szFreqBro$expAIC <-  -2*(-1*szFreqBro$exploglike) + 2*1
   
-  # Mottled heavy clay
-  round(-szFreqMot$weibloglike-max(c(-szFreqMot$weibloglike,-szFreqMot$powloglike,-szFreqMot$exploglike)),0) 
-  round(-szFreqMot$powloglike-max(c(-szFreqMot$weibloglike,-szFreqMot$powloglike,-szFreqMot$exploglike)),0) 
-  round(-szFreqMot$exploglike-max(c(-szFreqMot$weibloglike,-szFreqMot$powloglike,-szFreqMot$exploglike)),0) 
+  szFreqMot$weibAIC <-  -2*(-1*szFreqMot$weibloglike) + 2*2
+  szFreqMot$powAIC <-  -2*(-1*szFreqMot$powloglike) + 2*1
+  szFreqMot$expAIC <-  -2*(-1*szFreqMot$exploglike) + 2*1
   
-  # Pale swelling clay
-  round(-szFreqPal$weibloglike-max(c(-szFreqPal$weibloglike,-szFreqPal$powloglike,-szFreqPal$exploglike)),0) 
-  round(-szFreqPal$powloglike-max(c(-szFreqPal$weibloglike,-szFreqPal$powloglike,-szFreqPal$exploglike)),0) 
-  round(-szFreqPal$exploglike-max(c(-szFreqPal$weibloglike,-szFreqPal$powloglike,-szFreqPal$exploglike)),0) 
+  szFreqPal$weibAIC <-  -2*(-1*szFreqPal$weibloglike) + 2*2
+  szFreqPal$powAIC <-  -2*(-1*szFreqPal$powloglike) + 2*1
+  szFreqPal$expAIC <-  -2*(-1*szFreqPal$exploglike) + 2*1
   
-  # Red light clay
-  round(-szFreqRed$weibloglike-max(c(-szFreqRed$weibloglike,-szFreqRed$powloglike,-szFreqRed$exploglike)),0) 
-  round(-szFreqRed$powloglike-max(c(-szFreqRed$weibloglike,-szFreqRed$powloglike,-szFreqRed$exploglike)),0) 
-  round(-szFreqRed$exploglike-max(c(-szFreqRed$weibloglike,-szFreqRed$powloglike,-szFreqRed$exploglike)),0) 
+  szFreqRed$weibAIC <-  -2*(-1*szFreqRed$weibloglike) + 2*2
+  szFreqRed$powAIC <-  -2*(-1*szFreqRed$powloglike) + 2*1
+  szFreqRed$expAIC <-  -2*(-1*szFreqRed$exploglike) + 2*1
   
-  # Weibull has the lowest -log likelihood in all categories
+  
+  # Find the delta AIC
+  
+  round(szFreqBro$weibAIC-min(c(szFreqBro$weibAIC,szFreqBro$powAIC,szFreqBro$expAIC)),0) 
+  round(szFreqBro$powAIC-min(c(szFreqBro$weibAIC,szFreqBro$powAIC,szFreqBro$expAIC)),0) 
+  round(szFreqBro$expAIC-min(c(szFreqBro$weibAIC,szFreqBro$powAIC,szFreqBro$expAIC)),0) 
+  
+  round(szFreqMot$weibAIC-min(c(szFreqMot$weibAIC,szFreqMot$powAIC,szFreqMot$expAIC)),0) 
+  round(szFreqMot$powAIC-min(c(szFreqMot$weibAIC,szFreqMot$powAIC,szFreqMot$expAIC)),0) 
+  round(szFreqMot$expAIC-min(c(szFreqMot$weibAIC,szFreqMot$powAIC,szFreqMot$expAIC)),0) 
+  
+  round(szFreqPal$weibAIC-min(c(szFreqPal$weibAIC,szFreqPal$powAIC,szFreqPal$expAIC)),0) 
+  round(szFreqPal$powAIC-min(c(szFreqPal$weibAIC,szFreqPal$powAIC,szFreqPal$expAIC)),0) 
+  round(szFreqPal$expAIC-min(c(szFreqPal$weibAIC,szFreqPal$powAIC,szFreqPal$expAIC)),0) 
+  
+  round(szFreqRed$weibAIC-min(c(szFreqRed$weibAIC,szFreqRed$powAIC,szFreqRed$expAIC)),0) 
+  round(szFreqRed$powAIC-min(c(szFreqRed$weibAIC,szFreqRed$powAIC,szFreqRed$expAIC)),0) 
+  round(szFreqRed$expAIC-min(c(szFreqRed$weibAIC,szFreqRed$powAIC,szFreqRed$expAIC)),0) 
+  
+  
+  # Weibull has the lowest AIC in all categories
   round(szFreqBro[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   round(szFreqMot[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
   round(szFreqPal[,c("weibpar1est","weibpar1lo1","weibpar1hi1")],3)
@@ -1070,8 +1109,9 @@
        ylim=yRange,
        col = adjustcolor(colBro,0.6),
        log = logOption,
+       yaxt="n",
        pch=19,
-       cex.axis = 1,
+       cex.axis = 1.2,
        ylab = NA,
        xlab = NA,
        main = "Soil form")
@@ -1082,10 +1122,10 @@
   points(x = brksMids, y = gapSizesRed,
          col = adjustcolor(colRed,0.6), pch=19)
   
-  legend(x=30,y=0.0001,
+  legend(x=20,y=0.000005,
          c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
          col=adjustcolor(c(colBro,colMot,colPal,colRed),0.6),
-         pch=19, cex=1,
+         pch=19, cex=1.2,
          bty="n")
   
   lines(x = xVals, y = yValsWeibBro, col = adjustcolor(colBro,0.6), lwd=2)

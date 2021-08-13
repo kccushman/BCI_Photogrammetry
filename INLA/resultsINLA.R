@@ -834,7 +834,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
        xlab = NA,
        cex = 0.5,
        pch=19)
-  lines(smoothAll, col="goldenrod",lwd=2)
+  lines(smoothAll, col="red",lwd=2, lty=2)
   abline(a=0,b=1,col="red")
   mtext("Observed disturbance proportion", side=1,outer=T)
   par(las=0)
@@ -851,7 +851,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
        yaxt="n",
        cex = 0.5,
        pch=19)
-  lines(smooth18, col="goldenrod",lwd=2)
+  lines(smooth18, col="red", lwd=2, lty=2)
   abline(a=0,b=1,col="red")
   
   plot(gapPropCens~pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2020",],
@@ -864,7 +864,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
        yaxt="n",
        cex = 0.5,
        pch=19)
-  lines(smooth20, col="goldenrod",lwd=2)
+  lines(smooth20, col="red", lwd=2, lty=2)
   abline(a=0,b=1,col="red")
   
 #### Figure 6: Fixed effects sizes ####  
@@ -993,7 +993,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
          col = c("black", col18, col20, col20),
          pch=c(19,19,19,1))
   
-#### Figure 4: Raster plots of landscape predictors ####
+#### Figure 2: Raster plots of landscape predictors ####
   
   buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
   buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
@@ -1002,7 +1002,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   plotShp <- rgdal::readOGR("D:/BCI_Spatial/BCI50ha/BCI_50ha.shp")
   plotShp <- sp::spTransform(plotShp, sp::proj4string(buffer))
   
-  curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_8.tif")
+  curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_16.tif")
   slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
   drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
   
@@ -1012,20 +1012,23 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   
 
   
-  par(mar=c(1,1,1,1))
+  par(mar=c(1,3,1,1), mfrow=c(2,3), oma=c(0,0,0,2))
   raster::plot(curvRaster, col = viridis::cividis(128),
                bty="n", box=F, yaxt="n", xaxt="n",
-               main = "Curvature")
+               legend.width=1.5,
+               axis.args = list(cex.axis=1.8))
   raster::plot(plotShp,add=T, lwd=2, border="white")
   
   raster::plot(slopeRaster, col = viridis::plasma(128),
                bty="n", box=F, yaxt="n", xaxt="n",
-               main = "Slope")
+               legend.width=1.5,
+               axis.args = list(cex.axis=1.8))
   raster::plot(plotShp,add=T, lwd=2, border="white")
   
   raster::plot(drainRaster, col = viridis::viridis(128),
                bty="n", box=F, yaxt="n", xaxt="n",
-               main = "Height above drainage")
+               legend.width=1.5,
+               axis.args = list(cex.axis=1.8))
   raster::plot(plotShp,add=T, lwd=2, border="white")
   
   soil$formCol = NA
@@ -1043,13 +1046,11 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     soil <- sp::spTransform(soil, sp::proj4string(buffer))
     
   raster::plot(soil,
-               main = "Soil form",
                col = soil$formCol,
                border="NA")
   raster::plot(plotShp,add=T, lwd=2, border="white")
   
   raster::plot(soil,
-               main = "Soil parent material",
                col = soil$parentCol,
                border="NA")
   raster::plot(plotShp,add=T, lwd=2, border="white")
@@ -1061,7 +1062,6 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   
   age <- raster::crop(age,buffer)
   raster::plot(age ,
-               main = "Forest age",
                col = age$ageCol,
                border="NA")
   raster::plot(plotShp,add=T, lwd=2, border="white")
@@ -1178,8 +1178,41 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   mean(abs(slopeAll[!is.na(bci.gapsAll$gapPropCens)]))
   mean(abs(htAll[!is.na(bci.gapsAll$gapPropCens)]))
   
+  # Make a simplified version for plotting
   
-  par(mfrow=c(2,3), mar=c(0,4,0,1), oma=c(5,1,3,1))
+    # Find the relationship between each metric and its scaled (and squared) value
+      slopeSq <- bci.gapsAll$slopeMean_16^2
+      slopeScaleLinear <- lm(Sc_slopeMean_16~slopeMean_16, data = bci.gapsAll)
+      slopeScaleQuad <- lm(bci.gapsAll$Sc_slopeMean_16_Sq~slopeSq)
+      
+      curveScaleLinear <- lm(Sc_curvMean_2~curvMean_2, data = bci.gapsAll)
+      
+      drainSq <- bci.gapsAll$drainMean^2
+      drainScaleLinear <- lm(Sc_drainMean~drainMean, data = bci.gapsAll)
+      drainScaleQuad <- lm(bci.gapsAll$Sc_drainMean_Sq~drainSq)
+    
+    # Find the range of curvature, slope, and HAND; choose new values for plotting
+      slopeRange <- seq(range(bci.gapsAll$slopeMean_16)[1],
+                        range(bci.gapsAll$slopeMean_16)[2],
+                        length.out=100)
+      curvRange <- seq(range(bci.gapsAll$curvMean_2)[1],
+                       range(bci.gapsAll$curvMean_2)[2],
+                       length.out=100)
+      drainRange <- seq(range(bci.gapsAll$drainMean)[1],
+                        range(bci.gapsAll$drainMean)[2],
+                        length.out=100)
+    
+    # Generate new y values for ranges from linear models
+      curvVals <- model_full$summary.fixed[2,"mean"]*predict(curveScaleLinear, data.frame(curvMean_2 = curvRange))
+      
+      slopeVals <- (model_full$summary.fixed[3,"mean"]*predict(slopeScaleLinear, data.frame(slopeMean_16 = slopeRange)) 
+                    + model_full$summary.fixed[4,"mean"]*predict(slopeScaleQuad, data.frame(slopeSq = slopeRange^2)))
+      
+      drainVals <- (model_full$summary.fixed[5,"mean"]*predict(drainScaleLinear, data.frame(drainMean = drainRange)) 
+                    + model_full$summary.fixed[6,"mean"]*predict(drainScaleQuad, data.frame(drainSq = drainRange^2)))
+        
+  
+  par(mfrow=c(2,3), mar=c(0,4,0,1), oma=c(5,1,3,1), las=1)
   
   hist(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)],
        xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
@@ -1199,42 +1232,41 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
        ylim=c(0,6000),
        main=NA, xaxt="n", yaxt="n", ylab=NA)
   
-  plot(y = curvAll[order(bci.gapsAll$curvMean_2)],
-       x = bci.gapsAll$curvMean_2[order(bci.gapsAll$curvMean_2)],
+  plot(y = curvVals,
+       x = curvRange, 
        xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
-       ylim=c(-0.4,0.3), 
+       ylim=c(-0.4,0.35), 
        ylab = "Fixed effect",
        col="black",
        cex=1.5)
-  text("a", x = -2.7, y = 0.3)
+  text("a", x = -3.9, y = 0.35)
   mtext("Curvature (LaPlacian convexity)",side=1,outer=F, line=3, cex = 0.8)
   
   
-  plot(y = slopeAll[order(bci.gapsAll$slopeMean_16)],
-       x = bci.gapsAll$slopeMean_16[order(bci.gapsAll$slopeMean_16)],       
+  plot(y = slopeVals,
+       x = slopeRange,       
        xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
-       ylim=c(-0.4,0.3),
+       ylim=c(-0.4,0.35),
        ylab = NA,
        col="black",
        cex=1.5)  
-  text("b", x = 2, y = 0.3)
+  text("b", x = 2, y = 0.35)
   mtext("Slope (degree)",side=1,outer=F, line=3, cex = 0.8)
   
-  plot(y = htAll[order(bci.gapsAll$drainMean)],
-       x = bci.gapsAll$drainMean[order(bci.gapsAll$drainMean)],
+  plot(y = drainVals,
+       x = drainRange,
        xlim=range(bci.gapsAll$drainMean[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
-       pch=20, ylim=c(-0.4,0.3),
+       pch=20, ylim=c(-0.4,0.35),
        col="black",
        ylab = NA,
        cex=1.5)
-  text("c", x = 0, y = 0.3)
+  text("c", x = 0, y = 0.35)
   mtext("Height above drainage (m)",side=1,outer=F, line=3, cex = 0.8)
   
   
-
   
 #### Figure 7: aggregate and look at R2 ####          
     
@@ -1411,7 +1443,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
     # Plot results
     
-    par(mfrow=c(1,2), mar=c(4,4,1,1), oma=c(1,1,1,1), las=1)
+    par(mfrow=c(1,2), mar=c(4,1,1,0), oma=c(1,4,1,1), las=1)
     
     xVals <- (agResults$agBy*40)^2/10000
     
@@ -1419,7 +1451,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
          y = agResults$fixR_18,
          ylim=c(0,1.02),
          xlab = NA,
-         ylab = "Observed variation explained (R^2)",
+         ylab = NA,
          type = "l",
          col = col18,
          lwd=1)
@@ -1428,12 +1460,12 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
          y = agResults$fixR_20,
          col=col20,
          lwd=1)
-    polygon(x = c(xVals,rev(xVals)),
-            y = c(agResults$fixR_18lo,rev(agResults$fixR_18hi)),
+    polygon(x = c(xVals,rev(xVals),xVals[1]),
+            y = c(agResults$fixR_18lo,rev(agResults$fixR_18hi),agResults$fixR_18lo[1]),
             col=adjustcolor(col18,0.15),
             border=NA)
-    polygon(x = c(xVals,rev(xVals)),
-            y = c(agResults$fixR_20lo,rev(agResults$fixR_20hi)),
+    polygon(x = c(xVals,rev(xVals),xVals[1]),
+            y = c(agResults$fixR_20lo,rev(agResults$fixR_20hi),agResults$fixR_20lo[1]),
             col=adjustcolor(col20,0.15),
             border=NA)
     
@@ -1451,8 +1483,8 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
           y = agResults$allR_20,
           col=col20,
           lwd=1)
-    polygon(x = c(xVals,rev(xVals)),
-            y = c(agResults$allR_18lo,rev(agResults$allR_18hi)),
+    polygon(x = c(xVals,rev(xVals),xVals[1]),
+            y = c(agResults$allR_18lo,rev(agResults$allR_18hi),agResults$allR_18lo[1]),
             col=adjustcolor(col18,0.15),
             border=NA)
     polygon(x = c(xVals,rev(xVals)),
@@ -1467,7 +1499,10 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
            lwd=1)
     
     mtext("Spatial resolution (ha)", side=1, outer=T, line=-1)
-
+    par(las=0)
+    mtext("Pearson correlation (r)", side=2, outer=T, line=2)
+    par(las=1)
+    
 #### Define forest age and soil type polygons ####
     # Forest age polygon
     age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
@@ -1511,7 +1546,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
     soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
     
-#### Figure 7: Comparison of 2009 lidar data and average spatial pattern ####
+#### Figure 6ab: Comparison of 2009 lidar data and average spatial pattern ####
     
 # Raster of low canopy area in 2009
   lo09 <- raster::raster("binaryLoCanopy.tif") # pixels with value 1 are => 10 m height, 0 are < 10 m
@@ -1730,7 +1765,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
     
     
-#### Figure S23: Plot correlations with best scales ####
+#### Figures S23: Plot correlations with best scales ####
     
     # Get forest age and soil type values for each pixel
     
@@ -2685,3 +2720,290 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     par(las=0)
     mtext("Mean canopy height in 2009", side=2, outer=T, line=1.5)
     par(las=1)    
+#### Figure 6c: Comparison of 2009 lidar data and average spatial pattern ####
+    
+    # Make alternate versions of all raster layers WITHOUT Caimito volcanic soils
+    rasterLo09b <- raster::mask(rasterLo09, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
+    rasterchm09b <- raster::mask(rasterchm09, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
+    avgPredictedRasterb <- raster::mask(avgPredictedRaster, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
+    avgObservedRasterb <- raster::mask(avgObservedRaster, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
+    avgRasterNb <- raster::mask(avgRasterN, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
+    
+    
+    # Create data frame to store results  
+    loResults_b <- data.frame(agBy = 1:20,
+                            fixRlo = NA,
+                            fixRlo_lo = NA,
+                            fixRlo_hi = NA,
+                            obsRlo = NA,
+                            obsRlo_lo = NA,
+                            obsRlo_hi = NA,
+                            fixRchm = NA,
+                            fixRchm_lo = NA,
+                            fixRchm_hi = NA,
+                            obsRchm = NA,
+                            obsRchm_lo = NA,
+                            obsRchm_hi = NA,
+                            N = NA)
+    
+    for(i in 1:nrow(loResults_b)){
+      
+      # Get a matrix of observed cells
+      minObs <- 0.75*loResults_b$agBy[i]^2
+      
+      # Aggregate rasters
+      # Aggregate low canopy area raster
+      agLo09 <- raster::aggregate(rasterLo09b, fact = loResults_b$agBy[i], fun = mean, na.rm=T)
+      # Aggregate mean canopy height raster
+      agChm09 <- raster::aggregate(rasterchm09b, fact = loResults_b$agBy[i], fun = mean, na.rm=T)
+      # Aggregate average fixed effects raster
+      agFix <- raster::aggregate(avgPredictedRasterb, fact = loResults_b$agBy[i], fun = mean, na.rm=T)
+      # Aggregate average observed disturbance raster
+      agObs <- raster::aggregate(avgObservedRasterb, fact = loResults_b$agBy[i], fun = mean, na.rm=T)
+      # Aggregate sampling effort
+      agN <- raster::aggregate(avgRasterNb, fact = loResults_b$agBy[i], fun = sum, na.rm=T)
+      
+      # Get matrix of values for each aggregated raster
+      agLo09_mat <- raster::values(agLo09, format = "matrix")
+      agChm09_mat <- raster::values(agChm09, format = "matrix")
+      agFix_mat <- raster::values(agFix, format = "matrix")
+      agObs_mat <- raster::values(agObs, format = "matrix")
+      nMat <- raster::values(agN, format = "matrix")
+      
+      # matrix of cells that need to be combined
+      combineMat <- which(nMat<minObs & nMat>0, arr.ind = T)
+      
+      while(nrow(combineMat)>0){
+        
+        # get surrounding cells for each matrix
+        rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+        rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+        cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+        cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+        
+        agLo09_mat_j <- agLo09_mat[rows,cols]
+        agChm09_mat_j <- agChm09_mat[rows,cols]
+        agFix_mat_j <- agFix_mat[rows,cols]
+        agObs_mat_j <- agObs_mat[rows,cols]
+        nMat_j <- nMat[rows,cols]
+        
+        # set cell of interest to 0
+        nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- 0
+        
+        # Only proceed if there are non-NA neighboring cells
+        if(length(c(nMat_j)[c(nMat_j)>0])>0){  
+          
+          # find neighboring cell with most nearby observations
+          new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+          
+          # replace value for new cell with a weighted mean of all other values
+          agLo09_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agLo09_mat_j[new_j[1],new_j[2]],agLo09_mat[combineMat[1,1],combineMat[1,2]]),
+                                                           w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agChm09_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agChm09_mat_j[new_j[1],new_j[2]],agChm09_mat[combineMat[1,1],combineMat[1,2]]),
+                                                            w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agFix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agFix_mat_j[new_j[1],new_j[2]],agFix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                          w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agObs_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs_mat_j[new_j[1],new_j[2]],agObs_mat[combineMat[1,1],combineMat[1,2]]),
+                                                          w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          
+          nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+          
+          # replace neighborhood in original matrices
+          agLo09_mat[rows,cols] <- agLo09_mat_j
+          agChm09_mat[rows,cols] <- agChm09_mat_j
+          agFix_mat[rows,cols] <- agFix_mat_j
+          agObs_mat[rows,cols] <- agObs_mat_j
+          nMat[rows,cols] <- nMat_j
+        }
+        
+        # Replace original observation with NaN
+        agLo09_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agChm09_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agFix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agObs_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        nMat[combineMat[1,1],combineMat[1,2]] <- 0
+        
+        # Redefine combineMat
+        combineMat <- which(nMat<minObs & nMat >0, arr.ind = T)
+      }
+      
+      valsKeep <- which(c(nMat)>minObs)
+      loResults_b$fixRlo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$estimate
+      loResults_b$fixRlo_lo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[1]
+      loResults_b$fixRlo_hi[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[2]
+      loResults_b$obsRlo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$estimate
+      loResults_b$obsRlo_lo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[1]
+      loResults_b$obsRlo_hi[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[2]
+      
+      loResults_b$fixRchm[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$estimate
+      loResults_b$fixRchm_lo[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat[valsKeep]))$conf.int[1]
+      loResults_b$fixRchm_hi[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[2]
+      loResults_b$obsRchm[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$estimate
+      loResults_b$obsRchm_lo[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[1]
+      loResults_b$obsRchm_hi[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[2]
+      
+    }
+    
+    
+#### Figure 6: plot all ####
+    
+    # Plot results
+    
+    # Significance with aggregation scale    
+    par(mfrow=c(2,2), mar=c(1,1,1,1), oma=c(5,4,1,1), las=1)
+    
+    xVals <- ((loResults$agBy*40)^2)/10000
+    
+    plot(x = xVals,
+         y = loResults$fixRlo,
+         ylim=c(-1,1.02),
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         col = "blue",
+         xaxt="n",
+         main = "Proportion of low canopy area",
+         lwd=2)
+    par(las=0)
+    mtext(expression("Pearson correlation (r)"),
+          side=2, outer=T, line=2)
+    par(las=1)
+    text("a",
+         x = 0,
+         y = 1.02, adj=0)
+    abline(h=0,lty=2)
+    lines(x = xVals,
+          y = loResults$obsRlo,
+          col="lightblue",
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$fixRlo_lo,rev(loResults$fixRlo_hi)),
+            col=adjustcolor("blue",0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$obsRlo_lo,rev(loResults$obsRlo_hi)),
+            col=adjustcolor("lightblue",0.4),
+            border=NA)
+    legend(x = 0,
+           y = 0,
+           c("Predicted frequency (fixed effects)",
+             "Average observed frequency"),
+           col=c("blue","lightblue"),
+           lty=c(1,1),
+           lwd=2,
+           bty="n")
+    
+    plot(x = xVals,
+         y = loResults$fixRchm,
+         yaxt="n",
+         ylim=c(-1,1.02),
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         col = "blue",
+         main = "Mean canopy height",
+         xaxt="n",
+         lwd=2)
+    par(las=0)
+    abline(h=0,lty=2)
+    
+    par(las=1)
+    lines(x = xVals,
+          y = loResults$obsRchm,
+          col="lightblue",
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$fixRchm_lo,rev(loResults$fixRchm_hi)),
+            col=adjustcolor("blue",0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$obsRchm_lo,rev(loResults$obsRchm_hi)),
+            col=adjustcolor("lightblue",0.4),
+            border=NA)
+    
+    
+    
+    text("b",
+         x = 0,
+         y = 1.02, adj=0)
+    
+    
+    plot(x = xVals,
+         y = loResults_b$fixRlo,
+         ylim=c(-1,1.02),
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         lty=2,
+         col = "blue",
+         lwd=2)
+    par(las=0)
+    mtext(expression("Pearson correlation (r)"),
+          side=2, outer=T, line=2)
+    par(las=1)
+    text("c",
+         x = 0,
+         y = 1.02, adj=0)
+    abline(h=0,lty=2)
+    lines(x = xVals,
+          y = loResults_b$obsRlo,
+          lty=2,
+          col="lightblue",
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_b$fixRlo_lo,rev(loResults_b$fixRlo_hi)),
+            col=adjustcolor("blue",0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_b$obsRlo_lo,rev(loResults_b$obsRlo_hi)),
+            col=adjustcolor("lightblue",0.4),
+            border=NA)
+    legend(x = 0,
+           y = 0,
+           c("Whole island",
+             "Without Caimito volcanic soils"),
+           col=c("black"),
+           lty=c(1,2),
+           lwd=2,
+           bty="n")
+    
+    plot(x = xVals,
+         y = loResults_b$fixRchm,
+         yaxt="n",
+         ylim=c(-1,1.02),
+         lty=2,
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         col = "blue",
+         lwd=2)
+    par(las=0)
+    abline(h=0,lty=2)
+    
+    par(las=1)
+    lines(x = xVals,
+          y = loResults_b$obsRchm,
+          col="lightblue",
+          lty=2,
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_b$fixRchm_lo,rev(loResults_b$fixRchm_hi)),
+            col=adjustcolor("blue",0.15),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_b$obsRchm_lo,rev(loResults_b$obsRchm_hi)),
+            col=adjustcolor("lightblue",0.4),
+            border=NA)
+    
+    
+    
+    text("d",
+         x = 0,
+         y = 1.02, adj=0)
+    
+    
+    mtext("Spatial resolution (ha)", side=1, outer=T, line=2)
+    
+    
+    
+    

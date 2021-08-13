@@ -4,6 +4,38 @@ gridInfo <- read.csv("gridInfo.csv")
 path1 <- "D:/BCI_Spatial/Lidar_Data/"
 path2 <- "D:/BCI_Spatial/UAV_Data/TiledPointClouds/"
 
+#### Find point density within AOI for each year
+
+# Read polygon buffer 25 m inland from lake
+buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")  
+
+# read lidar catalog objects
+cat15at <- lidR::catalog(paste0(path2,"BCI15Tiles_alignedTrim/"))
+cat18at <- lidR::catalog(paste0(path2,"BCI18Tiles_alignedto15Trim/"))
+cat20at <- lidR::catalog(paste0(path2,"BCI20Tiles_alignedto18Trim/"))
+
+
+# trim catalog objects around buffer
+lidR::opt_output_files(cat15at) <- paste0(path2,"BCI15Tiles_buffer/Buffer_{ID}")
+cat15Tiles_buffer <- lidR::clip_roi(cat15at,buffer)
+
+lidR::opt_output_files(cat18at) <- paste0(path2,"BCI18Tiles_buffer/Tiles_{i}")
+cat18Tiles_buffer <- lidR::clip_roi(cat18at,buffer)
+
+lidR::opt_output_files(cat20at) <- paste0(path2,"BCI20Tiles_buffer/Tiles_{i}")
+cat20Tiles_buffer <- lidR::clip_roi(cat20at,buffer)
+
+# get point number and calculate avg point density per year
+lidR::readLASheader(paste0(path2,"BCI15Tiles_buffer/Buffer_1.las"))
+63598142/buffer@polygons[[1]]@area
+
+lidR::readLASheader(paste0(path2,"BCI18Tiles_buffer/Tiles_1.las"))
+429091630/buffer@polygons[[1]]@area
+
+lidR::readLASheader(paste0(path2,"BCI20Tiles_buffer/Tiles_1.las"))
+401412580/buffer@polygons[[1]]@area
+
 #### 2009 to 2015 #### 
 
 
