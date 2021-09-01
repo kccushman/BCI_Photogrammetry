@@ -1801,16 +1801,144 @@ legend(x=5,y=0.04,
         print(i)
       }
     
-  par(mfrow=c(3,2), mar=c(1,1,0,1), oma=c(3,5,2,1))
+    yLimVal_a <- range(gapCDFs[,-1])
+    yLimVal_b <- range(c(chm_all$y, chm_Old$y, chm_Sec$y,
+                         chm_And$y, chm_Boh$y, chm_Mar$y, chm_Vol$y,
+                         chm_Bro$y, chm_Mot$y, chm_Pal$y, chm_Red$y))  
+    cxAxis = 1.2
+    
+    par(mfrow=c(2,3), mar=c(1,1,0,1), oma=c(3,5,2,1), las=1)
   
-  plot(Age_OldGrowth~gapArea, data = gapCDFs,
-       type = "l",
-       log= "x",
-       lwd = 2,
-       col = adjustcolor(colOld, 0.5))
-  lines(Age_Secondary~gapArea, data = gapCDFs,
-        lwd = 2,
-        col = adjustcolor(colSec, 0.5))
+  # GAP CUMULATIVE AREA
+    
+    # age
+      plot(Age_OldGrowth~ht, data = gapCDFs,
+           type = "l",
+           xaxt="n",
+           xlim = c(0,50),
+           ylim = yLimVal_a,
+           lwd = 2,
+           col = adjustcolor(colOld, 0.8),
+           cex.axis = cxAxis)
+      lines(Age_Secondary~ht, data = gapCDFs,
+            lwd = 2,
+            col = adjustcolor(colSec, 0.8))
+      mtext("Forest age", side=3, outer=F, line=0.5)
+      legend(x=0,y=0.028,
+             c("Old growth","Secondary"),
+             col=adjustcolor(c(colOld,colSec),0.8),
+             lwd=2,
+             bty="n")
+      mtext("Cumulative disturbance area (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
+      
+      
+      # parent material 
+      plot(Parent_Bohio~ht, data = gapCDFs,
+           type = "l",
+           xaxt="n",yaxt="n",
+           xlim = c(0,50),
+           ylim = yLimVal_a,
+           lwd = 2,
+           col = adjustcolor(colBoh, 0.8),
+           cex.axis = cxAxis)
+      lines(Parent_CaimitoVolcanic~ht, data = gapCDFs,
+            lwd = 2,
+            col = adjustcolor(colVol, 0.8))
+      lines(Parent_CaimitoMarineSedimentary~ht, data = gapCDFs,
+            lwd = 2,
+            col = adjustcolor(colMar, 0.8))
+      lines(Parent_Andesite~ht, data = gapCDFs,
+            lwd = 2,
+            col = adjustcolor(colAnd, 0.8))
+      mtext("Soil parent material", side=3, outer=F, line=0.5)
+      legend(x=0,y=0.028,
+             c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
+             col=adjustcolor(c(colAnd,colBoh,colMar,colVol),0.8),
+             lwd=2,
+             bty="n")
+      
+      # soil form
+      plot(Form_RedLightClay~ht, data = gapCDFs,
+           type = "l",
+           xaxt="n",yaxt="n",
+           xlim = c(0,50),
+           ylim = yLimVal_a,
+           lwd = 2,
+           col = adjustcolor(colRed, 0.8),
+           cex.axis = cxAxis)
+      lines(Form_BrownFineLoam~ht, data = gapCDFs,
+            lwd = 2,
+            col = adjustcolor(colBro, 0.8))
+      lines(Form_PaleSwellingClay~ht, data = gapCDFs,
+            lwd = 2,
+            col = adjustcolor(colPal, 0.8))
+      lines(Form_MottledHeavyClay~ht, data = gapCDFs,
+            lwd = 2,
+            col = adjustcolor(colMot, 0.8))
+      mtext("Soil form", side=3, outer=F, line=0.5)
+      legend(x=0,y=0.028,
+             c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      
+    # CANOPY HEIGHT DISTRIBUTIONS
+      # age
+      plot(chm_Old,
+           type = "l",
+           main = NA,
+           xlim = c(0,50),
+           ylim=yLimVal_b,
+           lwd = 2,
+           col = adjustcolor(colOld, 0.8),
+           cex.axis = cxAxis)
+      lines(chm_Sec,
+            lwd = 2,
+            col = adjustcolor(colSec, 0.8))
+      mtext("Canopy height distribution", side=2, outer=F, line=4, las=0, cex=0.8)
+      
+    
+      # parent material
+      plot(chm_Boh,
+           type = "l",
+           yaxt = "n",
+           main = NA,
+           xlim = c(0,50),
+           ylim=yLimVal_b,
+           lwd = 2,
+           col = adjustcolor(colBoh, 0.8),
+           cex.axis = cxAxis)
+      lines(chm_Vol,
+            lwd = 2,
+            col = adjustcolor(colVol, 0.8))
+      lines(chm_Mar,
+            lwd = 2,
+            col = adjustcolor(colMar, 0.8))
+      lines(chm_And,
+            lwd = 2,
+            col = adjustcolor(colAnd, 0.8))
+      
+      # soil form    
+        plot(chm_Red,
+             type = "l",
+             yaxt = "n",
+             main = NA,
+             xlim = c(0,50),
+             ylim=yLimVal_b,
+             lwd = 2,
+             col = adjustcolor(colRed, 0.8),
+             cex.axis = cxAxis)
+        lines(chm_Bro,
+              lwd = 2,
+              col = adjustcolor(colBro, 0.8))
+        lines(chm_Pal,
+              lwd = 2,
+              col = adjustcolor(colPal, 0.8))
+        lines(chm_Mot,
+              lwd = 2,
+              col = adjustcolor(colMot, 0.8))
+        
+        mtext("Canopy height (m)", side=1, outer=T, line=1)
     
     
   # OLD PLOTS   
