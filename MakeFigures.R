@@ -1610,7 +1610,7 @@ legend(x=5,y=0.04,
 
 
 
-#### Figure S#: Distribution of 2009 canopy height per forest type ####
+#### Figure S#: CDF of gap size and distribution of 2009 canopy height per forest type ####
 
 # Define forest age and soil type polygons
 
@@ -1691,202 +1691,325 @@ legend(x=5,y=0.04,
     chm_Red <- density(raster::values(raster::mask(chm09, soil[soil$SoilForm=="RedLightClay",])),
                        n = 512, from = 0, to = 70, na.rm=T)
 
-  # Make plot per class
-    # Find y-axis limit
-    yLimVal <- range(c(chm_all$y, chm_Old$y, chm_Sec$y,
-                       chm_And$y, chm_Boh$y, chm_Mar$y, chm_Vol$y,
-                       chm_Bro$y, chm_Mot$y, chm_Pal$y, chm_Red$y))
+  # Make canopy height CDFs
+    htRange <- seq(0,70,length.out = 512)
     
-    axSize <- 1.2
+    htCDFs <- data.frame(ht = htRange,
+                          Age_OldGrowth = NA,
+                          Age_Secondary = NA,
+                          Parent_Bohio = NA,
+                          Parent_CaimitoVolcanic=NA,
+                          Parent_CaimitoMarineSedimentary=NA,
+                          Parent_Andesite=NA,
+                          Form_RedLightClay=NA,
+                          Form_BrownFineLoam=NA,
+                          Form_PaleSwellingClay=NA,
+                          Form_MottledHeavyClay=NA)
+    for(i in 1:length(htRange)){
+      htCDFs$Age_OldGrowth[i] <- sum(chm_Old$y[chm_Old$x <= htCDFs$ht[i]])/sum(chm_Old$y)
+      htCDFs$Age_Secondary[i] <- sum(chm_Sec$y[chm_Sec$x <= htCDFs$ht[i]])/sum(chm_Sec$y)
+      
+      htCDFs$Parent_Bohio[i] <- sum(chm_Boh$y[chm_Boh$x <= htCDFs$ht[i]])/sum(chm_Boh$y)
+      htCDFs$Parent_CaimitoVolcanic[i] <- sum(chm_Vol$y[chm_Vol$x <= htCDFs$ht[i]])/sum(chm_Vol$y)
+      htCDFs$Parent_CaimitoMarineSedimentary[i] <- sum(chm_Mar$y[chm_Mar$x <= htCDFs$ht[i]])/sum(chm_Mar$y)
+      htCDFs$Parent_Andesite[i] <- sum(chm_And$y[chm_And$x <= htCDFs$ht[i]])/sum(chm_And$y)
+      
+      htCDFs$Form_RedLightClay[i] <- sum(chm_Red$y[chm_Red$x <= htCDFs$ht[i]])/sum(chm_Red$y)
+      htCDFs$Form_BrownFineLoam[i] <- sum(chm_Bro$y[chm_Bro$x <= htCDFs$ht[i]])/sum(chm_Bro$y)
+      htCDFs$Form_PaleSwellingClay[i] <- sum(chm_Pal$y[chm_Pal$x <= htCDFs$ht[i]])/sum(chm_Pal$y)
+      htCDFs$Form_MottledHeavyClay[i] <- sum(chm_Mot$y[chm_Mot$x <= htCDFs$ht[i]])/sum(chm_Mot$y)
+    }
+       
+  # Calculate cumulative proportion of area in gaps with initial canopy height
+
+    # Load rasters    
+      gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
+      gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
+      gaps15to18_vals <- raster::values(gaps15to18)
+      gaps18to20_vals <- raster::values(gaps18to20)
+      
+      chm15 <- raster::raster("CHM_2015_QAQC_tin.tif")
+      chm18 <- raster::raster("CHM_2018_QAQC_tin.tif")
+      
+    # Normalize the proportion of gaps observed to per year
+      nYr15to18 <- as.numeric(as.Date("2018-06-07") - as.Date("2015-06-26"))/365
+      nYr18to20 <- as.numeric(as.Date("2020-07-31") - as.Date("2018-06-07"))/365  
+
+      
+    # Make separate rasters separately for forest age, parent material, and soil form
+      chm15_OldGrowth <- raster::values(raster::mask(chm15, ageUse[ageUse$AgeClass=="OldGrowth",])); chm15_OldGrowth[chm15_OldGrowth<10] <- NA
+      chm15_Secondary <- raster::values(raster::mask(chm15, ageUse[ageUse$AgeClass=="Secondary",])); chm15_Secondary[chm15_Secondary<10] <- NA
+      chm18_OldGrowth <- raster::values(raster::mask(chm18, ageUse[ageUse$AgeClass=="OldGrowth",])); chm18_OldGrowth[chm18_OldGrowth<10] <- NA
+      chm18_Secondary <- raster::values(raster::mask(chm18, ageUse[ageUse$AgeClass=="Secondary",])); chm18_Secondary[chm18_Secondary<10] <- NA
+      
+      chm15_Bohio <- raster::values(raster::mask(chm15, soil[soil$SoilParent=="Bohio",])); chm15_Bohio[chm15_Bohio<10] <- NA
+      chm15_CaimitoVolcanic <- raster::values(raster::mask(chm15, soil[soil$SoilParent=="CaimitoVolcanic",])); chm15_CaimitoVolcanic[chm15_CaimitoVolcanic<10] <- NA
+      chm15_CaimitoMarineSedimentary <- raster::values(raster::mask(chm15, soil[soil$SoilParent=="CaimitoMarineSedimentary",])); chm15_CaimitoMarineSedimentary[chm15_CaimitoMarineSedimentary<10] <- NA
+      chm15_Andesite <- raster::values(raster::mask(chm15, soil[soil$SoilParent=="Andesite",])); chm15_Andesite[chm15_Andesite<10] <- NA
+      chm18_Bohio <- raster::values(raster::mask(chm18, soil[soil$SoilParent=="Bohio",])); chm18_Bohio[chm18_Bohio<10] <- NA
+      chm18_CaimitoVolcanic <- raster::values(raster::mask(chm18, soil[soil$SoilParent=="CaimitoVolcanic",])); chm18_CaimitoVolcanic[chm18_CaimitoVolcanic<10] <- NA
+      chm18_CaimitoMarineSedimentary <- raster::values(raster::mask(chm18, soil[soil$SoilParent=="CaimitoMarineSedimentary",])); chm18_CaimitoMarineSedimentary[chm18_CaimitoMarineSedimentary<10] <- NA
+      chm18_Andesite <- raster::values(raster::mask(chm18, soil[soil$SoilParent=="Andesite",])); chm18_Andesite[chm18_Andesite<10] <- NA
+      
+      chm15_RedLightClay <- raster::values(raster::mask(chm15, soil[soil$SoilForm=="RedLightClay",])); chm15_RedLightClay[chm15_RedLightClay<10] <- NA
+      chm15_BrownFineLoam <- raster::values(raster::mask(chm15, soil[soil$SoilForm=="BrownFineLoam",])); chm15_BrownFineLoam[chm15_BrownFineLoam<10] <- NA
+      chm15_PaleSwellingClay <- raster::values(raster::mask(chm15, soil[soil$SoilForm=="PaleSwellingClay",])); chm15_PaleSwellingClay[chm15_PaleSwellingClay<10] <- NA
+      chm15_MottledHeavyClay <- raster::values(raster::mask(chm15, soil[soil$SoilForm=="MottledHeavyClay",])); chm15_MottledHeavyClay[chm15_MottledHeavyClay<10] <- NA
+      chm18_RedLightClay <- raster::values(raster::mask(chm18, soil[soil$SoilForm=="RedLightClay",])); chm18_RedLightClay[chm18_RedLightClay<10] <- NA
+      chm18_BrownFineLoam <- raster::values(raster::mask(chm18, soil[soil$SoilForm=="BrownFineLoam",])); chm18_BrownFineLoam[chm18_BrownFineLoam<10] <- NA
+      chm18_PaleSwellingClay <- raster::values(raster::mask(chm18, soil[soil$SoilForm=="PaleSwellingClay",])); chm18_PaleSwellingClay[chm18_PaleSwellingClay<10] <- NA
+      chm18_MottledHeavyClay <- raster::values(raster::mask(chm18, soil[soil$SoilForm=="MottledHeavyClay",])); chm18_MottledHeavyClay[chm18_MottledHeavyClay<10] <- NA
+      
+      htRange <- seq(10,50,length.out = 128)
+      
+      gapCDFs <- data.frame(ht = htRange,
+                            Age_OldGrowth = NA,
+                            Age_Secondary = NA,
+                            Parent_Bohio = NA,
+                            Parent_CaimitoVolcanic=NA,
+                            Parent_CaimitoMarineSedimentary=NA,
+                            Parent_Andesite=NA,
+                            Form_RedLightClay=NA,
+                            Form_BrownFineLoam=NA,
+                            Form_PaleSwellingClay=NA,
+                            Form_MottledHeavyClay=NA)
+      
+      for(i in 1:nrow(gapCDFs)){
+        gapCDFs$Age_OldGrowth[i] <- (length(chm15_OldGrowth[!is.na(chm15_OldGrowth) & chm15_OldGrowth <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_OldGrowth[!is.na(chm18_OldGrowth) & chm18_OldGrowth <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_OldGrowth[!is.na(chm15_OldGrowth)]) + length(chm18_OldGrowth[!is.na(chm18_OldGrowth)]))
+        gapCDFs$Age_Secondary[i] <- (length(chm15_Secondary[!is.na(chm15_Secondary) & chm15_Secondary <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_Secondary[!is.na(chm18_Secondary) & chm18_Secondary <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_Secondary[!is.na(chm15_Secondary)]) + length(chm18_Secondary[!is.na(chm18_Secondary)]))
+        
+        gapCDFs$Parent_Bohio[i] <- (length(chm15_Bohio[!is.na(chm15_Bohio) & chm15_Bohio <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_Bohio[!is.na(chm18_Bohio) & chm18_Bohio <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_Bohio[!is.na(chm15_Bohio)]) + length(chm18_Bohio[!is.na(chm18_Bohio)]))
+        gapCDFs$Parent_CaimitoVolcanic[i] <- (length(chm15_CaimitoVolcanic[!is.na(chm15_CaimitoVolcanic) & chm15_CaimitoVolcanic <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_CaimitoVolcanic[!is.na(chm18_CaimitoVolcanic) & chm18_CaimitoVolcanic <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_CaimitoVolcanic[!is.na(chm15_CaimitoVolcanic)]) + length(chm18_CaimitoVolcanic[!is.na(chm18_CaimitoVolcanic)]))
+        gapCDFs$Parent_CaimitoMarineSedimentary[i] <- (length(chm15_CaimitoMarineSedimentary[!is.na(chm15_CaimitoMarineSedimentary) & chm15_CaimitoMarineSedimentary <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_CaimitoMarineSedimentary[!is.na(chm18_CaimitoMarineSedimentary) & chm18_CaimitoMarineSedimentary <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_CaimitoMarineSedimentary[!is.na(chm15_CaimitoMarineSedimentary)]) + length(chm18_CaimitoMarineSedimentary[!is.na(chm18_CaimitoMarineSedimentary)]))
+        gapCDFs$Parent_Andesite[i] <- (length(chm15_Andesite[!is.na(chm15_Andesite) & chm15_Andesite <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_Andesite[!is.na(chm18_Andesite) & chm18_Andesite <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_Andesite[!is.na(chm15_Andesite)]) + length(chm18_Andesite[!is.na(chm18_Andesite)]))
+        
+        gapCDFs$Form_RedLightClay[i] <- (length(chm15_RedLightClay[!is.na(chm15_RedLightClay) & chm15_RedLightClay <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_RedLightClay[!is.na(chm18_RedLightClay) & chm18_RedLightClay <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_RedLightClay[!is.na(chm15_RedLightClay)]) + length(chm18_RedLightClay[!is.na(chm18_RedLightClay)]))
+        gapCDFs$Form_BrownFineLoam[i] <- (length(chm15_BrownFineLoam[!is.na(chm15_BrownFineLoam) & chm15_BrownFineLoam <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_BrownFineLoam[!is.na(chm18_BrownFineLoam) & chm18_BrownFineLoam <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_BrownFineLoam[!is.na(chm15_BrownFineLoam)]) + length(chm18_BrownFineLoam[!is.na(chm18_BrownFineLoam)]))
+        gapCDFs$Form_PaleSwellingClay[i] <- (length(chm15_PaleSwellingClay[!is.na(chm15_PaleSwellingClay) & chm15_PaleSwellingClay <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_PaleSwellingClay[!is.na(chm18_PaleSwellingClay) & chm18_PaleSwellingClay <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_PaleSwellingClay[!is.na(chm15_PaleSwellingClay)]) + length(chm18_PaleSwellingClay[!is.na(chm18_PaleSwellingClay)]))
+        gapCDFs$Form_MottledHeavyClay[i] <- (length(chm15_MottledHeavyClay[!is.na(chm15_MottledHeavyClay) & chm15_MottledHeavyClay <= gapCDFs$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_MottledHeavyClay[!is.na(chm18_MottledHeavyClay) & chm18_MottledHeavyClay <= gapCDFs$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_MottledHeavyClay[!is.na(chm15_MottledHeavyClay)]) + length(chm18_MottledHeavyClay[!is.na(chm18_MottledHeavyClay)]))
+        
+        print(i)
+      }
     
-    par(mfcol=c(4,3), mar=c(1,1,0,1), oma=c(3,5,2,1))
+  par(mfrow=c(3,2), mar=c(1,1,0,1), oma=c(3,5,2,1))
+  
+  plot(Age_OldGrowth~gapArea, data = gapCDFs,
+       type = "l",
+       log= "x",
+       lwd = 2,
+       col = adjustcolor(colOld, 0.5))
+  lines(Age_Secondary~gapArea, data = gapCDFs,
+        lwd = 2,
+        col = adjustcolor(colSec, 0.5))
     
-    # Plot forest age
-      plot(chm_all,
-           xaxt="n",
-           ylim=yLimVal,
-           col = adjustcolor("grey",0.6),
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Old, 
-            col = adjustcolor(colOld,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Old growth"),
-             bty = "n",
-             col = adjustcolor(c("grey",colOld),0.6),
-             lwd = 2,
-             cex = axSize)
-      mtext("Forest age", side=3, line = 0.5)
-      
-      
-      plot(chm_all,
-           col = adjustcolor("grey",0.6),
-           ylim=yLimVal,
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Sec, 
-            col = adjustcolor(colSec,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Secondary"),
-             bty = "n",
-             col = adjustcolor(c("grey",colSec),0.6),
-             lwd = 2,
-             cex = axSize)
-        # Add empty plots
-      plot(0,type='n',axes=FALSE,ann=FALSE)
-      plot(0,type='n',axes=FALSE,ann=FALSE)
     
-    # Plot soil parent material
-      plot(chm_all,
-           xaxt="n",
-           yaxt="n",
-           ylim=yLimVal,
-           col = adjustcolor("grey",0.6),
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Vol, 
-            col = adjustcolor(colVol,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Caimito volcanic"),
-             bty = "n",
-             col = adjustcolor(c("grey",colVol),0.6),
-             lwd = 2,
-             cex = axSize)
-      mtext("Soil parent material", side=3, line = 0.5)
-      
-      
-      plot(chm_all,
-           col = adjustcolor("grey",0.6),
-           ylim=yLimVal,
-           xaxt="n",
-           yaxt="n",
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_And, 
-            col = adjustcolor(colAnd,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Andesite"),
-             bty = "n",
-             col = adjustcolor(c("grey",colAnd),0.6),
-             lwd = 2,
-             cex = axSize)
-      
-      plot(chm_all,
-           col = adjustcolor("grey",0.6),
-           ylim=yLimVal,
-           xaxt="n",
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Mar, 
-            col = adjustcolor(colMar,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Caimito marine"),
-             bty = "n",
-             col = adjustcolor(c("grey",colMar),0.6),
-             lwd = 2,
-             cex = axSize)
-      
-      plot(chm_all,
-           col = adjustcolor("grey",0.6),
-           ylim=yLimVal,
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Boh, 
-            col = adjustcolor(colBoh,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Bohio"),
-             bty = "n",
-             col = adjustcolor(c("grey",colBoh),0.6),
-             lwd = 2,
-             cex = axSize)
-      
-    # Plot soil form
-      plot(chm_all,
-           xaxt="n",
-           yaxt="n",
-           ylim=yLimVal,
-           col = adjustcolor("grey",0.6),
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Bro, 
-            col = adjustcolor(colBro,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Brown fine loam"),
-             bty = "n",
-             col = adjustcolor(c("grey",colBro),0.6),
-             lwd = 2,
-             cex = axSize)
-      mtext("Soil form", side=3, line = 0.5)
-      
-      
-      plot(chm_all,
-           yaxt="n",
-           col = adjustcolor("grey",0.6),
-           ylim=yLimVal,
-           xaxt="n",
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Pal, 
-            col = adjustcolor(colPal,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Pale swelling clay"),
-             bty = "n",
-             col = adjustcolor(c("grey",colPal),0.6),
-             lwd = 2,
-             cex = axSize)
-      
-      plot(chm_all,
-           col = adjustcolor("grey",0.6),
-           ylim=yLimVal,
-           xaxt="n",
-           yaxt="n",
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Mot, 
-            col = adjustcolor(colMot,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Mottled heavy clay"),
-             bty = "n",
-             col = adjustcolor(c("grey",colMot),0.6),
-             lwd = 2,
-             cex = axSize)
-      
-      plot(chm_all,
-           yaxt="n",
-           col = adjustcolor("grey",0.6),
-           ylim=yLimVal,
-           lwd=2,
-           main = NA,
-           cex.axis = axSize)
-      lines(chm_Red, 
-            col = adjustcolor(colRed,0.6),
-            lwd=2)
-      legend(x = 30, y = 0.05,
-             c("All BCI", "Red light clay"),
-             bty = "n",
-             col = adjustcolor(c("grey",colRed),0.6),
-             lwd = 2,
-             cex = axSize)
-      mtext("Canopy height (m)", outer=T, side = 1, line = 1.5)
-      par(las=0)
-      mtext("Frequency", outer=T, side = 2, line = 2.5)
-      par(las=1)
+  # OLD PLOTS   
+  # # Make plot per class
+  #   # Find y-axis limit
+  #   yLimVal <- range(c(chm_all$y, chm_Old$y, chm_Sec$y,
+  #                      chm_And$y, chm_Boh$y, chm_Mar$y, chm_Vol$y,
+  #                      chm_Bro$y, chm_Mot$y, chm_Pal$y, chm_Red$y))
+  #   
+  #   axSize <- 1.2
+  #   
+  #   par(mfcol=c(4,3), mar=c(1,1,0,1), oma=c(3,5,2,1))
+  #   
+  #   # Plot forest age
+  #     plot(chm_all,
+  #          xaxt="n",
+  #          ylim=yLimVal,
+  #          col = adjustcolor("grey",0.6),
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Old, 
+  #           col = adjustcolor(colOld,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Old growth"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colOld),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     mtext("Forest age", side=3, line = 0.5)
+  #     
+  #     
+  #     plot(chm_all,
+  #          col = adjustcolor("grey",0.6),
+  #          ylim=yLimVal,
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Sec, 
+  #           col = adjustcolor(colSec,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Secondary"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colSec),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #       # Add empty plots
+  #     plot(0,type='n',axes=FALSE,ann=FALSE)
+  #     plot(0,type='n',axes=FALSE,ann=FALSE)
+  #   
+  #   # Plot soil parent material
+  #     plot(chm_all,
+  #          xaxt="n",
+  #          yaxt="n",
+  #          ylim=yLimVal,
+  #          col = adjustcolor("grey",0.6),
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Vol, 
+  #           col = adjustcolor(colVol,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Caimito volcanic"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colVol),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     mtext("Soil parent material", side=3, line = 0.5)
+  #     
+  #     
+  #     plot(chm_all,
+  #          col = adjustcolor("grey",0.6),
+  #          ylim=yLimVal,
+  #          xaxt="n",
+  #          yaxt="n",
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_And, 
+  #           col = adjustcolor(colAnd,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Andesite"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colAnd),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     
+  #     plot(chm_all,
+  #          col = adjustcolor("grey",0.6),
+  #          ylim=yLimVal,
+  #          xaxt="n",
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Mar, 
+  #           col = adjustcolor(colMar,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Caimito marine"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colMar),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     
+  #     plot(chm_all,
+  #          col = adjustcolor("grey",0.6),
+  #          ylim=yLimVal,
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Boh, 
+  #           col = adjustcolor(colBoh,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Bohio"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colBoh),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     
+  #   # Plot soil form
+  #     plot(chm_all,
+  #          xaxt="n",
+  #          yaxt="n",
+  #          ylim=yLimVal,
+  #          col = adjustcolor("grey",0.6),
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Bro, 
+  #           col = adjustcolor(colBro,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Brown fine loam"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colBro),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     mtext("Soil form", side=3, line = 0.5)
+  #     
+  #     
+  #     plot(chm_all,
+  #          yaxt="n",
+  #          col = adjustcolor("grey",0.6),
+  #          ylim=yLimVal,
+  #          xaxt="n",
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Pal, 
+  #           col = adjustcolor(colPal,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Pale swelling clay"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colPal),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     
+  #     plot(chm_all,
+  #          col = adjustcolor("grey",0.6),
+  #          ylim=yLimVal,
+  #          xaxt="n",
+  #          yaxt="n",
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Mot, 
+  #           col = adjustcolor(colMot,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Mottled heavy clay"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colMot),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     
+  #     plot(chm_all,
+  #          yaxt="n",
+  #          col = adjustcolor("grey",0.6),
+  #          ylim=yLimVal,
+  #          lwd=2,
+  #          main = NA,
+  #          cex.axis = axSize)
+  #     lines(chm_Red, 
+  #           col = adjustcolor(colRed,0.6),
+  #           lwd=2)
+  #     legend(x = 30, y = 0.05,
+  #            c("All BCI", "Red light clay"),
+  #            bty = "n",
+  #            col = adjustcolor(c("grey",colRed),0.6),
+  #            lwd = 2,
+  #            cex = axSize)
+  #     mtext("Canopy height (m)", outer=T, side = 1, line = 1.5)
+  #     par(las=0)
+  #     mtext("Frequency", outer=T, side = 2, line = 2.5)
+  #     par(las=1)
       

@@ -4,6 +4,7 @@ load("INLA/INLA_prelim_40m_tin.RData")
 load("INLA/INLA_fullModelResult.RData")
 load("INLA/INLA_fullModelResult_separate.RData")
 load("INLA/INLA_fullModelResult_noLargeGaps.RData")
+load("INLA/INLA_fullModelResult_initialHt.RData")
 
   # Make an ID value for each cell
   bci.gapsAll$Order <- 1:nrow(bci.gapsAll)
@@ -132,8 +133,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
   par(mfrow=c(4,1), las=1, mar=c(3,3,1,1), oma=c(2,2,1,1))
   
   # Both years, fixed and random effects
-    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_8"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"], df=30)
-    plot(resd~curvMean_8, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"], df=30)
+    plot(resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
          ylim=c(-0.02,0.05),
          pch=20,
          col = adjustcolor("black", 0.05),
@@ -151,8 +152,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
     curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
     for(i in 1:nrow(curvRMSE)){
       res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
-                           & bci.gapsAll$curvMean_8 > curvRMSE$min[i]
-                           & bci.gapsAll$curvMean_8 <= curvRMSE$max[i],"resd"]
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i],"resd"]
       curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
     }
     
@@ -161,8 +162,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
          col = "orange")
     
   # Both years, only fixed effects
-    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_8"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd"], df=30)
-    plot(fix_resd~curvMean_8, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd"], df=30)
+    plot(fix_resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
          ylim=c(-0.02,0.05),
          pch=20,
          col = adjustcolor("black", 0.05),
@@ -180,8 +181,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
     curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
     for(i in 1:nrow(curvRMSE)){
       res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
-                           & bci.gapsAll$curvMean_8 > curvRMSE$min[i]
-                           & bci.gapsAll$curvMean_8 <= curvRMSE$max[i],"fix_resd"]
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i],"fix_resd"]
       curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
     }
     
@@ -190,8 +191,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
            col = "orange")
     
   # 2015-2018, only fixed effects
-    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"curvMean_8"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd"], df=30)
-    plot(fix_resd~curvMean_8, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,],
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd"], df=30)
+    plot(fix_resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,],
          ylim=c(-0.02,0.05),
          pch=20,
          col = adjustcolor("black", 0.05),
@@ -209,8 +210,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
     curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
     for(i in 1:nrow(curvRMSE)){
       res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
-                           & bci.gapsAll$curvMean_8 > curvRMSE$min[i]
-                           & bci.gapsAll$curvMean_8 <= curvRMSE$max[i]
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i]
                            & bci.gapsAll$Year==2018,"fix_resd"]
       curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
     }
@@ -220,8 +221,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
            col = "orange")
     
   # 2018-2020, only fixed effects
-    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"curvMean_8"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd"], df=30)
-    plot(fix_resd~curvMean_8, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,],
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd"], df=30)
+    plot(fix_resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,],
          ylim=c(-0.02,0.05),
          pch=20,
          col = adjustcolor("black", 0.05),
@@ -239,8 +240,8 @@ pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
     curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
     for(i in 1:nrow(curvRMSE)){
       res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
-                           & bci.gapsAll$curvMean_8 > curvRMSE$min[i]
-                           & bci.gapsAll$curvMean_8 <= curvRMSE$max[i]
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i]
                            & bci.gapsAll$Year==2020,"fix_resd"]
       curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
     }
@@ -3007,3 +3008,856 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
     
     
+#### RESIVION: Fixed effects from model with initial height ####
+    
+    # Original model
+    fixedResults <- model_full$summary.fixed
+    
+    # Initial height models
+    fixedResults_Ht <- model_full_ht$summary.fixed
+    fixedResults_logHt <- model_full_htlog$summary.fixed
+    
+    fixedNames <- c("Curvature (linear)", "Slope (linear)", "Slope (quadratic)",                    
+                    "Height above drainage (linear)","Height above drainage (quadratic)",
+                    "Soil parent: Andesite", "Soil parent: Caimito marine", "Soil parent: Caimito volcanic",
+                    "Soil form: Heavy clay", "Soil form: Swelling clay", "Soil form: Light clay",
+                    "Forest age: Secondary",
+                    "Year: 2015-2018", "Initial canopy height")
+    
+    par(mfrow=c(1,1), mar=c(4,1,1,1))
+    plot(x = fixedResults[2:nrow(fixedResults),"mean"],
+         y = 1.2*nrow(fixedResults_Ht):3,
+         xlim = range(fixedResults[2:nrow(fixedResults),c(3,5)]) + c(-0.4,0.6),
+         ylim=c(2,1.2*nrow(fixedResults_Ht)),
+         pch = 19, 
+         cex = 1,
+         xlab = "Fixed effect",
+         ylab = NA, yaxt = "n")
+    arrows(x0 = fixedResults[2:nrow(fixedResults),"0.025quant"],
+           x1 = fixedResults[2:nrow(fixedResults),"0.975quant"],
+           y0 = 1.2*nrow(fixedResults_Ht):3,
+           y1 = 1.2*nrow(fixedResults_Ht):3,
+           angle = 90, code=3,
+           length = 0.05)
+    
+    points(x = fixedResults_Ht[2:nrow(fixedResults_Ht),"mean"],
+           y = 1.2*nrow(fixedResults_Ht):2 - 0.2,
+           pch = 19, 
+           cex = 1,
+           col = "grey")
+    arrows(x0 = fixedResults_Ht[2:nrow(fixedResults_Ht),"0.025quant"],
+           x1 = fixedResults_Ht[2:nrow(fixedResults_Ht),"0.975quant"],
+           y0 = 1.2*nrow(fixedResults_Ht):2- 0.2,
+           y1 = 1.2*nrow(fixedResults_Ht):2- 0.2,
+           angle = 90, code=3,
+           length = 0.05,
+           col = "grey")
+    
+    points(x = fixedResults_logHt[2:nrow(fixedResults_logHt),"mean"],
+           y = 1.2*nrow(fixedResults_logHt):2 - 0.4,
+           pch = 19, 
+           cex = 1,
+           col = "red")
+    arrows(x0 = fixedResults_logHt[2:nrow(fixedResults_logHt),"0.025quant"],
+           x1 = fixedResults_logHt[2:nrow(fixedResults_logHt),"0.975quant"],
+           y0 = 1.2*nrow(fixedResults_logHt):2- 0.4,
+           y1 = 1.2*nrow(fixedResults_logHt):2- 0.4,
+           angle = 90, code=3,
+           length = 0.05,
+           col = "red")
+    
+    
+    abline(v=0, lty=2)
+    text(fixedNames,
+         x = fixedResults_Ht[2:nrow(fixedResults_Ht),"0.975quant"]+0.05,
+         y = 1.2*nrow(fixedResults_Ht):2,
+         pos = 4)
+    
+    legend(x = -1.2,
+           y = 1.2*nrow(fixedResults_Ht),
+           c("Original model",
+             "Canopy height",
+             "Log canopy height"),
+           bty="n",
+           col = c("black", "grey", "red"),
+           pch=c(19,19,19,1))
+    
+#### REVISION: Calculate predicted values and residuals from model with initial height ####
+    
+    ## Fixed and random effects  
+    
+    # Get fitted values and reorder to match original data frame
+    bci.gapsAll$pred_Ht <- model_full_htlog$summary.fitted.values$mean[order(bci.gapsAll_Order$Order)]
+    bci.gapsAll$resd_Ht <- bci.gapsAll$gapPropCens - bci.gapsAll$predHt
+    
+    ## Fixed effects only  
+    
+    # Intercept
+    bci.gapsAll$fix_int_Ht <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="(Intercept)"]
+    
+    # Curvature
+    bci.gapsAll$fix_C_Ht <- bci.gapsAll$Sc_curvMean_2*(model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="Sc_curvMean_2"])
+    
+    # Slope
+    bci.gapsAll$fix_S_Ht <- bci.gapsAll$Sc_slopeMean_16*(model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="Sc_slopeMean_16"])
+    bci.gapsAll$fix_S2_Ht <- bci.gapsAll$Sc_slopeMean_16_Sq*(model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="Sc_slopeMean_16_Sq"])
+    
+    # Height above drainage
+    bci.gapsAll$fix_H_Ht <- bci.gapsAll$Sc_drainMean*(model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="Sc_drainMean"])
+    bci.gapsAll$fix_H2_Ht <- bci.gapsAll$Sc_drainMean_Sq*(model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="Sc_drainMean_Sq"])
+    
+    # Soil form
+    bci.gapsAll$fix_soilForm_Ht <- 0
+    
+    bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="MottledHeavyClay","fix_soilForm_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="soilFormMottledHeavyClay"]
+    bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="PaleSwellingClay","fix_soilForm_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="soilFormPaleSwellingClay"]
+    bci.gapsAll[!is.na(bci.gapsAll$soilForm) & bci.gapsAll$soilForm=="RedLightClay","fix_soilForm_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="soilFormRedLightClay"]
+    
+    
+    # Soil parent material
+    bci.gapsAll$fix_soilParent_Ht <- 0
+    
+    bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParent=="Andesite","fix_soilParent_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="soilParentAndesite"]
+    bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParent=="CaimitoMarineSedimentary","fix_soilParent_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="soilParentCaimitoMarineSedimentary"]
+    bci.gapsAll[!is.na(bci.gapsAll$soilParent) & bci.gapsAll$soilParent=="CaimitoVolcanic","fix_soilParent_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="soilParentCaimitoVolcanic"]
+    
+    # Year 
+    bci.gapsAll$fix_year_Ht <- 0
+    bci.gapsAll[bci.gapsAll$Year=="2018","fix_year_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="Year2018"]
+    
+    # Age 
+    bci.gapsAll$fix_age_Ht <- 0
+    bci.gapsAll[bci.gapsAll$age=="Secondary" & !(is.na(bci.gapsAll$age)),"fix_age_Ht"] <- model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="ageSecondary"]
+    
+    # Initial canopy height
+    bci.gapsAll$fix_Ht <- bci.gapsAll$Sc_initialHtlog*(model_full_htlog$summary.fixed$mean[model_full_htlog$names.fixed=="Sc_initialHtlog"])
+    
+    # All
+    bci.gapsAll$fix_sum_Ht <- bci.gapsAll$fix_int_Ht + bci.gapsAll$fix_C_Ht + bci.gapsAll$fix_S_Ht + bci.gapsAll$fix_S2_Ht + bci.gapsAll$fix_H_Ht + bci.gapsAll$fix_H2_Ht + bci.gapsAll$fix_soilParent_Ht + bci.gapsAll$fix_soilForm_Ht + bci.gapsAll$fix_age_Ht + bci.gapsAll$fix_year_Ht + bci.gapsAll$fix_Ht
+    
+    # Predicted value with just fixed effects
+    bci.gapsAll$fix_pred_Ht <- exp(bci.gapsAll$fix_sum_Ht)/(1 + exp(bci.gapsAll$fix_sum_Ht))
+    
+    bci.gapsAll$fix_resd_Ht <- bci.gapsAll$gapPropCens - bci.gapsAll$fix_pred_Ht
+    
+    
+   
+#### REVISION: Look at model residuals from model with initial height ####
+    
+    pdf(file = "residualsPlots_logHeight.pdf", onefile=T, height=9, width=6.5)
+    
+    # CURVATURE 
+    
+    par(mfrow=c(4,1), las=1, mar=c(3,3,1,1), oma=c(2,2,1,1))
+    
+    # Both years, fixed and random effects
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"], df=30)
+    curvSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd_Ht"], df=30)
+    
+    plot(resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, fixed + random effects")
+    abline(h=0,col="red")
+    lines(x = curvSpline$x, y= curvSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = curvSpline_Ht$x, y= curvSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    curvRMSE <- data.frame(min = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[1:10],
+                           max = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
+    for(i in 1:nrow(curvRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i],"resd"]
+      curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i],"resd_Ht"]
+      curvRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+   
+    points(RMSE~mid, data=curvRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=curvRMSE,
+           pch=1,
+           col = "purple")
+    
+    # Both years, only fixed effects
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd"], df=30)
+    curvSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = curvSpline$x, y= curvSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = curvSpline_Ht$x, y= curvSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    curvRMSE <- data.frame(min = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[1:10],
+                           max = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
+    for(i in 1:nrow(curvRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i],"fix_resd"]
+      curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i],"fix_resd_Ht"]
+      curvRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=curvRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=curvRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2015-2018, only fixed effects
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd"], df=30)
+    curvSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2015-2018, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = curvSpline$x, y= curvSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = curvSpline_Ht$x, y= curvSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    curvRMSE <- data.frame(min = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[1:10],
+                           max = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
+    for(i in 1:nrow(curvRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd"]
+      curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd_Ht"]
+      curvRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=curvRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=curvRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2018-2020, only fixed effects
+    curvSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd"], df=30)
+    curvSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"curvMean_2"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~curvMean_2, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2018-2020, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = curvSpline$x, y= curvSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = curvSpline_Ht$x, y= curvSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    curvRMSE <- data.frame(min = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[1:10],
+                           max = seq(min(curvSpline$x),max(curvSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    curvRMSE$mid <- 0.5*(curvRMSE$min+curvRMSE$max)
+    for(i in 1:nrow(curvRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd"]
+      curvRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$curvMean_2 > curvRMSE$min[i]
+                           & bci.gapsAll$curvMean_2 <= curvRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd_Ht"]
+      curvRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=curvRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=curvRMSE,
+           pch=1,
+           col = "purple")
+    
+    mtext("Curvature (LaPlacian convexity)", side=1, outer=T)
+    par(las=0)
+    mtext("Residual value", side=2, outer=T)
+    par(las=1)
+    
+    # SLOPE 
+    
+    # Both years, fixed and random effects
+    slopeSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"], df=30)
+    slopeSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd_Ht"], df=30)
+    
+    plot(resd~slopeMean_16, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, fixed + random effects")
+    abline(h=0,col="red")
+    lines(x = slopeSpline$x, y= slopeSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = slopeSpline_Ht$x, y= slopeSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    slopeRMSE <- data.frame(min = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[1:10],
+                           max = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    slopeRMSE$mid <- 0.5*(slopeRMSE$min+slopeRMSE$max)
+    for(i in 1:nrow(slopeRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i],"resd"]
+      slopeRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i],"resd_Ht"]
+      slopeRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    
+    points(RMSE~mid, data=slopeRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=slopeRMSE,
+           pch=1,
+           col = "purple")
+    
+    # Both years, only fixed effects
+    slopeSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd"], df=30)
+    slopeSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~slopeMean_16, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = slopeSpline$x, y= slopeSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = slopeSpline_Ht$x, y= slopeSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    slopeRMSE <- data.frame(min = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[1:10],
+                           max = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    slopeRMSE$mid <- 0.5*(slopeRMSE$min+slopeRMSE$max)
+    for(i in 1:nrow(slopeRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i],"fix_resd"]
+      slopeRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i],"fix_resd_Ht"]
+      slopeRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=slopeRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=slopeRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2015-2018, only fixed effects
+    slopeSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd"], df=30)
+    slopeSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~slopeMean_16, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2015-2018, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = slopeSpline$x, y= slopeSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = slopeSpline_Ht$x, y= slopeSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    slopeRMSE <- data.frame(min = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[1:10],
+                           max = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    slopeRMSE$mid <- 0.5*(slopeRMSE$min+slopeRMSE$max)
+    for(i in 1:nrow(slopeRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd"]
+      slopeRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd_Ht"]
+      slopeRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=slopeRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=slopeRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2018-2020, only fixed effects
+    slopeSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd"], df=30)
+    slopeSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"slopeMean_16"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~slopeMean_16, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2018-2020, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = slopeSpline$x, y= slopeSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = slopeSpline_Ht$x, y= slopeSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    slopeRMSE <- data.frame(min = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[1:10],
+                           max = seq(min(slopeSpline$x),max(slopeSpline$x),length.out=11)[2:11],
+                           mid = NA,
+                           RMSE = NA,
+                           RMSE_Ht = NA)
+    slopeRMSE$mid <- 0.5*(slopeRMSE$min+slopeRMSE$max)
+    for(i in 1:nrow(slopeRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd"]
+      slopeRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$slopeMean_16 > slopeRMSE$min[i]
+                           & bci.gapsAll$slopeMean_16 <= slopeRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd_Ht"]
+      slopeRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=slopeRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=slopeRMSE,
+           pch=1,
+           col = "purple")
+    
+    mtext("Slope (degrees)", side=1, outer=T)
+    par(las=0)
+    mtext("Residual value", side=2, outer=T)
+    par(las=1)
+    
+    # HEIGHT ABOVE DRAINAGE 
+    
+    # Both years, fixed and random effects
+    drainSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"], df=30)
+    drainSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd_Ht"], df=30)
+    
+    plot(resd~drainMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, fixed + random effects")
+    abline(h=0,col="red")
+    lines(x = drainSpline$x, y= drainSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = drainSpline_Ht$x, y= drainSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    drainRMSE <- data.frame(min = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[1:10],
+                            max = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    drainRMSE$mid <- 0.5*(drainRMSE$min+drainRMSE$max)
+    for(i in 1:nrow(drainRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i],"resd"]
+      drainRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i],"resd_Ht"]
+      drainRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    
+    points(RMSE~mid, data=drainRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=drainRMSE,
+           pch=1,
+           col = "purple")
+    
+    # Both years, only fixed effects
+    drainSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd"], df=30)
+    drainSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~drainMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = drainSpline$x, y= drainSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = drainSpline_Ht$x, y= drainSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    drainRMSE <- data.frame(min = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[1:10],
+                            max = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    drainRMSE$mid <- 0.5*(drainRMSE$min+drainRMSE$max)
+    for(i in 1:nrow(drainRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i],"fix_resd"]
+      drainRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i],"fix_resd_Ht"]
+      drainRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=drainRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=drainRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2015-2018, only fixed effects
+    drainSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd"], df=30)
+    drainSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~drainMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2015-2018, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = drainSpline$x, y= drainSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = drainSpline_Ht$x, y= drainSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    drainRMSE <- data.frame(min = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[1:10],
+                            max = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    drainRMSE$mid <- 0.5*(drainRMSE$min+drainRMSE$max)
+    for(i in 1:nrow(drainRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd"]
+      drainRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd_Ht"]
+      drainRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=drainRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=drainRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2018-2020, only fixed effects
+    drainSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd"], df=30)
+    drainSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"drainMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~drainMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2018-2020, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = drainSpline$x, y= drainSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = drainSpline_Ht$x, y= drainSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    drainRMSE <- data.frame(min = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[1:10],
+                            max = seq(min(drainSpline$x),max(drainSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    drainRMSE$mid <- 0.5*(drainRMSE$min+drainRMSE$max)
+    for(i in 1:nrow(drainRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd"]
+      drainRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$drainMean > drainRMSE$min[i]
+                           & bci.gapsAll$drainMean <= drainRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd_Ht"]
+      drainRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=drainRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=drainRMSE,
+           pch=1,
+           col = "purple")
+    
+    mtext("HAND (m)", side=1, outer=T)
+    par(las=0)
+    mtext("Residual value", side=2, outer=T)
+    par(las=1)
+    
+    # ASPECT
+    
+    # Both years, fixed and random effects
+    aspectSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"], df=30)
+    aspectSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd_Ht"], df=30)
+    
+    plot(resd~aspectMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, fixed + random effects")
+    abline(h=0,col="red")
+    lines(x = aspectSpline$x, y= aspectSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = aspectSpline_Ht$x, y= aspectSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    aspectRMSE <- data.frame(min = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[1:10],
+                            max = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    aspectRMSE$mid <- 0.5*(aspectRMSE$min+aspectRMSE$max)
+    for(i in 1:nrow(aspectRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i],"resd"]
+      aspectRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i],"resd_Ht"]
+      aspectRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    
+    points(RMSE~mid, data=aspectRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=aspectRMSE,
+           pch=1,
+           col = "purple")
+    
+    # Both years, only fixed effects
+    aspectSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd"], df=30)
+    aspectSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~aspectMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "All years, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = aspectSpline$x, y= aspectSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = aspectSpline_Ht$x, y= aspectSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    
+    aspectRMSE <- data.frame(min = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[1:10],
+                            max = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    aspectRMSE$mid <- 0.5*(aspectRMSE$min+aspectRMSE$max)
+    for(i in 1:nrow(aspectRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i],"fix_resd"]
+      aspectRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i],"fix_resd_Ht"]
+      aspectRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=aspectRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=aspectRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2015-2018, only fixed effects
+    aspectSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd"], df=30)
+    aspectSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~aspectMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2018,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2015-2018, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = aspectSpline$x, y= aspectSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = aspectSpline_Ht$x, y= aspectSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    aspectRMSE <- data.frame(min = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[1:10],
+                            max = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    aspectRMSE$mid <- 0.5*(aspectRMSE$min+aspectRMSE$max)
+    for(i in 1:nrow(aspectRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd"]
+      aspectRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i]
+                           & bci.gapsAll$Year==2018,"fix_resd_Ht"]
+      aspectRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=aspectRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=aspectRMSE,
+           pch=1,
+           col = "purple")
+    
+    # 2018-2020, only fixed effects
+    aspectSpline <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd"], df=30)
+    aspectSpline_Ht <- smooth.spline(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"aspectMean"], y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,"fix_resd_Ht"], df=30)
+    
+    plot(fix_resd~aspectMean, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year==2020,],
+         ylim=c(-0.02,0.05),
+         pch=20,
+         col = adjustcolor("black", 0.05),
+         cex = 0.6,
+         ylab = NA,
+         xlab = NA,
+         main = "2018-2020, only fixed effects")
+    abline(h=0,col="red")
+    lines(x = aspectSpline$x, y= aspectSpline$y, col=adjustcolor("orange",0.7),lty=1,lwd=2)
+    lines(x = aspectSpline_Ht$x, y= aspectSpline_Ht$y, col=adjustcolor("purple",0.7),lty=3,lwd=2)
+    
+    aspectRMSE <- data.frame(min = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[1:10],
+                            max = seq(min(aspectSpline$x),max(aspectSpline$x),length.out=11)[2:11],
+                            mid = NA,
+                            RMSE = NA,
+                            RMSE_Ht = NA)
+    aspectRMSE$mid <- 0.5*(aspectRMSE$min+aspectRMSE$max)
+    for(i in 1:nrow(aspectRMSE)){
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd"]
+      aspectRMSE$RMSE[i] <- sqrt(mean(res_i^2))
+      
+      res_i <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) 
+                           & bci.gapsAll$aspectMean > aspectRMSE$min[i]
+                           & bci.gapsAll$aspectMean <= aspectRMSE$max[i]
+                           & bci.gapsAll$Year==2020,"fix_resd_Ht"]
+      aspectRMSE$RMSE_Ht[i] <- sqrt(mean(res_i^2))
+    }
+    
+    points(RMSE~mid, data=aspectRMSE,
+           pch=19,
+           col = "orange")
+    points(RMSE_Ht~mid, data=aspectRMSE,
+           pch=1,
+           col = "purple")
+    
+    mtext("Aspect (degrees)", side=1, outer=T)
+    par(las=0)
+    mtext("Residual value", side=2, outer=T)
+    par(las=1)
+    
+    dev.off() 

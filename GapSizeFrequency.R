@@ -284,7 +284,72 @@
   allData18to20 <- data.frame(dbh = gaps18to20sp$area,
                               quadnum = gaps18to20sp$block)
   
+#### BOOTSTRAPPED MEAN AND MEDIAN GAP SIZE ####
+  
+  # Create a function to calculate mean and median gap size, with CIs from bootstrapping
+  gapSizeSimple <- function(alldata, nreps=1000, probLevels = c(0.025,0.975)){
+    
+    # set seed for repeatability
+    set.seed(1)
+    
+    # create data frame for results
+    longResults <- data.frame(rep = 1:nreps,
+                              nGap = NA,
+                              areaGap = NA,
+                              meanGap = NA,
+                              medGap = NA)
+    
+    
+    Quads <- unique(alldata$quadnum)
+    nQuads <- length(Quads)
+    for(i in 1:nreps){
+      
+      # sample from bootstrapping units with replacement
+      iSample <- sample(Quads,nQuads,replace=T)
+      
+      # make a vector of all gaps to summarize
+      iGaps <- alldata[alldata$quadnum==iSample[1],"dbh"]
+      for(j in 2:nQuads){
+        iGaps <- c(iGaps,alldata[alldata$quadnum==iSample[j],"dbh"])
+      }
+      
+      # summarize gaps
+      longResults[i,"nGap"] <- length(iGaps)
+      longResults[i,"areaGap"] <- sum(iGaps)
+      longResults[i,"meanGap"] <- mean(iGaps)
+      longResults[i,"medGap"] <- median(iGaps)
+    }
+    
+    # summary bootstraps
+    shortResults <- data.frame(metric = c("lo","mean","hi"),
+                              nGap = NA,
+                              areaGap = NA,
+                              meanGap = NA,
+                              medGap = NA)
+    
+    shortResults[shortResults$metric %in% c("lo","hi") ,c("nGap")] <- quantile(longResults$nGap,probLevels)
+    shortResults[shortResults$metric %in% c("lo","hi") ,c("areaGap")] <- quantile(longResults$areaGap,probLevels)
+    shortResults[shortResults$metric %in% c("lo","hi") ,c("meanGap")] <- quantile(longResults$meanGap,probLevels)
+    shortResults[shortResults$metric %in% c("lo","hi") ,c("medGap")] <- quantile(longResults$medGap,probLevels)
+    
+    shortResults[shortResults$metric %in% c("mean") ,c("nGap")] <- mean(longResults$nGap)
+    shortResults[shortResults$metric %in% c("mean") ,c("areaGap")] <- mean(longResults$areaGap)
+    shortResults[shortResults$metric %in% c("mean") ,c("meanGap")] <- mean(longResults$meanGap)
+    shortResults[shortResults$metric %in% c("mean") ,c("medGap")] <- mean(longResults$medGap)
+    
+    # structure outputs
+    allResults <- list(shortResults, longResults, nQuads)
+  }
+  
+  
+  
 #### Bootstrapped size frequency by year ####
+  
+  # simple
+    sz15to18 <- gapSizeSimple(alldata = allData15to18, nreps=1000, probLevels = c(0.025,0.975))
+    sz18to20 <- gapSizeSimple(alldata = allData18to20, nreps=1000, probLevels = c(0.025,0.975))
+    
+  # size frequency
   
     i <- 1
     datadir <- "SizeFreqResults/"
@@ -333,6 +398,11 @@
                              data.frame(dbh = gaps18to20sp$area[gaps18to20sp$Age=="Secondary"],
                                         quadnum = gaps18to20sp$block[gaps18to20sp$Age=="Secondary"]))
       
+      # simple
+        szOld <- gapSizeSimple(alldata = oldGrowthGaps, nreps=1000, probLevels = c(0.025,0.975))
+        szSec <- gapSizeSimple(alldata = secondaryGaps, nreps=1000, probLevels = c(0.025,0.975))
+      
+      # size frequency
       i <- 1
       datadir <- "SizeFreqResults/"
       site <- "BCI"
@@ -388,7 +458,13 @@
                                             quadnum = gaps15to18sp$block[gaps15to18sp$SoilParent=="CaimitoMarineSedimentary"]),
                                  data.frame(dbh = gaps18to20sp$area[gaps18to20sp$SoilParent=="CaimitoMarineSedimentary"],
                                             quadnum = gaps18to20sp$block[gaps18to20sp$SoilParent=="CaimitoMarineSedimentary"]))
+      # simple
+        szAnd <- gapSizeSimple(alldata = andesiteGaps, nreps=1000, probLevels = c(0.025,0.975))
+        szBoh <- gapSizeSimple(alldata = bohioGaps, nreps=1000, probLevels = c(0.025,0.975))
+        szVol <- gapSizeSimple(alldata = caimitoVolcanicGaps, nreps=1000, probLevels = c(0.025,0.975))
+        szMar <- gapSizeSimple(alldata = caimitoMarineGaps, nreps=1000, probLevels = c(0.025,0.975))
       
+      # size frequency
        i <- 1
       datadir <- "SizeFreqResults/"
       site <- "BCI"
@@ -469,6 +545,14 @@
                                        quadnum = gaps15to18sp$block[gaps15to18sp$SoilForm=="BrownFineLoam"]),
                             data.frame(dbh = gaps18to20sp$area[gaps18to20sp$SoilForm=="BrownFineLoam"],
                                        quadnum = gaps18to20sp$block[gaps18to20sp$SoilForm=="BrownFineLoam"]))
+      
+    # simple
+      szRed <- gapSizeSimple(alldata = lightClayGaps, nreps=1000, probLevels = c(0.025,0.975))
+      szPal <- gapSizeSimple(alldata = swellingClayGaps, nreps=1000, probLevels = c(0.025,0.975))
+      szMot <- gapSizeSimple(alldata = heavyClayGaps, nreps=1000, probLevels = c(0.025,0.975))
+      szBro <- gapSizeSimple(alldata = fineLoamGaps, nreps=1000, probLevels = c(0.025,0.975))
+      
+    # size frequency
       i <- 1
       datadir <- "SizeFreqResults/"
       site <- "BCI"
@@ -1133,4 +1217,116 @@
   lines(x = xVals, y = yValsWeibPal, col = adjustcolor(colPal,0.6), lwd=2)
   lines(x = xVals, y = yValsWeibRed, col = adjustcolor(colRed,0.6), lwd=2)
   
+  
+
+
+  
+#### Make new stacked barplots ####  
+
+  gapBins <- c(25,50,100,200,400,800,1600,3200,6400,19200)
+  
+  
+  # Make data frame
+  gapProp <- data.frame(minSz = gapBins[1:(length(gapBins)-1)],
+                        maxSz = gapBins[2:(length(gapBins))],
+                        yr15to18 = NA,
+                        yr18to20 = NA,
+                        oldGrowth = NA,
+                        secondary = NA,
+                        parAnd = NA,
+                        parBoh = NA,
+                        parMar = NA,
+                        parVol = NA,
+                        formBro = NA,
+                        formMot = NA,
+                        formPal = NA,
+                        formRed = NA)
+  
+  for(i in 1:(length(gapBins)-1)){
+    # gapProp$yr15to18[i] <- sum(allData15to18[allData15to18$dbh>=gapProp$minSz[i] & allData15to18$dbh<gapProp$maxSz[i],"dbh"])/sum(allData15to18$dbh)
+    # gapProp$yr18to20[i] <- sum(allData18to20[allData18to20$dbh>=gapProp$minSz[i] & allData18to20$dbh<gapProp$maxSz[i],"dbh"])/sum(allData18to20$dbh)
+    gapProp$yr15to18[i] <- sum(allData15to18[allData15to18$dbh>=gapProp$minSz[i] & allData15to18$dbh<gapProp$maxSz[i],"dbh"])/(areaSampled15to18tall)/10000
+    gapProp$yr18to20[i] <- sum(allData18to20[allData18to20$dbh>=gapProp$minSz[i] & allData18to20$dbh<gapProp$maxSz[i],"dbh"])/(areaSampled18to20tall)/10000
+    
+    
+    # gapProp$oldGrowth[i] <- sum(oldGrowthGaps[oldGrowthGaps$dbh>=gapProp$minSz[i] & oldGrowthGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(oldGrowthGaps$dbh)
+    # gapProp$secondary[i] <- sum(secondaryGaps[secondaryGaps$dbh>=gapProp$minSz[i] & secondaryGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(secondaryGaps$dbh)
+    gapProp$oldGrowth[i] <- sum(oldGrowthGaps[oldGrowthGaps$dbh>=gapProp$minSz[i] & oldGrowthGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledOld18+areaSampledOld20)/10000
+    gapProp$secondary[i] <- sum(secondaryGaps[secondaryGaps$dbh>=gapProp$minSz[i] & secondaryGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledSec18+areaSampledSec20)/10000
+    
+    
+    # gapProp$parAnd[i] <- sum(andesiteGaps[andesiteGaps$dbh>=gapProp$minSz[i] & andesiteGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(andesiteGaps$dbh)
+    # gapProp$parBoh[i] <- sum(bohioGaps[bohioGaps$dbh>=gapProp$minSz[i] & bohioGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(bohioGaps$dbh)
+    # gapProp$parMar[i] <- sum(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapProp$minSz[i] & caimitoMarineGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(caimitoMarineGaps$dbh)
+    # gapProp$parVol[i] <- sum(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapProp$minSz[i] & caimitoVolcanicGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(caimitoVolcanicGaps$dbh)
+    gapProp$parAnd[i] <- sum(andesiteGaps[andesiteGaps$dbh>=gapProp$minSz[i] & andesiteGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledAnd18+areaSampledAnd20)/10000
+    gapProp$parBoh[i] <- sum(bohioGaps[bohioGaps$dbh>=gapProp$minSz[i] & bohioGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledBoh18+areaSampledBoh20)/10000
+    gapProp$parMar[i] <- sum(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapProp$minSz[i] & caimitoMarineGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledMar18+areaSampledMar20)/10000
+    gapProp$parVol[i] <- sum(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapProp$minSz[i] & caimitoVolcanicGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledVol18+areaSampledVol20)/10000
+    
+    
+    # gapProp$formBro[i] <- sum(fineLoamGaps[fineLoamGaps$dbh>=gapProp$minSz[i] & fineLoamGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(fineLoamGaps$dbh)
+    # gapProp$formMot[i] <- sum(heavyClayGaps[heavyClayGaps$dbh>=gapProp$minSz[i] & heavyClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(heavyClayGaps$dbh)
+    # gapProp$formPal[i] <- sum(swellingClayGaps[swellingClayGaps$dbh>=gapProp$minSz[i] & swellingClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(swellingClayGaps$dbh)
+    # gapProp$formRed[i] <- sum(lightClayGaps[lightClayGaps$dbh>=gapProp$minSz[i] & lightClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(lightClayGaps$dbh)
+    gapProp$formBro[i] <- sum(fineLoamGaps[fineLoamGaps$dbh>=gapProp$minSz[i] & fineLoamGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledBro18+areaSampledBro20)/10000
+    gapProp$formMot[i] <- sum(heavyClayGaps[heavyClayGaps$dbh>=gapProp$minSz[i] & heavyClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledMot18+areaSampledMot20)/10000
+    gapProp$formPal[i] <- sum(swellingClayGaps[swellingClayGaps$dbh>=gapProp$minSz[i] & swellingClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledPal18+areaSampledPal20)/10000
+    gapProp$formRed[i] <- sum(lightClayGaps[lightClayGaps$dbh>=gapProp$minSz[i] & lightClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledRed18+areaSampledRed20)/10000
+  }
+  
+  # Make plots
+    gapPropYear <- as.matrix(gapProp[,c("yr15to18","yr18to20")])
+    gapPropAge <- as.matrix(gapProp[,c("oldGrowth","secondary")])
+    gapPropParent <- as.matrix(gapProp[,c("parAnd","parBoh","parMar","parVol")])
+    gapPropForm <- as.matrix(gapProp[,c("formBro","formMot","formPal","formRed")])
+    
+    yRange <- 0.02+max(apply(gapPropYear,2,"sum"),apply(gapPropAge,2,"sum"),apply(gapPropParent,2,"sum"),apply(gapPropForm,2,"sum"))
+    gapCols <- viridis::viridis(nrow(gapProp))
+    
+    
+
+    par(mar=c(3,4,1,1))
+    barplot(gapPropYear,
+            names = c("2015-2018","2018-2020"),
+            ylim=c(0,yRange),
+            col=gapCols,
+            ylab="Proportion of area")
+    
+    legend(x=0.15,y=0.085,col=gapCols,pch=19,bty="n",horiz=F,xpd=T,ncol=5,
+           paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
+           title="Gap size (m2)")
+
+    barplot(gapPropAge,
+            names = c("Old growth","Secondary"),
+            ylim=c(0,yRange),
+            col=gapCols,
+            ylab="Proportion of area")
+    
+    legend(x=0.15,y=0.085,col=gapCols,pch=19,bty="n",horiz=F,xpd=T,ncol=5,
+           paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
+           title="Gap size (m2)")
+    
+
+    barplot(gapPropParent,
+            names = c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
+            ylim=c(0,yRange),
+            col=gapCols,
+            ylab="Proportion of area")
+    
+    legend(x=0.15,y=0.085,col=gapCols,pch=19,bty="n",horiz=F,xpd=T,ncol=5,
+           paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
+           title="Gap size (m2)")
+    
+
+    barplot(gapPropForm,
+            names = c("Brown fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+            ylim=c(0,yRange),
+            col=gapCols,
+            ylab="Proportion of area")
+    
+    legend(x=0.15,y=0.085,col=gapCols,pch=19,bty="n",horiz=F,xpd=T,ncol=5,
+           paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
+           title="Gap size (m2)")
+    
   
