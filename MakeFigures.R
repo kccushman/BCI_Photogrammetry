@@ -8,7 +8,8 @@
   colRed <- wesanderson::wes_palette("Rushmore1",5)[5]
   colAnd <- wesanderson::wes_palette("Chevalier1",4)[2]
   colBoh <- wesanderson::wes_palette("Chevalier1",4)[4]
-  colMar <- wesanderson::wes_palette("Chevalier1",4)[3]
+  #colMar <- wesanderson::wes_palette("Chevalier1",4)[3]
+  colMar <- "#88b2c2"
   colVol <- wesanderson::wes_palette("Chevalier1",4)[1]
   colOld <- wesanderson::wes_palette("Moonrise2",4)[1]
   colSec <- wesanderson::wes_palette("Moonrise2",4)[2]
@@ -38,6 +39,127 @@ raster::plot(example18to20,
              breaks=seq(-35,20,5),
              bty = "n", box = F,xaxt = "n")
 raster::plot(examplesGaps, add=T, border="black", lwd=3)
+
+
+#### Figure 2: Raster plots of landscape predictors ####
+
+buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
+
+# Read plot outline  
+plotShp <- rgdal::readOGR("D:/BCI_Spatial/BCI50ha/BCI_50ha.shp")
+plotShp <- sp::spTransform(plotShp, sp::proj4string(buffer))
+
+curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_16.tif")
+slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
+drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
+
+curvRaster <- raster::mask(curvRaster, buffer)
+slopeRaster <- raster::mask(slopeRaster, buffer)
+drainRaster <- raster::mask(drainRaster, buffer)
+
+
+
+par(mar=c(1,0,1,1), mfrow=c(2,3), oma=c(0,0,0,2))
+raster::plot(curvRaster, col = viridis::cividis(128),
+             ext = raster::extent(buffer),
+             bty="n", box=F, yaxt="n", xaxt="n",
+             legend.width=1.5,
+             legend.args=list(text="",line=-5),
+             axis.args = list(cex.axis=1.8))
+#raster::plot(plotShp,add=T, lwd=2, border="white")
+
+raster::plot(slopeRaster, col = viridis::plasma(128),
+             bty="n", box=F, yaxt="n", xaxt="n",
+             ext = raster::extent(buffer),
+             legend.width=1.5,
+             axis.args = list(cex.axis=1.8))
+#raster::plot(plotShp,add=T, lwd=2, border="white")
+
+raster::plot(drainRaster, col = viridis::viridis(128),
+             bty="n", box=F, yaxt="n", xaxt="n",
+             legend.width=1.5,
+             ext = raster::extent(buffer),
+             axis.args = list(cex.axis=1.8))
+#raster::plot(plotShp,add=T, lwd=2, border="white")
+
+soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+# Define parent material and soil form from soil class
+soil$SoilParent <- NA
+soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
+soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
+soil[soil$SOIL=="Fairchild",c("SoilParent")] <- c("Bohio")
+soil[soil$SOIL=="Gross",c("SoilParent")] <- c("Bohio")
+soil[soil$SOIL=="Harvard",c("SoilParent")] <- c("CaimitoVolcanic")
+soil[soil$SOIL=="Hood",c("SoilParent")] <- c("CaimitoVolcanic")
+soil[soil$SOIL=="Lake",c("SoilParent")] <- c("Andesite")
+soil[soil$SOIL=="Lutz",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+soil[soil$SOIL=="Marron",c("SoilParent")] <- c("Andesite")
+soil[soil$SOIL=="Poacher",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+soil[soil$SOIL=="Standley",c("SoilParent")] <- c("Bohio")
+soil[soil$SOIL=="Wetmore",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+soil[soil$SOIL=="Zetek",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+
+soil$SoilForm <- NA
+soil[soil$SOIL=="AVA", c("SoilForm")] <- c("RedLightClay")
+soil[soil$SOIL=="Barbour", c("SoilForm")] <- c("PaleSwellingClay")
+soil[soil$SOIL=="Fairchild",c("SoilForm")] <- c("RedLightClay")
+soil[soil$SOIL=="Gross",c("SoilForm")] <- c("PaleSwellingClay")
+soil[soil$SOIL=="Harvard",c("SoilForm")] <- c("RedLightClay")
+soil[soil$SOIL=="Hood",c("SoilForm")] <- c("BrownFineLoam")
+soil[soil$SOIL=="Lake",c("SoilForm")] <- c("PaleSwellingClay")
+soil[soil$SOIL=="Lutz",c("SoilForm")] <- c("MottledHeavyClay")
+soil[soil$SOIL=="Marron",c("SoilForm")] <- c("BrownFineLoam")
+soil[soil$SOIL=="Poacher",c("SoilForm")] <- c("RedLightClay")
+soil[soil$SOIL=="Standley",c("SoilForm")] <- c("BrownFineLoam")
+soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
+soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
+
+soil$formCol = NA
+soil[soil$SoilForm=="BrownFineLoam","formCol"] = wesanderson::wes_palette("Rushmore1",5)[1]
+soil[soil$SoilForm=="PaleSwellingClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[3]
+soil[soil$SoilForm=="MottledHeavyClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[4]
+soil[soil$SoilForm=="RedLightClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[5]
+
+soil$parentCol = NA
+soil[soil$SoilParent=="CaimitoVolcanic","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[1]
+soil[soil$SoilParent=="Andesite","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[2]
+soil[soil$SoilParent=="CaimitoMarineSedimentary","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[3]
+soil[soil$SoilParent=="Bohio","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[4]
+
+soil <- sp::spTransform(soil, sp::proj4string(buffer))
+
+raster::plot(soil,
+             ext = raster::extent(buffer),
+             col = soil$formCol,
+             border="NA")
+# raster::plot(plotShp,add=T, lwd=2, border="white")
+
+raster::plot(soil,
+             ext = raster::extent(buffer),
+             col = soil$parentCol,
+             border="NA")
+# raster::plot(plotShp,add=T, lwd=2, border="white")
+
+age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+age$AgeClass <- "Other"
+age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
+age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
+ageUse <- age[!(age$AgeClass=="Other"),]
+
+age$ageCol = NA
+age[age$AgeClass=="OldGrowth","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[1]
+age[age$AgeClass=="Secondary","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[2]
+age[age$AgeClass=="Other","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[3]
+
+age <- raster::crop(age,buffer)
+raster::plot(age ,
+             ext = raster::extent(buffer),
+             col = age$ageCol,
+             border="NA")
+# raster::plot(plotShp,add=T, lwd=2, border="white")
+
+
 
 
 #### Figure 2: area sampled and gaps in each interval ####
@@ -167,30 +289,80 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
 #### Figure S2 (2015 data correction): in "Validation_50HaPlot.R" ####
 #### Figure S5: Results from disturbance validation in 50 ha plot ####
     
-## Panel a: plot monthly disturbances
+  # Load files
+    plotGaps <- rgdal::readOGR("toCheckKC_final/toCheckKC_final.shp")
     valGaps15to18 <- rgdal::readOGR("toCheckRaquel/toCheckRaquel.shp")
     valGapsSzHt <- valGaps15to18[valGaps15to18$area2 >= 25 & valGaps15to18$htDrop <= -5 & !is.na(valGaps15to18$htDrop),]
     
-    # make a jiggered date field to plot
-    valGapsSzHt$datClss <- as.Date(valGapsSzHt$datClss)
-    valGapsSzHt$datePlot <-  valGapsSzHt$datClss + rnorm(mean = 0, sd = 7, n = nrow(valGapsSzHt))
+    # # make a jiggered date field to plot
+    # valGapsSzHt$datClss <- as.Date(valGapsSzHt$datClss)
+    # valGapsSzHt$datePlot <-  valGapsSzHt$datClss + rnorm(mean = 0, sd = 7, n = nrow(valGapsSzHt))
     
-    par(mar=c(3,3,1,2), oma = c(1,2,2,0), mfrow=c(1,2), las=1)
+    ## Stacked barplots
+      # Monthly data
+      monthlySums <- as.table(matrix(c(sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(0,5)])/sum(valGapsSzHt$area2),
+                                       sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(1)])/sum(valGapsSzHt$area2),
+                                       sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(4)])/sum(valGapsSzHt$area2),
+                                       sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(2)])/sum(valGapsSzHt$area2),
+                                       sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(3)])/sum(valGapsSzHt$area2),
+                                       length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(0,5)])/length(valGapsSzHt$area2),
+                                       length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(1)])/length(valGapsSzHt$area2),
+                                       length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(4)])/length(valGapsSzHt$area2),
+                                       length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(2)])/length(valGapsSzHt$area2),
+                                       length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(3)])/length(valGapsSzHt$area2)),nrow=2,
+                                     byrow=T))
+      # Interannual data
+      annualSums <- as.table(matrix(c(sum(plotGaps@data$area2[(plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T & !(plotGaps$vslChck==9)) | (plotGaps$vslChck %in% c(5,8))])/sum(plotGaps$area2),
+                                      sum(plotGaps@data$area2[(plotGaps$obsrvdAl==T & (plotGaps$obsrvdAr==F | plotGaps$obsrvdH==F)) & !(plotGaps$vslChck %in% c(5,8,9,10))])/sum(plotGaps$area2),
+                                      sum(plotGaps@data$area2[plotGaps$vslChck==7])/sum(plotGaps$area2),
+                                      sum(plotGaps@data$area2[plotGaps$vslChck==9])/sum(plotGaps$area2),
+                                      sum(plotGaps@data$area2[plotGaps$vslChck==1])/sum(plotGaps$area2),
+                                      sum(plotGaps@data$area2[plotGaps$vslChck==10])/sum(plotGaps$area2),
+                                      sum(plotGaps@data$area2[plotGaps$vslChck==2])/sum(plotGaps$area2),
+                                      length(plotGaps@data$area2[(plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T & !(plotGaps$vslChck==9)) | (plotGaps$vslChck %in% c(5,8))])/length(plotGaps$area2),
+                                      length(plotGaps@data$area2[(plotGaps$obsrvdAl==T & (plotGaps$obsrvdAr==F | plotGaps$obsrvdH==F)) & !(plotGaps$vslChck %in% c(5,8,9,10))])/length(plotGaps$area2),
+                                      length(plotGaps@data$area2[plotGaps$vslChck==1])/length(plotGaps$area2),
+                                      length(plotGaps@data$area2[plotGaps$vslChck==7])/length(plotGaps$area2),
+                                      length(plotGaps@data$area2[plotGaps$vslChck==9])/length(plotGaps$area2),
+                                      length(plotGaps@data$area2[plotGaps$vslChck==10])/length(plotGaps$area2),
+                                      length(plotGaps@data$area2[plotGaps$vslChck==2])/length(plotGaps$area2)),nrow=2,
+                                    byrow=T))
+    
+    par(mar=c(3,1,1,1), oma = c(1,4,2,0), mfrow=c(1,2), las=1)
+    
+    barplot(t(monthlySums),
+            col=adjustcolor(c("grey","red","blue","orange","purple"),c(0.6)),
+            names.arg = c("Area", "Number"))
+    mtext("a", adj = 0, outer=T)
+    mtext("Proportion of disturbance area or #", side = 2, outer=T, line=2, las=0)
+
+
+    barplot(t(annualSums),
+            col=adjustcolor(c("grey",
+                              "blue",
+                              "magenta1","palevioletred1","darkorchid",
+                              "red","orange"),c(0.6)),
+            names.arg = c("Area", "Number"),
+            yaxt="n")
+    mtext("b", adj = 0.55, outer=T)
+    
+    
+    par(mar=c(3,3,1,1), oma = c(1,2,2,0), mfrow=c(1,2), las=1)
     
     # observed with ht and area agreement
     plot(-htDrop~area2, data=valGapsSzHt[valGapsSzHt$vslChck %in% c(0,5),],
-         xlim=c(20,1800),
-         ylim=c(5,45),
+         xlim=c(20,750),
+         ylim=c(5,30),
          pch=20,
          col=adjustcolor("grey",0.99),
          cex = 0.75,
          log="xy",
          ylab=NA,
          xlab = NA)
-    mtext(expression("Gap area " (m^2)),side=1,outer=T, las=0)
+    mtext(expression("Disturbance area " (m^2)),side=1,outer=T, las=0, line=-0.5)
     mtext(expression("Mean height decrease (m)"),side=2,outer=F, las=0, line=2.5)
-    mtext(expression("Disturbances detected in monthly"),side=3,outer=F, las=0, line=1)
-    mtext(expression("high-resolution data"),side=3,outer=F, las=0, line=0)
+    # mtext(expression("Disturbances detected in monthly"),side=3,outer=F, las=0, line=1)
+    # mtext(expression("high-resolution data"),side=3,outer=F, las=0, line=0)
     
     # Red: monthly data are correct but missed by me
     points(-htDrop~area2, data=valGapsSzHt[valGapsSzHt$observd==F & valGapsSzHt$vslChck==1,],
@@ -216,22 +388,22 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
              cex = 0.75,
              col=adjustcolor("blue",0.6))
 
-      text("a",
+      text("c",
            x=20,
-           y=45)
+           y=30)
       
-    legend(x=90,
-           y=52,
-           bty="n",
-           c("Observed in interannual data",
-             "Missing in interannual data",
-             "Potential size overestimate",
-             "False positive",
-             "Unclear"),
-           col=adjustcolor(c("grey","red","blue","orange","purple"),c(0.6)),
-          pch=20,
-          pt.cex=1,
-          cex=0.9)
+    # legend(x=90,
+    #        y=52,
+    #        bty="n",
+    #        c("Observed in interannual data",
+    #          "Missing in interannual data",
+    #          "Potential size overestimate",
+    #          "False positive",
+    #          "Unclear"),
+    #        col=adjustcolor(c("grey","red","blue","orange","purple"),c(0.6)),
+    #       pch=20,
+    #       pt.cex=1,
+    #       cex=0.9)
       
     # # mismatch in space (group these with OK trees because not a detection problem)
     #   # Spatial alignment mismatch
@@ -241,22 +413,19 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
   
 ## Panel b: plot multiannual disturbances
     
-    plotGaps <- rgdal::readOGR("toCheckKC_final/toCheckKC_final.shp")
-    
-    
     # Observed with ht and area agreement
     plot(ratiCrc~area2, data=plotGaps@data[plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T,],
-         ylim=c(0.07, 0.85),
-         xlim=c(20,1800),
+         ylim=c(0.07, 0.6),
+         xlim=c(20,1200),
          pch=20,
          col=adjustcolor("grey",0.99),
          cex = 0.75,
          log="x",
          ylab=NA,
          xlab = NA)
-    mtext(expression("Gap circularity " (4*pi*"Area"/"Perim"^2)),side=2,outer=F, las=0, line=2.5)
-    mtext(expression("Disturbances detected in multiannual"),side=3,outer=F, las=0, line=1)
-    mtext(expression("lower-resolution data"),side=3,outer=F, las=0, line=0)    
+    mtext(expression("Circularity " (4*pi*"Area"/"Perim"^2)),side=2,outer=F, las=0, line=2.5)
+    # mtext(expression("Disturbances detected in multiannual"),side=3,outer=F, las=0, line=1)
+    # mtext(expression("lower-resolution data"),side=3,outer=F, las=0, line=0)    
     # mismatch in space/time [consider this OK because not an error in detection]
       # Spatial alignment mismatch
       points(ratiCrc~area2, data=plotGaps@data[plotGaps$obsrvdAl==F & plotGaps$vslChck==5,],
@@ -316,74 +485,29 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
              cex = 0.75,
              col=adjustcolor("palevioletred1",0.6))
       
-      text("b",
+      text("d",
            x=20,
-           y=0.85)
+           y=0.6)
       
-      legend(x=40,
-             y=0.90,
-             bty="n",
-             c("Observed",
-               "Observed with size/height discrepancy",
-               "Missing in monthly data: total",
-               "Missing in monthly data: partial",
-               "Missing in monthly data: unclear",
-               "False positive: no disturbance",
-               "False positive: small disturbance"),
-             col=adjustcolor(c("grey",
-                               "blue",
-                               "magenta1","palevioletred1","darkorchid",
-                               "red","orange"),c(0.6)),
-             pch=20,
-             pt.cex=1,
-             cex=0.9)
+      # legend(x=40,
+      #        y=0.90,
+      #        bty="n",
+      #        c("Observed",
+      #          "Observed with size/height discrepancy",
+      #          "Missing in monthly data: total",
+      #          "Missing in monthly data: partial",
+      #          "Missing in monthly data: unclear",
+      #          "False positive: no disturbance",
+      #          "False positive: small disturbance"),
+      #        col=adjustcolor(c("grey",
+      #                          "blue",
+      #                          "magenta1","palevioletred1","darkorchid",
+      #                          "red","orange"),c(0.6)),
+      #        pch=20,
+      #        pt.cex=1,
+      #        cex=0.9)
 
-  ## Stacked barplots
-    # Monthly data
-    monthlySums <- as.table(matrix(c(sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(0,5)])/sum(valGapsSzHt$area2),
-                                                sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(1)])/sum(valGapsSzHt$area2),
-                                                sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(4)])/sum(valGapsSzHt$area2),
-                                                sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(2)])/sum(valGapsSzHt$area2),
-                                                sum(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(3)])/sum(valGapsSzHt$area2),
-                                      length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(0,5)])/length(valGapsSzHt$area2),
-                                                  length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(1)])/length(valGapsSzHt$area2),
-                                                  length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(4)])/length(valGapsSzHt$area2),
-                                                  length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(2)])/length(valGapsSzHt$area2),
-                                                  length(valGapsSzHt$area2[valGapsSzHt$vslChck %in% c(3)])/length(valGapsSzHt$area2)),nrow=2,
-                                   byrow=T))
-    barplot(t(monthlySums),
-            col=adjustcolor(c("grey","red","blue","orange","purple"),c(0.6)),
-            names.arg = c("Gap area", "Gap number"))
-    mtext("c", adj = 0.1, outer=T)
-    par(las=0)
-    mtext("Proportion of gap area or #", side = 2, outer=T)
-    par(las=1)
-    
-    # Interannual data
-    annualSums <- as.table(matrix(c(sum(plotGaps@data$area2[(plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T & !(plotGaps$vslChck==9)) | (plotGaps$vslChck %in% c(5,8))])/sum(plotGaps$area2),
-                                    sum(plotGaps@data$area2[(plotGaps$obsrvdAl==T & (plotGaps$obsrvdAr==F | plotGaps$obsrvdH==F)) & !(plotGaps$vslChck %in% c(5,8,9,10))])/sum(plotGaps$area2),
-                                    sum(plotGaps@data$area2[plotGaps$vslChck==7])/sum(plotGaps$area2),
-                                    sum(plotGaps@data$area2[plotGaps$vslChck==9])/sum(plotGaps$area2),
-                                    sum(plotGaps@data$area2[plotGaps$vslChck==1])/sum(plotGaps$area2),
-                                    sum(plotGaps@data$area2[plotGaps$vslChck==10])/sum(plotGaps$area2),
-                                    sum(plotGaps@data$area2[plotGaps$vslChck==2])/sum(plotGaps$area2),
-                                    length(plotGaps@data$area2[(plotGaps$obsrvdAl==T & plotGaps$obsrvdAr==T & plotGaps$obsrvdH==T & !(plotGaps$vslChck==9)) | (plotGaps$vslChck %in% c(5,8))])/length(plotGaps$area2),
-                                    length(plotGaps@data$area2[(plotGaps$obsrvdAl==T & (plotGaps$obsrvdAr==F | plotGaps$obsrvdH==F)) & !(plotGaps$vslChck %in% c(5,8,9,10))])/length(plotGaps$area2),
-                                    length(plotGaps@data$area2[plotGaps$vslChck==1])/length(plotGaps$area2),
-                                    length(plotGaps@data$area2[plotGaps$vslChck==7])/length(plotGaps$area2),
-                                    length(plotGaps@data$area2[plotGaps$vslChck==9])/length(plotGaps$area2),
-                                    length(plotGaps@data$area2[plotGaps$vslChck==10])/length(plotGaps$area2),
-                                    length(plotGaps@data$area2[plotGaps$vslChck==2])/length(plotGaps$area2)),nrow=2,
-                                   byrow=T))
-    barplot(t(annualSums),
-            col=adjustcolor(c("grey",
-                              "blue",
-                              "magenta1","palevioletred1","darkorchid",
-                              "red","orange"),c(0.6)),
-            names.arg = c("Gap area", "Gap number"),
-            yaxt="n")
-    mtext("d", adj = 0.6, outer=T)
-    
+ 
 
 #### Figure S4. Smoothing scale example plots ####
 
@@ -421,7 +545,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     legendWidth = 2
     legendCex = 2
     jpeg(filename = "Figure S4. Smoothing scales example.jpg", width=1000,height = 1100)
-    par(mfrow = c(4,3), mar=c(2,2,2,5), oma=c(1,1,1,1))
+    par(mfrow = c(4,3), mar=c(1,2,2,5), oma=c(0,1,2,1))
     
     raster::plot(dem1,
                  bty="n", box=F,
@@ -429,16 +553,22 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
     mtext(expression(sigma~"= 2"),side=2,outer=F, cex=2)
+    mtext(expression("Elevation (m)"),side=3,outer=F, cex=2, line=1)
+    
     raster::plot(curv1,xaxt = "n", yaxt="n",
                  bty="n", box=F,
                  col = viridis::cividis(128),
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
+    mtext(expression("Curvature (LaPlacian convexity)"),side=3, outer=F, cex=2, line=1)
+    
     raster::plot(slope1,xaxt = "n", yaxt="n",
                  bty="n", box=F,
                  col = viridis::plasma(128),
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
+    mtext(expression("Slope (degrees)"),side=3,outer=F, cex=2, line=1)
+    
     
     raster::plot(dem2,xaxt = "n", yaxt="n",
                  bty="n", box=F,
@@ -476,19 +606,16 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
     mtext(expression(sigma~"= 32"),side=2,outer=F, cex=2)
-    mtext(expression("Elevation (m)"),side=1,outer=F, cex=2, line=2)
     raster::plot(curv4,xaxt = "n", yaxt="n",
                  bty="n", box=F,
                  col = viridis::cividis(128),
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
-    mtext(expression("Curvature (LaPlacian convexity)"),side=1,outer=F, cex=2, line=2)
     raster::plot(slope4,xaxt = "n", yaxt="n",
                  bty="n", box=F,
                  col = viridis::plasma(128),
                  axis.args=list(cex.axis=legendCex),
                  legend.width=legendWidth)
-    mtext(expression("Slope (degrees)"),side=1,outer=F, cex=2, line=2)
     
     dev.off()
     
@@ -511,42 +638,42 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     legendCex = 2
     
     jpeg(filename = "Figure S5. INLA scale example.jpg", width=1000,height = 600)
-    par(mfrow = c(2,3), mar=c(2,2,2,5), oma=c(1,1,1,1))
+    par(mfrow = c(2,3), mar=c(1,2,2,5), oma=c(1,1,2,1))
       
       # 1 m scale
       raster::plot(curvCrop,col = viridis::cividis(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
+      mtext(expression("Curvature (LaPlacian convexity)"),side=3, outer=F, cex=1.8, line=2)
       
       raster::plot(slopeCrop,col = viridis::plasma(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
+      mtext(expression("Slope (degrees)"),side=3, outer=F, cex=1.8, line=2)
       
       raster::plot(drainCrop,col = viridis::viridis(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
+      mtext(expression("Height above drainage (m)"),side=3, outer=F, cex=1.8, line=2)
       
       # resampled
       raster::plot(curvMean, col = viridis::cividis(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
-      mtext(expression("Curvature (LaPlacian convexity)"),side=1,outer=F, cex=1.8, line=2)
       
       raster::plot(slopeMean, col = viridis::plasma(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
-      mtext(expression("Slope (degrees)"),side=1,outer=F, cex=1.8, line=2)
       
       raster::plot(drainMean, col = viridis::viridis(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
-      mtext(expression("Height above drainage (m)"),side=1,outer=F, cex=1.8, line=2)
       
     dev.off()
     
@@ -1547,21 +1674,19 @@ nYr18to20 <- as.numeric(as.Date("2020-07-31") - as.Date("2018-06-07"))/365
 col18 <- "blue"
 col20 <- "#d95f02"
 
-# Plot canopy height distributions
-par(mfrow=c(2,1), mar=c(0,4,0,1),oma=c(4,1,2,1))
+# Plot canopy height distribution (PART OF FIGURE S2 NOW)
+par(mfrow=c(1,1), mar=c(0,4,0,1),oma=c(4,1,2,1))
 plot(n15~start,
      xlim = c(5,50),
      data = propGap,
      type="l",
-     ylim=c(0,0.06),
-     xlab = NA,
-     xaxt="n",
-     bty= "n",
+     ylim=c(0,0.05),
      ylab = "Proportion of total area",
+     xlab = "Canopy height (m)",
      col = adjustcolor("black",0.6),
      lty=1,
      lwd=3)
-abline(h=0)
+mtext("c", side=3, adj=0, line=1)
 # lines(n09~start,
 #       data = propGap,
 #       col=adjustcolor("orange",0.6), lwd=3)
@@ -1574,7 +1699,7 @@ lines(n20~start,
       data = propGap,
       col=adjustcolor(col20,0.6), lwd=3)
 
-legend(x=35,y=0.06,
+legend(x=35,y=0.05,
        bty="n",
        c("2015","2018","2020"),
        lty=c(1,1,1),
@@ -1584,33 +1709,30 @@ legend(x=35,y=0.06,
 
 # Plot probability of becoming a gap for area in each height bin
 
-
-plot(propGap15/nYr15to18~start,
-     data = propGap,
-     col = adjustcolor(col18,0.6),
-     type="l",
-     ylim=c(0,0.045),
-     xlim=c(5,50),
-     xlab = "Initial canopy height (m)",
-     ylab = "Proportion of height area decreasing > 5m",
-     lwd=3)
-
-lines(propGap18/nYr18to20~start, data=propGap,
-      col=adjustcolor(col20,0.6), lwd=3)
-
-legend(x=5,y=0.04,
-       bty="n",
-       c("2015-2018","2018-2020"),
-       col=adjustcolor(c(col18,col20),0.6), lwd=3, lty=c(1,1))
-
-
-
-
-
+# 
+# plot(propGap15/nYr15to18~start,
+#      data = propGap,
+#      col = adjustcolor(col18,0.6),
+#      type="l",
+#      ylim=c(0,0.045),
+#      xlim=c(5,50),
+#      xlab = "Initial canopy height (m)",
+#      ylab = "Proportion of height area decreasing > 5m",
+#      lwd=3)
+# 
+# lines(propGap18/nYr18to20~start, data=propGap,
+#       col=adjustcolor(col20,0.6), lwd=3)
+# 
+# legend(x=5,y=0.04,
+#        bty="n",
+#        c("2015-2018","2018-2020"),
+#        col=adjustcolor(c(col18,col20),0.6), lwd=3, lty=c(1,1))
+# 
+# 
+# 
 
 
-
-#### Figure S#: CDF of gap size and distribution of 2009 canopy height per forest type ####
+#### Figure 4: gap frequencies and distribution of 2009 canopy height per forest type ####
 
 # Define forest age and soil type polygons
 
@@ -1800,87 +1922,212 @@ legend(x=5,y=0.04,
         
         print(i)
       }
-    
-    yLimVal_a <- range(gapCDFs[,-1])
-    yLimVal_b <- range(c(chm_all$y, chm_Old$y, chm_Sec$y,
+      
+      gapProps <- data.frame(ht = 10:40,
+                            Age_OldGrowth = NA,
+                            Age_Secondary = NA,
+                            Parent_Bohio = NA,
+                            Parent_CaimitoVolcanic=NA,
+                            Parent_CaimitoMarineSedimentary=NA,
+                            Parent_Andesite=NA,
+                            Form_RedLightClay=NA,
+                            Form_BrownFineLoam=NA,
+                            Form_PaleSwellingClay=NA,
+                            Form_MottledHeavyClay=NA)
+      
+      for(i in 1:nrow(gapProps)){
+        
+        gapProps$Age_OldGrowth[i] <- (length(chm15_OldGrowth[!is.na(chm15_OldGrowth) & chm15_OldGrowth < (gapProps$ht[i] + 1) & chm15_OldGrowth >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_OldGrowth[!is.na(chm18_OldGrowth) &  chm18_OldGrowth < (gapProps$ht[i] + 1) & chm18_OldGrowth >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_OldGrowth[!is.na(chm15_OldGrowth) &  chm15_OldGrowth < (gapProps$ht[i] + 1) & chm15_OldGrowth >= gapProps$ht[i]]) + length(chm18_OldGrowth[!is.na(chm18_OldGrowth) &  chm18_OldGrowth < (gapProps$ht[i] + 1) & chm18_OldGrowth >= gapProps$ht[i]]))
+        gapProps$Age_Secondary[i] <- (length(chm15_Secondary[!is.na(chm15_Secondary) & chm15_Secondary < (gapProps$ht[i] + 1) & chm15_Secondary >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_Secondary[!is.na(chm18_Secondary) &  chm18_Secondary < (gapProps$ht[i] + 1) & chm18_Secondary >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_Secondary[!is.na(chm15_Secondary) &  chm15_Secondary < (gapProps$ht[i] + 1) & chm15_Secondary >= gapProps$ht[i]]) + length(chm18_Secondary[!is.na(chm18_Secondary) &  chm18_Secondary < (gapProps$ht[i] + 1) & chm18_Secondary >= gapProps$ht[i]]))
+        
+        gapProps$Parent_Andesite[i] <- (length(chm15_Andesite[!is.na(chm15_Andesite) & chm15_Andesite < (gapProps$ht[i] + 1) & chm15_Andesite >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_Andesite[!is.na(chm18_Andesite) &  chm18_Andesite < (gapProps$ht[i] + 1) & chm18_Andesite >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_Andesite[!is.na(chm15_Andesite) &  chm15_Andesite < (gapProps$ht[i] + 1) & chm15_Andesite >= gapProps$ht[i]]) + length(chm18_Andesite[!is.na(chm18_Andesite) &  chm18_Andesite < (gapProps$ht[i] + 1) & chm18_Andesite >= gapProps$ht[i]]))
+        gapProps$Parent_Bohio[i] <- (length(chm15_Bohio[!is.na(chm15_Bohio) & chm15_Bohio < (gapProps$ht[i] + 1) & chm15_Bohio >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_Bohio[!is.na(chm18_Bohio) &  chm18_Bohio < (gapProps$ht[i] + 1) & chm18_Bohio >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_Bohio[!is.na(chm15_Bohio) &  chm15_Bohio < (gapProps$ht[i] + 1) & chm15_Bohio >= gapProps$ht[i]]) + length(chm18_Bohio[!is.na(chm18_Bohio) &  chm18_Bohio < (gapProps$ht[i] + 1) & chm18_Bohio >= gapProps$ht[i]]))
+        gapProps$Parent_CaimitoVolcanic[i] <- (length(chm15_CaimitoVolcanic[!is.na(chm15_CaimitoVolcanic) & chm15_CaimitoVolcanic < (gapProps$ht[i] + 1) & chm15_CaimitoVolcanic >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_CaimitoVolcanic[!is.na(chm18_CaimitoVolcanic) &  chm18_CaimitoVolcanic < (gapProps$ht[i] + 1) & chm18_CaimitoVolcanic >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_CaimitoVolcanic[!is.na(chm15_CaimitoVolcanic) &  chm15_CaimitoVolcanic < (gapProps$ht[i] + 1) & chm15_CaimitoVolcanic >= gapProps$ht[i]]) + length(chm18_CaimitoVolcanic[!is.na(chm18_CaimitoVolcanic) &  chm18_CaimitoVolcanic < (gapProps$ht[i] + 1) & chm18_CaimitoVolcanic >= gapProps$ht[i]]))
+        gapProps$Parent_CaimitoMarineSedimentary[i] <- (length(chm15_CaimitoMarineSedimentary[!is.na(chm15_CaimitoMarineSedimentary) & chm15_CaimitoMarineSedimentary < (gapProps$ht[i] + 1) & chm15_CaimitoMarineSedimentary >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_CaimitoMarineSedimentary[!is.na(chm18_CaimitoMarineSedimentary) &  chm18_CaimitoMarineSedimentary < (gapProps$ht[i] + 1) & chm18_CaimitoMarineSedimentary >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_CaimitoMarineSedimentary[!is.na(chm15_CaimitoMarineSedimentary) &  chm15_CaimitoMarineSedimentary < (gapProps$ht[i] + 1) & chm15_CaimitoMarineSedimentary >= gapProps$ht[i]]) + length(chm18_CaimitoMarineSedimentary[!is.na(chm18_CaimitoMarineSedimentary) &  chm18_CaimitoMarineSedimentary < (gapProps$ht[i] + 1) & chm18_CaimitoMarineSedimentary >= gapProps$ht[i]]))
+        
+        gapProps$Form_RedLightClay[i] <- (length(chm15_RedLightClay[!is.na(chm15_RedLightClay) & chm15_RedLightClay < (gapProps$ht[i] + 1) & chm15_RedLightClay >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_RedLightClay[!is.na(chm18_RedLightClay) &  chm18_RedLightClay < (gapProps$ht[i] + 1) & chm18_RedLightClay >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_RedLightClay[!is.na(chm15_RedLightClay) &  chm15_RedLightClay < (gapProps$ht[i] + 1) & chm15_RedLightClay >= gapProps$ht[i]]) + length(chm18_RedLightClay[!is.na(chm18_RedLightClay) &  chm18_RedLightClay < (gapProps$ht[i] + 1) & chm18_RedLightClay >= gapProps$ht[i]]))
+        gapProps$Form_BrownFineLoam[i] <- (length(chm15_BrownFineLoam[!is.na(chm15_BrownFineLoam) & chm15_BrownFineLoam < (gapProps$ht[i] + 1) & chm15_BrownFineLoam >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_BrownFineLoam[!is.na(chm18_BrownFineLoam) &  chm18_BrownFineLoam < (gapProps$ht[i] + 1) & chm18_BrownFineLoam >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_BrownFineLoam[!is.na(chm15_BrownFineLoam) &  chm15_BrownFineLoam < (gapProps$ht[i] + 1) & chm15_BrownFineLoam >= gapProps$ht[i]]) + length(chm18_BrownFineLoam[!is.na(chm18_BrownFineLoam) &  chm18_BrownFineLoam < (gapProps$ht[i] + 1) & chm18_BrownFineLoam >= gapProps$ht[i]]))
+        gapProps$Form_PaleSwellingClay[i] <- (length(chm15_PaleSwellingClay[!is.na(chm15_PaleSwellingClay) & chm15_PaleSwellingClay < (gapProps$ht[i] + 1) & chm15_PaleSwellingClay >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_PaleSwellingClay[!is.na(chm18_PaleSwellingClay) &  chm18_PaleSwellingClay < (gapProps$ht[i] + 1) & chm18_PaleSwellingClay >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_PaleSwellingClay[!is.na(chm15_PaleSwellingClay) &  chm15_PaleSwellingClay < (gapProps$ht[i] + 1) & chm15_PaleSwellingClay >= gapProps$ht[i]]) + length(chm18_PaleSwellingClay[!is.na(chm18_PaleSwellingClay) &  chm18_PaleSwellingClay < (gapProps$ht[i] + 1) & chm18_PaleSwellingClay >= gapProps$ht[i]]))
+        gapProps$Form_MottledHeavyClay[i] <- (length(chm15_MottledHeavyClay[!is.na(chm15_MottledHeavyClay) & chm15_MottledHeavyClay < (gapProps$ht[i] + 1) & chm15_MottledHeavyClay >= gapProps$ht[i] & !is.na(gaps15to18_vals)])/nYr15to18 + length(chm18_MottledHeavyClay[!is.na(chm18_MottledHeavyClay) &  chm18_MottledHeavyClay < (gapProps$ht[i] + 1) & chm18_MottledHeavyClay >= gapProps$ht[i] & !is.na(gaps18to20_vals)])/nYr18to20)/(
+          length(chm15_MottledHeavyClay[!is.na(chm15_MottledHeavyClay) &  chm15_MottledHeavyClay < (gapProps$ht[i] + 1) & chm15_MottledHeavyClay >= gapProps$ht[i]]) + length(chm18_MottledHeavyClay[!is.na(chm18_MottledHeavyClay) &  chm18_MottledHeavyClay < (gapProps$ht[i] + 1) & chm18_MottledHeavyClay >= gapProps$ht[i]]))
+        print(i)
+      }
+      
+# Get predicted values from fixed effects from INLA model
+  # RUN CODE FROM "resultsINLA.R", first two sections
+      
+    # Forest age  
+      predFixOld <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$age=="OldGrowth","fix_pred"]
+      predFixSec <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$age=="Secondary","fix_pred"]
+      
+    # Soil parent material  
+      predFixAnd <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="Andesite","fix_pred"]
+      predFixBoh <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="Bohio","fix_pred"]
+      predFixMar <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="CaimitoMarineSedimentary","fix_pred"]
+      predFixVol <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="CaimitoVolcanic","fix_pred"]
+      
+    # Soil form
+      predFixBro <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="BrownFineLoam","fix_pred"]
+      predFixMot <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="MottledHeavyClay","fix_pred"]
+      predFixPal <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="PaleSwellingClay","fix_pred"]
+      predFixRed <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="RedLightClay","fix_pred"]  
+      
+# MAKE PLOT  
+    yLimVal_a <- range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"]) + c(0,0.003)
+    yLimVal_b <- range(c(0,gapProps[,-1]))
+    yLimVal_c <- range(c(chm_all$y, chm_Old$y, chm_Sec$y,
                          chm_And$y, chm_Boh$y, chm_Mar$y, chm_Vol$y,
                          chm_Bro$y, chm_Mot$y, chm_Pal$y, chm_Red$y))  
     cxAxis = 1.2
     
-    par(mfrow=c(2,3), mar=c(1,1,0,1), oma=c(3,5,2,1), las=1)
+    par(mfrow=c(3,3), mar=c(1,1,0,1), oma=c(3,5,2,1), las=1)
   
-  # GAP CUMULATIVE AREA
+  # VIOLIN PLOTS OF PREDICTED VALUES FROM FIXED EFFECTS
+    vioplot::vioplot(fix_pred~age, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+                     ylim = yLimVal_a,
+                     col = c(colOld, colSec),
+                     cex=1.5,
+                     range=-1,
+                     xaxt = "n",
+                     cex.axis = cxAxis)
+    mtext("Pred. disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
+    text("a", x = 0.5, y = 0.0243, cex=1.2)
+    mtext("Forest age", side=3, outer=F, line=0.5)
+    
+    vioplot::vioplot(fix_pred~soilParent, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+                     ylim = yLimVal_a,
+                     cex=1.5,
+                     range=-1,
+                     col = c(colAnd, colBoh, colMar, colVol),
+                     xaxt = "n",
+                     yaxt="n")
+    text("b", x = 0.5, y = 0.0243, cex=1.2)
+    mtext("Soil parent material", side=3, outer=F, line=0.5)
+    
+    
+    vioplot::vioplot(fix_pred~soilForm, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+                     ylim = yLimVal_a,
+                     cex=1.5,
+                     range=-1,
+                     col = c(colBro, colMot, colPal, colRed),
+                     xaxt = "n",
+                     yaxt="n")
+    text("c", x = 0.5, y = 0.0243, cex=1.2)
+    mtext("Soil form", side=3, outer=F, line=0.5)
+    
+    
+  # PROPORTION OF AREA IN NEW GAPS
     
     # age
-      plot(Age_OldGrowth~ht, data = gapCDFs,
+      plot(Age_OldGrowth~ht, data = gapProps,
            type = "l",
            xaxt="n",
            xlim = c(0,50),
-           ylim = yLimVal_a,
+           ylim = yLimVal_b,
            lwd = 2,
            col = adjustcolor(colOld, 0.8),
            cex.axis = cxAxis)
-      lines(Age_Secondary~ht, data = gapCDFs,
+      lines(Age_Secondary~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colSec, 0.8))
-      mtext("Forest age", side=3, outer=F, line=0.5)
-      legend(x=0,y=0.028,
-             c("Old growth","Secondary"),
-             col=adjustcolor(c(colOld,colSec),0.8),
-             lwd=2,
-             bty="n")
-      mtext("Cumulative disturbance area (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
+      # abline(h=max(gapCDFs$Age_OldGrowth),
+      #        col = adjustcolor(colOld, 0.4),
+      #        lwd=2, lty=1)
+      # abline(h=max(gapCDFs$Age_Secondary),
+      #        col = adjustcolor(colSec, 0.4),
+      #        lwd=2, lty=1)
+      text("d", x = 0, y = 0.036, cex=1.2)
+      
+      # legend(x=15,y=0.012,
+      #        c("Old growth","Secondary"),
+      #        col=adjustcolor(c(colOld,colSec),0.8),
+      #        lwd=2,
+      #        bty="n")
+      mtext("Disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
       
       
       # parent material 
-      plot(Parent_Bohio~ht, data = gapCDFs,
+      plot(Parent_Bohio~ht, data = gapProps,
            type = "l",
            xaxt="n",yaxt="n",
            xlim = c(0,50),
-           ylim = yLimVal_a,
+           ylim = yLimVal_b,
            lwd = 2,
            col = adjustcolor(colBoh, 0.8),
            cex.axis = cxAxis)
-      lines(Parent_CaimitoVolcanic~ht, data = gapCDFs,
+      lines(Parent_CaimitoVolcanic~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colVol, 0.8))
-      lines(Parent_CaimitoMarineSedimentary~ht, data = gapCDFs,
+      lines(Parent_CaimitoMarineSedimentary~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colMar, 0.8))
-      lines(Parent_Andesite~ht, data = gapCDFs,
+      lines(Parent_Andesite~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colAnd, 0.8))
-      mtext("Soil parent material", side=3, outer=F, line=0.5)
-      legend(x=0,y=0.028,
-             c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
-             col=adjustcolor(c(colAnd,colBoh,colMar,colVol),0.8),
-             lwd=2,
-             bty="n")
+      # abline(h=max(gapCDFs$Parent_Bohio),
+      #        col = adjustcolor(colBoh, 0.4),
+      #        lwd=2, lty=1)
+      # abline(h=max(gapCDFs$Parent_CaimitoVolcanic),
+      #        col = adjustcolor(colVol, 0.4),
+      #        lwd=2, lty=1)
+      # abline(h=max(gapCDFs$Parent_CaimitoMarineSedimentary),
+      #        col = adjustcolor(colMar, 0.4),
+      #        lwd=2, lty=1)
+      # abline(h=max(gapCDFs$Parent_Andesite),
+      #        col = adjustcolor(colAnd, 0.4),
+      #        lwd=2, lty=1)
+      text("e", x = 0, y = 0.036, cex=1.2)
+      # legend(x=15,y=0.012,
+      #        c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
+      #        col=adjustcolor(c(colAnd,colBoh,colMar,colVol),0.8),
+      #        lwd=2,
+      #        bty="n")
       
       # soil form
-      plot(Form_RedLightClay~ht, data = gapCDFs,
+      plot(Form_RedLightClay~ht, data = gapProps,
            type = "l",
            xaxt="n",yaxt="n",
            xlim = c(0,50),
-           ylim = yLimVal_a,
+           ylim = yLimVal_b,
            lwd = 2,
            col = adjustcolor(colRed, 0.8),
            cex.axis = cxAxis)
-      lines(Form_BrownFineLoam~ht, data = gapCDFs,
+      lines(Form_BrownFineLoam~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colBro, 0.8))
-      lines(Form_PaleSwellingClay~ht, data = gapCDFs,
+      lines(Form_PaleSwellingClay~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colPal, 0.8))
-      lines(Form_MottledHeavyClay~ht, data = gapCDFs,
+      lines(Form_MottledHeavyClay~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colMot, 0.8))
-      mtext("Soil form", side=3, outer=F, line=0.5)
-      legend(x=0,y=0.028,
-             c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
-             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
-             lwd=2,
-             bty="n")
+      # abline(h=max(gapCDFs$Form_RedLightClay),
+      #        col = adjustcolor(colRed, 0.4),
+      #        lwd=2, lty=1)
+      # abline(h=max(gapCDFs$Form_BrownFineLoam),
+      #        col = adjustcolor(colBro, 0.4),
+      #        lwd=2, lty=1)
+      # abline(h=max(gapCDFs$Form_PaleSwellingClay),
+      #        col = adjustcolor(colPal, 0.4),
+      #        lwd=2, lty=1)
+      # abline(h=max(gapCDFs$Form_MottledHeavyClay),
+      #        col = adjustcolor(colMot, 0.4),
+      #        lwd=2, lty=1)
+      text("f", x = 0, y = 0.036, cex=1.2)
+      # legend(x=15,y=0.012,
+      #        c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+      #        col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+      #        lwd=2,
+      #        bty="n")
       
     # CANOPY HEIGHT DISTRIBUTIONS
       # age
@@ -1888,13 +2135,14 @@ legend(x=5,y=0.04,
            type = "l",
            main = NA,
            xlim = c(0,50),
-           ylim=yLimVal_b,
+           ylim=yLimVal_c,
            lwd = 2,
            col = adjustcolor(colOld, 0.8),
            cex.axis = cxAxis)
       lines(chm_Sec,
             lwd = 2,
             col = adjustcolor(colSec, 0.8))
+      text("g", x = 0, y = 0.048, cex=1.2)
       mtext("Canopy height distribution", side=2, outer=F, line=4, las=0, cex=0.8)
       
     
@@ -1904,7 +2152,7 @@ legend(x=5,y=0.04,
            yaxt = "n",
            main = NA,
            xlim = c(0,50),
-           ylim=yLimVal_b,
+           ylim=yLimVal_c,
            lwd = 2,
            col = adjustcolor(colBoh, 0.8),
            cex.axis = cxAxis)
@@ -1917,6 +2165,7 @@ legend(x=5,y=0.04,
       lines(chm_And,
             lwd = 2,
             col = adjustcolor(colAnd, 0.8))
+      text("h", x = 0, y = 0.048, cex=1.2)
       
       # soil form    
         plot(chm_Red,
@@ -1924,7 +2173,7 @@ legend(x=5,y=0.04,
              yaxt = "n",
              main = NA,
              xlim = c(0,50),
-             ylim=yLimVal_b,
+             ylim=yLimVal_c,
              lwd = 2,
              col = adjustcolor(colRed, 0.8),
              cex.axis = cxAxis)
@@ -1937,8 +2186,9 @@ legend(x=5,y=0.04,
         lines(chm_Mot,
               lwd = 2,
               col = adjustcolor(colMot, 0.8))
+        text("i", x = 0, y = 0.048, cex=1.2)
         
-        mtext("Canopy height (m)", side=1, outer=T, line=1)
+        mtext("Canopy height (m)", side=1, outer=T, line=1.5)
     
     
   # OLD PLOTS   
@@ -2140,4 +2390,474 @@ legend(x=5,y=0.04,
   #     par(las=0)
   #     mtext("Frequency", outer=T, side = 2, line = 2.5)
   #     par(las=1)
+      
+#### Figure S#: Distribution of 2009 canopy height per parent material x soil form ####
+        
+        # Define forest age and soil type polygons
+        
+        # Forest age polygon
+        age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+        age$AgeClass <- "Other"
+        age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
+        age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
+        ageUse <- age[!(age$AgeClass=="Other"),]
+        
+        # Soil type polygon  
+        soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+        soil <- sp::spTransform(soil,raster::crs(age))
+        
+        # Define parent material and soil form from soil class
+        soil$SoilParent <- NA
+        soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
+        soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
+        soil[soil$SOIL=="Fairchild",c("SoilParent")] <- c("Bohio")
+        soil[soil$SOIL=="Gross",c("SoilParent")] <- c("Bohio")
+        soil[soil$SOIL=="Harvard",c("SoilParent")] <- c("CaimitoVolcanic")
+        soil[soil$SOIL=="Hood",c("SoilParent")] <- c("CaimitoVolcanic")
+        soil[soil$SOIL=="Lake",c("SoilParent")] <- c("Andesite")
+        soil[soil$SOIL=="Lutz",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+        soil[soil$SOIL=="Marron",c("SoilParent")] <- c("Andesite")
+        soil[soil$SOIL=="Poacher",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+        soil[soil$SOIL=="Standley",c("SoilParent")] <- c("Bohio")
+        soil[soil$SOIL=="Wetmore",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+        soil[soil$SOIL=="Zetek",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+        
+        soil$SoilForm <- NA
+        soil[soil$SOIL=="AVA", c("SoilForm")] <- c("RedLightClay")
+        soil[soil$SOIL=="Barbour", c("SoilForm")] <- c("PaleSwellingClay")
+        soil[soil$SOIL=="Fairchild",c("SoilForm")] <- c("RedLightClay")
+        soil[soil$SOIL=="Gross",c("SoilForm")] <- c("PaleSwellingClay")
+        soil[soil$SOIL=="Harvard",c("SoilForm")] <- c("RedLightClay")
+        soil[soil$SOIL=="Hood",c("SoilForm")] <- c("BrownFineLoam")
+        soil[soil$SOIL=="Lake",c("SoilForm")] <- c("PaleSwellingClay")
+        soil[soil$SOIL=="Lutz",c("SoilForm")] <- c("MottledHeavyClay")
+        soil[soil$SOIL=="Marron",c("SoilForm")] <- c("BrownFineLoam")
+        soil[soil$SOIL=="Poacher",c("SoilForm")] <- c("RedLightClay")
+        soil[soil$SOIL=="Standley",c("SoilForm")] <- c("BrownFineLoam")
+        soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
+        soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
+        
+        # Read 2009 CHM
+        chm09 <- raster::raster("CHM_2009_QAQC.tif")
+        
+        # Make density plots
+        
+        # Whole island
+        chm_all <- density(raster::values(chm09),
+                           n = 512, from = 0, to = 70, na.rm=T)
+        
+        # By soil parent material
+        chm_And <-  raster::mask(chm09, soil[soil$SoilParent=="Andesite",])
+          chm_And_Bro <- density(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="BrownFineLoam",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+          chm_And_Mot <- density(raster::values(raster::mask(chm_And,soil[soil$SoilForm=="MottledHeavyClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+          chm_And_Pal <- density(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="PaleSwellingClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+          chm_And_Red <- density(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="RedLightClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+          nHa_And_Bro <- length(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="BrownFineLoam",]))[!is.na(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="BrownFineLoam",])))])/10000
+          nHa_And_Mot <- length(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="MottledHeavyClay",]))[!is.na(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="MottledHeavyClay",])))])/10000
+          nHa_And_Pal <- length(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="PaleSwellingClay",]))[!is.na(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="PaleSwellingClay",])))])/10000
+          nHa_And_Red <- length(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="RedLightClay",]))[!is.na(raster::values(raster::mask(chm_And, soil[soil$SoilForm=="RedLightClay",])))])/10000
+          
+        chm_Boh <-  raster::mask(chm09, soil[soil$SoilParent=="Bohio",])
+          chm_Boh_Bro <- density(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="BrownFineLoam",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Boh_Mot <- density(raster::values(raster::mask(chm_Boh,soil[soil$SoilForm=="MottledHeavyClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Boh_Pal <- density(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="PaleSwellingClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Boh_Red <- density(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="RedLightClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          nHa_Boh_Bro <- length(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="BrownFineLoam",]))[!is.na(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="BrownFineLoam",])))])/10000
+          nHa_Boh_Mot <- length(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="MottledHeavyClay",]))[!is.na(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="MottledHeavyClay",])))])/10000
+          nHa_Boh_Pal <- length(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="PaleSwellingClay",]))[!is.na(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="PaleSwellingClay",])))])/10000
+          nHa_Boh_Red <- length(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="RedLightClay",]))[!is.na(raster::values(raster::mask(chm_Boh, soil[soil$SoilForm=="RedLightClay",])))])/10000
+        
+        chm_Mar <-  raster::mask(chm09, soil[soil$SoilParent=="CaimitoMarineSedimentary",])
+          chm_Mar_Bro <- density(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="BrownFineLoam",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Mar_Mot <- density(raster::values(raster::mask(chm_Mar,soil[soil$SoilForm=="MottledHeavyClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Mar_Pal <- density(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="PaleSwellingClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Mar_Red <- density(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="RedLightClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          nHa_Mar_Bro <- length(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="BrownFineLoam",]))[!is.na(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="BrownFineLoam",])))])/10000
+          nHa_Mar_Mot <- length(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="MottledHeavyClay",]))[!is.na(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="MottledHeavyClay",])))])/10000
+          nHa_Mar_Pal <- length(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="PaleSwellingClay",]))[!is.na(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="PaleSwellingClay",])))])/10000
+          nHa_Mar_Red <- length(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="RedLightClay",]))[!is.na(raster::values(raster::mask(chm_Mar, soil[soil$SoilForm=="RedLightClay",])))])/10000
+          
+        chm_Vol <-  raster::mask(chm09, soil[soil$SoilParent=="CaimitoVolcanic",])
+          chm_Vol_Bro <- density(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="BrownFineLoam",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Vol_Mot <- density(raster::values(raster::mask(chm_Vol,soil[soil$SoilForm=="MottledHeavyClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Vol_Pal <- density(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="PaleSwellingClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          chm_Vol_Red <- density(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="RedLightClay",])),
+                                 n = 512, from = 0, to = 70, na.rm=T)
+          nHa_Vol_Bro <- length(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="BrownFineLoam",]))[!is.na(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="BrownFineLoam",])))])/10000
+          nHa_Vol_Mot <- length(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="MottledHeavyClay",]))[!is.na(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="MottledHeavyClay",])))])/10000
+          nHa_Vol_Pal <- length(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="PaleSwellingClay",]))[!is.na(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="PaleSwellingClay",])))])/10000
+          nHa_Vol_Red <- length(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="RedLightClay",]))[!is.na(raster::values(raster::mask(chm_Vol, soil[soil$SoilForm=="RedLightClay",])))])/10000
+          
+          
+      yVals <- range(c(chm_And_Bro$y,chm_And_Pal$y,chm_And_Red$y,
+                       chm_Boh_Bro$y,chm_Boh_Pal$y,chm_Boh_Red$y,
+                       chm_Mar_Bro$y,chm_Mar_Mot$y,chm_Mar_Pal$y,chm_Mar_Red$y,
+                       chm_Vol_Bro$y,chm_Vol_Pal$y,chm_Vol_Red$y)) + c(0,0.01)
+                
+      par(mfrow=c(2,2), mar=c(1,1,1,1), oma=c(4,4,1,1))
+      
+      plot(chm_And_Bro,
+           col = adjustcolor(colBro,0.7),
+           ylim=yVals,
+           xaxt="n",
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2,
+           main = "Andesite")
+      lines(chm_And_Pal,
+            col = adjustcolor(colPal,0.7),
+            lwd=2)
+      lines(chm_And_Red,
+            col = adjustcolor(colRed,0.7),
+            lwd=2)
+      legend(x=0,y=0.075,
+             c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      legend(x=35,y=0.075,
+             title = "Area (ha)",
+             c(round(nHa_And_Bro,1),
+               round(nHa_And_Mot,1),
+               round(nHa_And_Pal,1),
+               round(nHa_And_Red,1)),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      
+      
+      plot(chm_Boh_Bro,
+           col = adjustcolor(colBro,0.7),
+           ylim=yVals,
+           xaxt="n",
+           yaxt="n",
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2,
+           main = "Bohio")
+      lines(chm_Boh_Pal,
+            col = adjustcolor(colPal,0.7),
+            lwd=2)
+      lines(chm_Boh_Red,
+            col = adjustcolor(colRed,0.7),
+            lwd=2)
+      legend(x=35,y=0.075,
+             title = "Area (ha)",
+             c(round(nHa_Boh_Bro,1),
+               round(nHa_Boh_Mot,1),
+               round(nHa_Boh_Pal,1),
+               round(nHa_Boh_Red,1)),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      
+      plot(chm_Mar_Bro,
+           col = adjustcolor(colBro,0.7),
+           ylim=yVals,
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2,
+           main = "Caimito Marine Sedimentary")
+      lines(chm_Mar_Pal,
+            col = adjustcolor(colPal,0.7),
+            lwd=2)
+      lines(chm_Mar_Red,
+            col = adjustcolor(colRed,0.7),
+            lwd=2)
+      lines(chm_Mar_Mot,
+            col = adjustcolor(colMot,0.7),
+            lwd=2)
+      legend(x=35,y=0.075,
+             title = "Area (ha)",
+             c(round(nHa_Mar_Bro,1),
+               round(nHa_Mar_Mot,1),
+               round(nHa_Mar_Pal,1),
+               round(nHa_Mar_Red,1)),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      
+      plot(chm_Vol_Bro,
+           col = adjustcolor(colBro,0.7),
+           ylim=yVals,
+           yaxt="n",
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2,
+           main = "Caimito Volcanic")
+      lines(chm_Vol_Pal,
+            col = adjustcolor(colPal,0.7),
+            lwd=2)
+      lines(chm_Vol_Red,
+            col = adjustcolor(colRed,0.7),
+            lwd=2)
+      legend(x=35,y=0.075,
+             title = "Area (ha)",
+             c(round(nHa_Vol_Bro,1),
+               round(nHa_Vol_Mot,1),
+               round(nHa_Vol_Pal,1),
+               round(nHa_Vol_Red,1)),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      
+      mtext("Canopy height (m)", side=1, outer=T, line=1.5)
+      mtext("Proportion of area", side=2, outer=T, line=2.5, las=0)
+      
+      
+#### Figure S#: Distribution of 2009 canopy height per forest age x parent material and forest age x soil form ####
+      
+      # Define forest age and soil type polygons
+      
+      # Forest age polygon
+      age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+      age$AgeClass <- "Other"
+      age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
+      age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
+      ageUse <- age[!(age$AgeClass=="Other"),]
+      
+      # Soil type polygon  
+      soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+      soil <- sp::spTransform(soil,raster::crs(age))
+      
+      # Define parent material and soil form from soil class
+      soil$SoilParent <- NA
+      soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
+      soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
+      soil[soil$SOIL=="Fairchild",c("SoilParent")] <- c("Bohio")
+      soil[soil$SOIL=="Gross",c("SoilParent")] <- c("Bohio")
+      soil[soil$SOIL=="Harvard",c("SoilParent")] <- c("CaimitoVolcanic")
+      soil[soil$SOIL=="Hood",c("SoilParent")] <- c("CaimitoVolcanic")
+      soil[soil$SOIL=="Lake",c("SoilParent")] <- c("Andesite")
+      soil[soil$SOIL=="Lutz",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      soil[soil$SOIL=="Marron",c("SoilParent")] <- c("Andesite")
+      soil[soil$SOIL=="Poacher",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      soil[soil$SOIL=="Standley",c("SoilParent")] <- c("Bohio")
+      soil[soil$SOIL=="Wetmore",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      soil[soil$SOIL=="Zetek",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+      
+      soil$SoilForm <- NA
+      soil[soil$SOIL=="AVA", c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Barbour", c("SoilForm")] <- c("PaleSwellingClay")
+      soil[soil$SOIL=="Fairchild",c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Gross",c("SoilForm")] <- c("PaleSwellingClay")
+      soil[soil$SOIL=="Harvard",c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Hood",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Lake",c("SoilForm")] <- c("PaleSwellingClay")
+      soil[soil$SOIL=="Lutz",c("SoilForm")] <- c("MottledHeavyClay")
+      soil[soil$SOIL=="Marron",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Poacher",c("SoilForm")] <- c("RedLightClay")
+      soil[soil$SOIL=="Standley",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
+      soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
+      
+      # Read 2009 CHM
+      chm09 <- raster::raster("CHM_2009_QAQC.tif")
+      
+      # Make density plots
+      
+      # Whole island
+      chm_all <- density(raster::values(chm09),
+                         n = 512, from = 0, to = 70, na.rm=T)
+      
+      # Old growth forests
+      chm_Old <-  raster::mask(chm09, ageUse[ageUse$AgeClass=="OldGrowth",])
+      chm_Old_Bro <- density(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="BrownFineLoam",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Old_Mot <- density(raster::values(raster::mask(chm_Old,soil[soil$SoilForm=="MottledHeavyClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Old_Pal <- density(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="PaleSwellingClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Old_Red <- density(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="RedLightClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      nHa_Old_Bro <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="BrownFineLoam",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="BrownFineLoam",])))])/10000
+      nHa_Old_Mot <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="MottledHeavyClay",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="MottledHeavyClay",])))])/10000
+      nHa_Old_Pal <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="PaleSwellingClay",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="PaleSwellingClay",])))])/10000
+      nHa_Old_Red <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="RedLightClay",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilForm=="RedLightClay",])))])/10000
+      
+      chm_Old_And <- density(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="Andesite",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Old_Boh <- density(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="Bohio",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Old_Mar <- density(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="CaimitoMarineSedimentary",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Old_Vol <- density(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="CaimitoVolcanic",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      nHa_Old_And <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="Andesite",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="Andesite",])))])/10000
+      nHa_Old_Boh <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="Bohio",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="Bohio",])))])/10000
+      nHa_Old_Mar <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="CaimitoMarineSedimentary",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="CaimitoMarineSedimentary",])))])/10000
+      nHa_Old_Vol <- length(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="CaimitoVolcanic",]))[!is.na(raster::values(raster::mask(chm_Old, soil[soil$SoilParent=="CaimitoVolcanic",])))])/10000
+      
+      # Secondary
+      chm_Sec <-  raster::mask(chm09, ageUse[ageUse$AgeClass=="Secondary",])
+      chm_Sec_Bro <- density(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="BrownFineLoam",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Sec_Mot <- density(raster::values(raster::mask(chm_Sec,soil[soil$SoilForm=="MottledHeavyClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Sec_Pal <- density(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="PaleSwellingClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Sec_Red <- density(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="RedLightClay",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      nHa_Sec_Bro <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="BrownFineLoam",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="BrownFineLoam",])))])/10000
+      nHa_Sec_Mot <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="MottledHeavyClay",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="MottledHeavyClay",])))])/10000
+      nHa_Sec_Pal <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="PaleSwellingClay",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="PaleSwellingClay",])))])/10000
+      nHa_Sec_Red <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="RedLightClay",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilForm=="RedLightClay",])))])/10000
+      
+      chm_Sec_And <- density(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="Andesite",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Sec_Boh <- density(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="Bohio",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Sec_Mar <- density(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="CaimitoMarineSedimentary",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      chm_Sec_Vol <- density(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="CaimitoVolcanic",])),
+                             n = 512, from = 0, to = 70, na.rm=T)
+      nHa_Sec_And <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="Andesite",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="Andesite",])))])/10000
+      nHa_Sec_Boh <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="Bohio",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="Bohio",])))])/10000
+      nHa_Sec_Mar <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="CaimitoMarineSedimentary",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="CaimitoMarineSedimentary",])))])/10000
+      nHa_Sec_Vol <- length(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="CaimitoVolcanic",]))[!is.na(raster::values(raster::mask(chm_Sec, soil[soil$SoilParent=="CaimitoVolcanic",])))])/10000
+      
+      
+      yVals <- range(c(chm_Old_Bro$y,chm_Old_Mot$y,chm_Old_Pal$y,chm_Old_Red$y,
+                       chm_Old_And$y,chm_Old_Boh$y,chm_Old_Mar$y,chm_Old_Vol$y,
+                       chm_Sec_Bro$y,chm_Sec_Mot$y,chm_Sec_Pal$y,chm_Sec_Red$y,
+                       chm_Sec_And$y,chm_Sec_Boh$y,chm_Sec_Mar$y,chm_Sec_Vol$y)) + c(0,0.01)
+      
+      par(mfrow=c(2,2), mar=c(1,1,1,1), oma=c(4,4,1,1))
+      
+      plot(chm_Old_Bro,
+           col = adjustcolor(colBro,0.7),
+           ylim=yVals,
+           xaxt="n",
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2,
+           main = "Old growth")
+      lines(chm_Old_Mot,
+            col = adjustcolor(colMot,0.7),
+            lwd=2)
+      lines(chm_Old_Pal,
+            col = adjustcolor(colPal,0.7),
+            lwd=2)
+      lines(chm_Old_Red,
+            col = adjustcolor(colRed,0.7),
+            lwd=2)
+      legend(x=0,y=0.066,
+             c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      legend(x=35,y=0.066,
+             title = "Area (ha)",
+             c(round(nHa_Old_Bro,1),
+               round(nHa_Old_Mot,1),
+               round(nHa_Old_Pal,1),
+               round(nHa_Old_Red,1)),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      
+      plot(chm_Sec_Bro,
+           col = adjustcolor(colBro,0.7),
+           ylim=yVals,
+           xaxt="n",yaxt="n",
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2,
+           main = "Secondary")
+      lines(chm_Sec_Mot,
+            col = adjustcolor(colMot,0.7),
+            lwd=2)
+      lines(chm_Sec_Pal,
+            col = adjustcolor(colPal,0.7),
+            lwd=2)
+      lines(chm_Sec_Red,
+            col = adjustcolor(colRed,0.7),
+            lwd=2)
+      legend(x=35,y=0.066,
+             title = "Area (ha)",
+             c(round(nHa_Sec_Bro,1),
+               round(nHa_Sec_Mot,1),
+               round(nHa_Sec_Pal,1),
+               round(nHa_Sec_Red,1)),
+             col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
+             lwd=2,
+             bty="n")
+      
+      
+      plot(chm_Old_And,
+           col = adjustcolor(colAnd,0.7),
+           ylim=yVals,
+           main = NA,
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2)
+      lines(chm_Old_Boh,
+            col = adjustcolor(colBoh,0.7),
+            lwd=2)
+      lines(chm_Old_Mar,
+            col = adjustcolor(colMar,0.7),
+            lwd=2)
+      lines(chm_Old_Vol,
+            col = adjustcolor(colVol,0.7),
+            lwd=2)
+      legend(x=0,y=0.066,
+             c("Caimito marine","Caimito volcanic","Andesite","Bohio"),
+             col=adjustcolor(c(colMar,colVol,colAnd,colBoh),0.8),
+             lwd=2,
+             bty="n")
+      legend(x=35,y=0.066,
+             title = "Area (ha)",
+             c(round(nHa_Old_Mar,1),
+               round(nHa_Old_Vol,1),
+              round(nHa_Old_And,1),
+               round(nHa_Old_Boh,1)),
+             col=adjustcolor(c(colMar,colVol,colAnd,colBoh),0.8),
+             lwd=2,
+             bty="n")
+      
+      plot(chm_Sec_And,
+           col = adjustcolor(colAnd,0.7),
+           ylim=yVals,
+           yaxt="n",
+           main = NA,
+           xlim=c(0,50),
+           xlab=NA,ylab=NA,
+           lwd=2)
+      lines(chm_Sec_Boh,
+            col = adjustcolor(colBoh,0.7),
+            lwd=2)
+      lines(chm_Sec_Mar,
+            col = adjustcolor(colMar,0.7),
+            lwd=2)
+      lines(chm_Sec_Vol,
+            col = adjustcolor(colVol,0.7),
+            lwd=2)
+      legend(x=35,y=0.066,
+             title = "Area (ha)",
+             c(round(nHa_Sec_Mar,1),
+               round(nHa_Sec_Vol,1),
+               round(nHa_Sec_And,1),
+               round(nHa_Sec_Boh,1)),
+             col=adjustcolor(c(colMar,colVol,colAnd,colBoh),0.8),
+             lwd=2,
+             bty="n")
+      
+      mtext("Canopy height (m)", side=1, outer=T, line=1.5)
+      mtext("Proportion of area", side=2, outer=T, line=2.5, las=0)
+      
       

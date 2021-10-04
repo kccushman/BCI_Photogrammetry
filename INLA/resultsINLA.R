@@ -837,10 +837,9 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
        pch=19)
   lines(smoothAll, col="red",lwd=2, lty=2)
   abline(a=0,b=1,col="red")
-  mtext("Observed disturbance proportion", side=1,outer=T)
-  par(las=0)
-  mtext("Predicted disturbance proportion", side=2,outer=T)
-  par(las=1)
+  mtext("Observed disturbance proportion", side=2,outer=T, las=0)
+  mtext("Predicted disturbance proportion (fixed + random effects)", side=1,outer=T)
+
   
   plot(gapPropCens~pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2018",],
        xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
@@ -868,7 +867,57 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   lines(smooth20, col="red", lwd=2, lty=2)
   abline(a=0,b=1,col="red")
   
-#### Figure 6: Fixed effects sizes ####  
+  
+  smoothAllb <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],
+                            y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],
+                            degree=1, span = 1.2)
+  smooth18b <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2018","fix_pred"],
+                           y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2018","resd"],
+                           degree=1, span = 1.2)
+  smooth20b <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2020","fix_pred"],
+                           y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2020","resd"],
+                           degree=1, span = 1.2)
+  
+  par(las=1, mfrow=c(1,3), mar=c(3,3,1,0),oma=c(1,3,1,1))
+  plot(resd~fix_pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],na.rm=T),
+       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],na.rm=T),
+       col = adjustcolor("black", 0.08),
+       #main = "All years",
+       ylab = NA,
+       xlab = NA,
+       cex = 0.5,
+       pch=19)
+  lines(smoothAllb, col="red",lwd=2, lty=1)
+  mtext("Predicted disturbance distribubtion (fixed effects only)", side=1,outer=T)
+  mtext("Residual", side=2,outer=T, las=0)
+
+  
+  plot(resd~fix_pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2018",],
+       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],na.rm=T),
+       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],na.rm=T),
+       col = adjustcolor(col18, 0.08),
+       #main = "2015-2018",
+       ylab = NA,
+       xlab = NA,
+       yaxt="n",
+       cex = 0.5,
+       pch=19)
+  lines(smooth18b, col="red", lwd=2, lty=1)
+
+  plot(resd~fix_pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2020",],
+       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],na.rm=T),
+       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],na.rm=T),
+       col = adjustcolor(col20, 0.08),
+       #main = "2015-2018",
+       ylab = NA,
+       xlab = NA,
+       yaxt="n",
+       cex = 0.5,
+       pch=19)
+  lines(smooth20b, col="red", lwd=2, lty=1)
+
+#### Figure 4c: Fixed effects sizes ####  
   fixedResults <- model_full$summary.fixed
   
   # separated by years
@@ -926,9 +975,9 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
        y = 1.2*nrow(fixedResults):2,
        xlim = range(fixedResults[2:nrow(fixedResults),c(3,5)]) + c(-0.4,0.6),
        ylim=c(2,1.2*nrow(fixedResults)),
+       xlab=NA,
        pch = 19, 
        cex = 1,
-       xlab = "Fixed effect",
        ylab = NA, yaxt = "n")
   arrows(x0 = fixedResults[2:nrow(fixedResults),"0.025quant"],
          x1 = fixedResults[2:nrow(fixedResults),"0.975quant"],
@@ -980,12 +1029,12 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   
   abline(v=0, lty=2)
   text(fixedNames,
-        x = fixedResults[2:nrow(fixedResults),"0.975quant"]+0.005,
+      x = fixedResults[2:nrow(fixedResults),"0.975quant"]+0.03,
        y = 1.2*nrow(fixedResults):2,
        pos = 4)
   
-  legend(x = -1.2,
-         y = 1.2*nrow(fixedResults),
+  legend(x = -1.3,
+         y = 6,
          c("Full model",
            "2015-2018 only",
            "2018-2020 only",
@@ -993,82 +1042,8 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
          bty="n",
          col = c("black", col18, col20, col20),
          pch=c(19,19,19,1))
-  
-#### Figure 2: Raster plots of landscape predictors ####
-  
-  buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
-  buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
-  
-  # Read plot outline  
-  plotShp <- rgdal::readOGR("D:/BCI_Spatial/BCI50ha/BCI_50ha.shp")
-  plotShp <- sp::spTransform(plotShp, sp::proj4string(buffer))
-  
-  curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_16.tif")
-  slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
-  drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
-  
-  curvRaster <- raster::mask(curvRaster, buffer)
-  slopeRaster <- raster::mask(slopeRaster, buffer)
-  drainRaster <- raster::mask(drainRaster, buffer)
-  
-
-  
-  par(mar=c(1,3,1,1), mfrow=c(2,3), oma=c(0,0,0,2))
-  raster::plot(curvRaster, col = viridis::cividis(128),
-               bty="n", box=F, yaxt="n", xaxt="n",
-               legend.width=1.5,
-               axis.args = list(cex.axis=1.8))
-  raster::plot(plotShp,add=T, lwd=2, border="white")
-  
-  raster::plot(slopeRaster, col = viridis::plasma(128),
-               bty="n", box=F, yaxt="n", xaxt="n",
-               legend.width=1.5,
-               axis.args = list(cex.axis=1.8))
-  raster::plot(plotShp,add=T, lwd=2, border="white")
-  
-  raster::plot(drainRaster, col = viridis::viridis(128),
-               bty="n", box=F, yaxt="n", xaxt="n",
-               legend.width=1.5,
-               axis.args = list(cex.axis=1.8))
-  raster::plot(plotShp,add=T, lwd=2, border="white")
-  
-  soil$formCol = NA
-    soil[soil$SoilForm=="BrownFineLoam","formCol"] = wesanderson::wes_palette("Rushmore1",5)[1]
-    soil[soil$SoilForm=="PaleSwellingClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[3]
-    soil[soil$SoilForm=="MottledHeavyClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[4]
-    soil[soil$SoilForm=="RedLightClay","formCol"] = wesanderson::wes_palette("Rushmore1",5)[5]
-    
-  soil$parentCol = NA
-    soil[soil$SoilParent=="CaimitoVolcanic","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[1]
-    soil[soil$SoilParent=="Andesite","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[2]
-    soil[soil$SoilParent=="CaimitoMarineSedimentary","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[3]
-    soil[soil$SoilParent=="Bohio","parentCol"] = wesanderson::wes_palette("Chevalier1",4)[4]
-    
-    soil <- sp::spTransform(soil, sp::proj4string(buffer))
-    
-  raster::plot(soil,
-               col = soil$formCol,
-               border="NA")
-  raster::plot(plotShp,add=T, lwd=2, border="white")
-  
-  raster::plot(soil,
-               col = soil$parentCol,
-               border="NA")
-  raster::plot(plotShp,add=T, lwd=2, border="white")
-  
-  age$ageCol = NA
-    age[age$AgeClass=="OldGrowth","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[1]
-    age[age$AgeClass=="Secondary","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[2]
-    age[age$AgeClass=="Other","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[3]
-  
-  age <- raster::crop(age,buffer)
-  raster::plot(age ,
-               col = age$ageCol,
-               border="NA")
-  raster::plot(plotShp,add=T, lwd=2, border="white")
-  
-  
-  
+  text("c", x = -1.25, y = 1.2*nrow(fixedResults))
+  mtext("Fixed effect", side=1, outer=F, line=2)
   
 #### Fig??. Proportion of short canopy in each cell ####
   load("INLA/INLA_prelim_40m_tin.RData")
@@ -1168,7 +1143,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   length(chm20vals[chm20vals<15 & !is.na(chm20vals)])/ length(chm20vals[!is.na(chm20vals)])
   length(chm20vals[is.na(chm20vals)])/length(chm20vals)
   
-#### Fig S12. Fixed effects ####
+#### Fig S12. Fixed topographic effects ####
 
   slopeAll <- bci.gapsAll$fix_S + bci.gapsAll$fix_S2
   htAll <- bci.gapsAll$fix_H + bci.gapsAll$fix_H2
@@ -1450,17 +1425,18 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
     plot(x = xVals,
          y = agResults$fixR_18,
+         log="x",
          ylim=c(0,1.02),
          xlab = NA,
          ylab = NA,
          type = "l",
          col = col18,
-         lwd=1)
-    text("a. Fixed effects only", x = 0, y = 1.02, adj=0)
+         lwd=2)
+    text("a. Fixed effects only", x = 0.15, y = 1.02, adj=0)
     lines(x = xVals,
          y = agResults$fixR_20,
          col=col20,
-         lwd=1)
+         lwd=2)
     polygon(x = c(xVals,rev(xVals),xVals[1]),
             y = c(agResults$fixR_18lo,rev(agResults$fixR_18hi),agResults$fixR_18lo[1]),
             col=adjustcolor(col18,0.15),
@@ -1469,21 +1445,28 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
             y = c(agResults$fixR_20lo,rev(agResults$fixR_20hi),agResults$fixR_20lo[1]),
             col=adjustcolor(col20,0.15),
             border=NA)
+    legend(c("2015-2018",
+             "2018-2020"),
+           x=0.15,y=0.95,
+           col=c(col18,col20),
+           bty="n",
+           lwd=2)
     
     plot(x = xVals,
          y = agResults$allR_18,
          ylim=c(0,1.02),
+         log="x",
          yaxt="n",
          xlab = NA,
          ylab = NA,
          type = "l",
          col = col18,
-         lwd=1)
-    text("b. Fixed + random effects", x = 0, y = 1.02, adj=0)
+         lwd=2)
+    text("b. Fixed + random effects", x = 0.15, y = 1.02, adj=0)
     lines(x = xVals,
           y = agResults$allR_20,
           col=col20,
-          lwd=1)
+          lwd=2)
     polygon(x = c(xVals,rev(xVals),xVals[1]),
             y = c(agResults$allR_18lo,rev(agResults$allR_18hi),agResults$allR_18lo[1]),
             col=adjustcolor(col18,0.15),
@@ -1492,18 +1475,11 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
             y = c(agResults$allR_20lo,rev(agResults$allR_20hi)),
             col=adjustcolor(col20,0.15),
             border=NA)
-    legend(c("2015-2018",
-             "2018-2020"),
-           x=20,y=0.85,
-           col=c(col18,col20),
-           bty="n",
-           lwd=1)
+
     
-    mtext("Spatial resolution (ha)", side=1, outer=T, line=-1)
-    par(las=0)
-    mtext("Pearson correlation (r)", side=2, outer=T, line=2)
-    par(las=1)
-    
+    mtext("Spatial grain (ha)", side=1, outer=T, line=-2)
+    mtext("Pearson correlation (r)", side=2, outer=T, line=1.5, las=0)
+
 #### Define forest age and soil type polygons ####
     # Forest age polygon
     age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
@@ -1586,7 +1562,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
                           obsRchm_hi = NA,
                           N = NA)
   
-  for(i in 1:nrow(agResults)){
+  for(i in 1:nrow(loResults)){
     
     # Get a matrix of observed cells
     minObs <- 0.75*loResults$agBy[i]^2
@@ -1694,6 +1670,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
     plot(x = xVals,
          y = loResults$fixRlo,
+         log = "x",
          ylim=c(-1,1.02),
          xlab = NA,
          ylab = NA,
@@ -1705,7 +1682,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
           side=2, outer=T, line=2)
     par(las=1)
     text("a. Proportion of low canopy area",
-         x = 0,
+         x = 0.15,
          y = 1.02, adj=0)
     abline(h=0,lty=2)
     lines(x = xVals,
@@ -1720,7 +1697,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
             y = c(loResults$obsRlo_lo,rev(loResults$obsRlo_hi)),
             col=adjustcolor("lightblue",0.4),
             border=NA)
-    legend(x = 0,
+    legend(x = 0.15,
            y = 0,
            c("Predicted frequency (fixed effects)",
              "Average observed frequency"),
@@ -1731,6 +1708,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     
     plot(x = xVals,
          y = loResults$fixRchm,
+         log = "x",
          yaxt="n",
          ylim=c(-1,1.02),
          xlab = NA,
@@ -1758,7 +1736,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
   
 
     text("b. Mean canopy height",
-         x = 0,
+         x = 0.15,
          y = 1.02, adj=0)
 
     
@@ -1771,7 +1749,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     # Get forest age and soil type values for each pixel
     
     # Scale 1
-    agScale_1 <- 4
+    agScale_1 <- 5
 
     # Aggregate low canopy area raster
     agLo09_1 <- raster::aggregate(rasterLo09, fact = agScale_1, fun = mean, na.rm=T)
@@ -1889,7 +1867,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     bestAgResults_2[bestAgResults_2$agForm==4,"agForm"] <- "MottledHeavyClay"
     
     # Scale 3
-    agScale_3 <- 20
+    agScale_3 <- 18
     
     # Aggregate low canopy area raster
     agLo09_3 <- raster::aggregate(rasterLo09, fact = agScale_3, fun = mean, na.rm=T)
@@ -1959,7 +1937,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
          xlim=range(bestAgResults_1[,c("agFix")]),
          ylim=range(bestAgResults_1[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
-         main = "2.56 ha resolution",
+         main = "4.00 ha resolution",
          pch=19,
          cex=PtCex_1,
          xlab = NA, ylab=NA,
@@ -2009,7 +1987,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
          xlim=range(bestAgResults_3[,c("agFix")]),
          ylim=range(bestAgResults_3[,c("agLo09")]),
          col = adjustcolor(wesanderson::wes_palette("Rushmore1",5)[5],0.6),
-         main = "64.00 ha resolution",
+         main = "51.84 ha resolution",
          pch=19,
          cex=PtCex_3,
          xlab = NA, ylab=NA,
@@ -2720,15 +2698,163 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
           side=1, outer=T, line=1)
     par(las=0)
     mtext("Mean canopy height in 2009", side=2, outer=T, line=1.5)
-    par(las=1)    
-#### Figure 6c: Comparison of 2009 lidar data and average spatial pattern ####
+    par(las=1)   
     
-    # Make alternate versions of all raster layers WITHOUT Caimito volcanic soils
-    rasterLo09b <- raster::mask(rasterLo09, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
-    rasterchm09b <- raster::mask(rasterchm09, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
-    avgPredictedRasterb <- raster::mask(avgPredictedRaster, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
-    avgObservedRasterb <- raster::mask(avgObservedRaster, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
-    avgRasterNb <- raster::mask(avgRasterN, soil[!(soil$SoilParent=="CaimitoVolcanic"),])
+#### Figure 6: relationship between disturbance and standing canopy height at 2 spatial scales ####
+    
+    bestAgResults_1$agLo09Pct <- 100*bestAgResults_1$agLo09
+    bestAgResults_2$agLo09Pct <- 100*bestAgResults_2$agLo09
+    bestAgResults_3$agLo09Pct <- 100*bestAgResults_3$agLo09
+    
+    ## Be sure to run section above first!
+    axisCex <- 1.2
+    
+    par(mfrow=c(4,2), mar=c(2,3,1,1), oma=c(4,4,1,1))
+    
+    plot(agLo09Pct~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agLo09Pct")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("a", x=0.0075, y = 25, cex = axisCex)
+    mtext("Low canopy area (%)", side=2, outer=F, line=4, las=0, at = -0.1)
+    
+    points(agLo09Pct~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    
+    
+    plot(agLo09Pct~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agLo09Pct")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         yaxt="n",
+         pch=19,
+         cex=PtCex_1,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("b", x=0.0145, y = 25, cex = axisCex)
+    
+    points(agLo09Pct~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    legend(x=0.06,
+           y=28,
+           c("Old growth","Secondary"),
+           col=adjustcolor(c(colOld,colSec),0.6),
+           pch=19, pt.cex=1.5,
+           bty="n")
+    
+    plot(agLo09Pct~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agLo09Pct")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("c", x=0.0082, y = 9.5, cex = axisCex)
+    points(agLo09Pct~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    plot(agLo09Pct~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agLo09Pct")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         yaxt="n",
+         pch=19,
+         cex=PtCex_3,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("d", x=0.0145, y = 9.5, cex = axisCex)
+    points(agLo09Pct~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    plot(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agFix")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_1,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("e", x=0.0075, y = 30, cex = axisCex)
+    mtext("Mean canopy height (m)", side=2, outer=F, line=4, las=0, at=10)
+    points(agChm09~agFix, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+
+    
+    plot(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_1[,c("agObs")]),
+         ylim=range(bestAgResults_1[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         yaxt="n",
+         pch=19,
+         cex=PtCex_1,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("f", x=0.01, y = 30, cex = axisCex)
+    
+    points(agChm09~agObs, data = bestAgResults_1[bestAgResults_1$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_1)
+    
+    plot(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agFix")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         pch=19,
+         cex=PtCex_3,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("g", x=0.0082, y = 26.5, cex = axisCex)
+    points(agChm09~agFix, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    mtext("Predicted disturbance rate",
+          side=1, outer=F, line=2.5)  
+    
+    plot(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="OldGrowth",],
+         xlim=range(bestAgResults_3[,c("agObs")]),
+         ylim=range(bestAgResults_3[,c("agChm09")]),
+         col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[1],0.6),
+         yaxt="n",
+         pch=19,
+         cex=PtCex_3,
+         cex.axis = axisCex,
+         xlab = NA, ylab=NA)
+    text("h", x=0.0145, y = 26.5, cex = axisCex)
+    
+    points(agChm09~agObs, data = bestAgResults_3[bestAgResults_3$agAge=="Secondary",],
+           col = adjustcolor(wesanderson::wes_palette("Moonrise2",4)[2],0.6),
+           pch=19,
+           cex=PtCex_3)
+    
+    mtext("Observed disturbance rate",
+          side=1, outer=F, line=2.5)  
+    
+
+#### Figure 6cd: Comparison of 2009 lidar data and average spatial pattern ####
+    
+    # Make alternate versions of all raster layers--only old growth forests
+    rasterLo09b <- raster::mask(rasterLo09, ageUse[ageUse$AgeClass=="OldGrowth",])
+    rasterchm09b <- raster::mask(rasterchm09, ageUse[ageUse$AgeClass=="OldGrowth",])
+    avgPredictedRasterb <- raster::mask(avgPredictedRaster, ageUse[ageUse$AgeClass=="OldGrowth",])
+    avgObservedRasterb <- raster::mask(avgObservedRaster, ageUse[ageUse$AgeClass=="OldGrowth",])
+    avgRasterNb <- raster::mask(avgRasterN, ageUse[ageUse$AgeClass=="OldGrowth",])
     
     
     # Create data frame to store results  
@@ -2845,13 +2971,135 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
       
     }
     
+    # Make alternate versions of all raster layers--only secondary forests
+    rasterLo09c <- raster::mask(rasterLo09, ageUse[ageUse$AgeClass=="Secondary",])
+    rasterchm09c <- raster::mask(rasterchm09, ageUse[ageUse$AgeClass=="Secondary",])
+    avgPredictedRasterc <- raster::mask(avgPredictedRaster, ageUse[ageUse$AgeClass=="Secondary",])
+    avgObservedRasterc <- raster::mask(avgObservedRaster, ageUse[ageUse$AgeClass=="Secondary",])
+    avgRasterNc <- raster::mask(avgRasterN, ageUse[ageUse$AgeClass=="Secondary",])
+    
+    
+    # Create data frame to store results  
+    loResults_c <- data.frame(agBy = 1:20,
+                              fixRlo = NA,
+                              fixRlo_lo = NA,
+                              fixRlo_hi = NA,
+                              obsRlo = NA,
+                              obsRlo_lo = NA,
+                              obsRlo_hi = NA,
+                              fixRchm = NA,
+                              fixRchm_lo = NA,
+                              fixRchm_hi = NA,
+                              obsRchm = NA,
+                              obsRchm_lo = NA,
+                              obsRchm_hi = NA,
+                              N = NA)
+    
+    for(i in 1:nrow(loResults_c)){
+      
+      # Get a matrix of observed cells
+      minObs <- 0.75*loResults_c$agBy[i]^2
+      
+      # Aggregate rasters
+      # Aggregate low canopy area raster
+      agLo09 <- raster::aggregate(rasterLo09c, fact = loResults_c$agBy[i], fun = mean, na.rm=T)
+      # Aggregate mean canopy height raster
+      agChm09 <- raster::aggregate(rasterchm09c, fact = loResults_c$agBy[i], fun = mean, na.rm=T)
+      # Aggregate average fixed effects raster
+      agFix <- raster::aggregate(avgPredictedRasterc, fact = loResults_c$agBy[i], fun = mean, na.rm=T)
+      # Aggregate average observed disturbance raster
+      agObs <- raster::aggregate(avgObservedRasterc, fact = loResults_c$agBy[i], fun = mean, na.rm=T)
+      # Aggregate sampling effort
+      agN <- raster::aggregate(avgRasterNc, fact = loResults_c$agBy[i], fun = sum, na.rm=T)
+      
+      # Get matrix of values for each aggregated raster
+      agLo09_mat <- raster::values(agLo09, format = "matrix")
+      agChm09_mat <- raster::values(agChm09, format = "matrix")
+      agFix_mat <- raster::values(agFix, format = "matrix")
+      agObs_mat <- raster::values(agObs, format = "matrix")
+      nMat <- raster::values(agN, format = "matrix")
+      
+      # matrix of cells that need to be combined
+      combineMat <- which(nMat<minObs & nMat>0, arr.ind = T)
+      
+      while(nrow(combineMat)>0){
+        
+        # get surrounding cells for each matrix
+        rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+        rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+        cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+        cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+        
+        agLo09_mat_j <- agLo09_mat[rows,cols]
+        agChm09_mat_j <- agChm09_mat[rows,cols]
+        agFix_mat_j <- agFix_mat[rows,cols]
+        agObs_mat_j <- agObs_mat[rows,cols]
+        nMat_j <- nMat[rows,cols]
+        
+        # set cell of interest to 0
+        nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- 0
+        
+        # Only proceed if there are non-NA neighboring cells
+        if(length(c(nMat_j)[c(nMat_j)>0])>0){  
+          
+          # find neighboring cell with most nearby observations
+          new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+          
+          # replace value for new cell with a weighted mean of all other values
+          agLo09_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agLo09_mat_j[new_j[1],new_j[2]],agLo09_mat[combineMat[1,1],combineMat[1,2]]),
+                                                           w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agChm09_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agChm09_mat_j[new_j[1],new_j[2]],agChm09_mat[combineMat[1,1],combineMat[1,2]]),
+                                                            w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agFix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agFix_mat_j[new_j[1],new_j[2]],agFix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                          w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agObs_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs_mat_j[new_j[1],new_j[2]],agObs_mat[combineMat[1,1],combineMat[1,2]]),
+                                                          w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          
+          nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+          
+          # replace neighborhood in original matrices
+          agLo09_mat[rows,cols] <- agLo09_mat_j
+          agChm09_mat[rows,cols] <- agChm09_mat_j
+          agFix_mat[rows,cols] <- agFix_mat_j
+          agObs_mat[rows,cols] <- agObs_mat_j
+          nMat[rows,cols] <- nMat_j
+        }
+        
+        # Replace original observation with NaN
+        agLo09_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agChm09_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agFix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agObs_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        nMat[combineMat[1,1],combineMat[1,2]] <- 0
+        
+        # Redefine combineMat
+        combineMat <- which(nMat<minObs & nMat >0, arr.ind = T)
+      }
+      
+      valsKeep <- which(c(nMat)>minObs)
+      loResults_c$fixRlo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$estimate
+      loResults_c$fixRlo_lo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[1]
+      loResults_c$fixRlo_hi[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[2]
+      loResults_c$obsRlo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$estimate
+      loResults_c$obsRlo_lo[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[1]
+      loResults_c$obsRlo_hi[i] <- cor.test(x = c(agLo09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[2]
+      
+      loResults_c$fixRchm[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$estimate
+      loResults_c$fixRchm_lo[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat[valsKeep]))$conf.int[1]
+      loResults_c$fixRchm_hi[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agFix_mat)[valsKeep])$conf.int[2]
+      loResults_c$obsRchm[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$estimate
+      loResults_c$obsRchm_lo[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[1]
+      loResults_c$obsRchm_hi[i] <- cor.test(x = c(agChm09_mat)[valsKeep], y = c(agObs_mat)[valsKeep])$conf.int[2]
+    }
+    
     
 #### Figure 6: plot all ####
     
     # Plot results
     
     # Significance with aggregation scale    
-    par(mfrow=c(2,2), mar=c(1,1,1,1), oma=c(5,4,1,1), las=1)
+    axisCex <- 1.2
+    par(mfrow=c(3,2), mar=c(1,1,0,0), oma=c(5,4,3,1), las=1)
     
     xVals <- ((loResults$agBy*40)^2)/10000
     
@@ -2860,123 +3108,123 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
          ylim=c(-1,1.02),
          xlab = NA,
          ylab = NA,
+         log = "x",
          type = "l",
-         col = "blue",
+         col = "black",
+         cex.axis = axisCex,
          xaxt="n",
-         main = "Proportion of low canopy area",
          lwd=2)
     par(las=0)
+    text("All forest", x=0.15, y=-0.8, cex=1.5, adj=0)
+    mtext("Proportion of low canopy area", side=3, outer=F)
     mtext(expression("Pearson correlation (r)"),
           side=2, outer=T, line=2)
     par(las=1)
     text("a",
-         x = 0,
-         y = 1.02, adj=0)
+         x = 0.15,
+         y = 1, adj=0, cex=1.5)
     abline(h=0,lty=2)
     lines(x = xVals,
           y = loResults$obsRlo,
-          col="lightblue",
+          col="grey",
+          lty=2,
           lwd=2)
     polygon(x = c(xVals,rev(xVals)),
             y = c(loResults$fixRlo_lo,rev(loResults$fixRlo_hi)),
-            col=adjustcolor("blue",0.15),
+            col=adjustcolor("black",0.25),
             border=NA)
     polygon(x = c(xVals,rev(xVals)),
             y = c(loResults$obsRlo_lo,rev(loResults$obsRlo_hi)),
-            col=adjustcolor("lightblue",0.4),
+            col=adjustcolor("grey",0.35),
             border=NA)
-    legend(x = 0,
+    legend(x = 0.15,
            y = 0,
            c("Predicted frequency (fixed effects)",
              "Average observed frequency"),
-           col=c("blue","lightblue"),
-           lty=c(1,1),
-           lwd=2,
-           bty="n")
-    
-    plot(x = xVals,
-         y = loResults$fixRchm,
-         yaxt="n",
-         ylim=c(-1,1.02),
-         xlab = NA,
-         ylab = NA,
-         type = "l",
-         col = "blue",
-         main = "Mean canopy height",
-         xaxt="n",
-         lwd=2)
-    par(las=0)
-    abline(h=0,lty=2)
-    
-    par(las=1)
-    lines(x = xVals,
-          y = loResults$obsRchm,
-          col="lightblue",
-          lwd=2)
-    polygon(x = c(xVals,rev(xVals)),
-            y = c(loResults$fixRchm_lo,rev(loResults$fixRchm_hi)),
-            col=adjustcolor("blue",0.15),
-            border=NA)
-    polygon(x = c(xVals,rev(xVals)),
-            y = c(loResults$obsRchm_lo,rev(loResults$obsRchm_hi)),
-            col=adjustcolor("lightblue",0.4),
-            border=NA)
-    
-    
-    
-    text("b",
-         x = 0,
-         y = 1.02, adj=0)
-    
-    
-    plot(x = xVals,
-         y = loResults_b$fixRlo,
-         ylim=c(-1,1.02),
-         xlab = NA,
-         ylab = NA,
-         type = "l",
-         lty=2,
-         col = "blue",
-         lwd=2)
-    par(las=0)
-    mtext(expression("Pearson correlation (r)"),
-          side=2, outer=T, line=2)
-    par(las=1)
-    text("c",
-         x = 0,
-         y = 1.02, adj=0)
-    abline(h=0,lty=2)
-    lines(x = xVals,
-          y = loResults_b$obsRlo,
-          lty=2,
-          col="lightblue",
-          lwd=2)
-    polygon(x = c(xVals,rev(xVals)),
-            y = c(loResults_b$fixRlo_lo,rev(loResults_b$fixRlo_hi)),
-            col=adjustcolor("blue",0.15),
-            border=NA)
-    polygon(x = c(xVals,rev(xVals)),
-            y = c(loResults_b$obsRlo_lo,rev(loResults_b$obsRlo_hi)),
-            col=adjustcolor("lightblue",0.4),
-            border=NA)
-    legend(x = 0,
-           y = 0,
-           c("Whole island",
-             "Without Caimito volcanic soils"),
-           col=c("black"),
+           col=c("black","grey"),
+           cex = 1.2,
            lty=c(1,2),
            lwd=2,
            bty="n")
     
     plot(x = xVals,
-         y = loResults_b$fixRchm,
+         y = loResults$fixRchm,
+         log = "x",
          yaxt="n",
          ylim=c(-1,1.02),
-         lty=2,
          xlab = NA,
          ylab = NA,
          type = "l",
-         col = "blue",
+         cex.axis = axisCex,
+         col = "black",
+         xaxt="n",
+         lwd=2)
+    abline(h=0,lty=2)
+    mtext("Mean canopy height", side=3, outer=F)
+    
+    lines(x = xVals,
+          y = loResults$obsRchm,
+          col="grey",
+          lty=2,
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$fixRchm_lo,rev(loResults$fixRchm_hi)),
+            col=adjustcolor("black",0.25),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults$obsRchm_lo,rev(loResults$obsRchm_hi)),
+            col=adjustcolor("grey",0.35),
+            border=NA)
+    text("b",
+         x = 0.15,
+         y = 1, adj=0, cex=1.5)
+    
+    
+    plot(x = xVals,
+         y = loResults_b$fixRlo,
+         cex.axis = axisCex,
+         ylim=c(-1,1.02),
+         log = "x",
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         xaxt="n",
+         lty=1,
+         col = colOld,
+         lwd=2)
+    par(las=0)
+    text("Old growth forest", x=0.15, y=-0.8, cex=1.5, adj=0, col=colOld)
+    par(las=1)
+    text("c",
+         x = 0.15,
+         y = 1, adj=0, cex=1.5)
+    abline(h=0,lty=2)
+    lines(x = xVals,
+          y = loResults_b$obsRlo,
+          lty=2,
+          col="grey",
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_b$fixRlo_lo,rev(loResults_b$fixRlo_hi)),
+            col=adjustcolor(colOld,0.35),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_b$obsRlo_lo,rev(loResults_b$obsRlo_hi)),
+            col=adjustcolor("grey",0.35),
+            border=NA)
+
+    
+    plot(x = xVals,
+         y = loResults_b$fixRchm,
+         log = "x",
+         xaxt="n",
+         yaxt="n",
+         ylim=c(-1,1.02),
+         lty=1,
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         col = colOld,
          lwd=2)
     par(las=0)
     abline(h=0,lty=2)
@@ -2984,24 +3232,90 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
     par(las=1)
     lines(x = xVals,
           y = loResults_b$obsRchm,
-          col="lightblue",
+          col="grey",
           lty=2,
           lwd=2)
     polygon(x = c(xVals,rev(xVals)),
             y = c(loResults_b$fixRchm_lo,rev(loResults_b$fixRchm_hi)),
-            col=adjustcolor("blue",0.15),
+            col=adjustcolor(colOld,0.35),
             border=NA)
     polygon(x = c(xVals,rev(xVals)),
             y = c(loResults_b$obsRchm_lo,rev(loResults_b$obsRchm_hi)),
-            col=adjustcolor("lightblue",0.4),
+            col=adjustcolor("grey",0.35),
+            border=NA)
+    
+    text("d",
+         x = 0.15,
+         y = 1, adj=0, cex=1.5)
+    
+    
+    plot(x = xVals,
+         y = loResults_c$fixRlo,
+         cex.axis = axisCex,
+         log = "x",
+         ylim=c(-1,1.02),
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         lty=1,
+         col = colSec,
+         lwd=2)
+    par(las=0)
+    text("Secondary forest", x=0.15, y=-0.8, cex=1.5, adj=0, col=colSec)
+    
+    par(las=1)
+    text("e",
+         x = 0.15,
+         y = 1, adj=0, cex=1.5)
+    abline(h=0,lty=2)
+    lines(x = xVals,
+          y = loResults_c$obsRlo,
+          lty=2,
+          col="grey",
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_c$fixRlo_lo,rev(loResults_c$fixRlo_hi)),
+            col=adjustcolor(colSec, 0.35),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_c$obsRlo_lo,rev(loResults_c$obsRlo_hi)),
+            col=adjustcolor("grey", 0.35),
             border=NA)
     
     
+    plot(x = xVals,
+         y = loResults_c$fixRchm,
+         cex.axis = axisCex,
+         log = "x",
+         yaxt="n",
+         ylim=c(-1,1.02),
+         lty=1,
+         xlab = NA,
+         ylab = NA,
+         type = "l",
+         col = colSec,
+         lwd=2)
+    par(las=0)
+    abline(h=0,lty=2)
     
-    text("d",
-         x = 0,
-         y = 1.02, adj=0)
+    par(las=1)
+    lines(x = xVals,
+          y = loResults_c$obsRchm,
+          col="grey",
+          lty=2,
+          lwd=2)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_c$fixRchm_lo,rev(loResults_c$fixRchm_hi)),
+            col=adjustcolor(colSec, 0.35),
+            border=NA)
+    polygon(x = c(xVals,rev(xVals)),
+            y = c(loResults_c$obsRchm_lo,rev(loResults_c$obsRchm_hi)),
+            col=adjustcolor("grey", 0.35),
+            border=NA)
     
+    text("f",
+         x = 0.15,
+         y = 1, adj=0, cex=1.5)
     
     mtext("Spatial resolution (ha)", side=1, outer=T, line=2)
     

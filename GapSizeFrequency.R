@@ -1243,36 +1243,85 @@
                         formRed = NA)
   
   for(i in 1:(length(gapBins)-1)){
-    # gapProp$yr15to18[i] <- sum(allData15to18[allData15to18$dbh>=gapProp$minSz[i] & allData15to18$dbh<gapProp$maxSz[i],"dbh"])/sum(allData15to18$dbh)
-    # gapProp$yr18to20[i] <- sum(allData18to20[allData18to20$dbh>=gapProp$minSz[i] & allData18to20$dbh<gapProp$maxSz[i],"dbh"])/sum(allData18to20$dbh)
-    gapProp$yr15to18[i] <- sum(allData15to18[allData15to18$dbh>=gapProp$minSz[i] & allData15to18$dbh<gapProp$maxSz[i],"dbh"])/(areaSampled15to18tall)/10000
-    gapProp$yr18to20[i] <- sum(allData18to20[allData18to20$dbh>=gapProp$minSz[i] & allData18to20$dbh<gapProp$maxSz[i],"dbh"])/(areaSampled18to20tall)/10000
+    gapProp$yr15to18[i] <- sum(allData15to18[allData15to18$dbh>=gapProp$minSz[i] & allData15to18$dbh<gapProp$maxSz[i],"dbh"])/sum(allData15to18$dbh)
+    gapProp$yr18to20[i] <- sum(allData18to20[allData18to20$dbh>=gapProp$minSz[i] & allData18to20$dbh<gapProp$maxSz[i],"dbh"])/sum(allData18to20$dbh)
+    # gapProp$yr15to18[i] <- sum(allData15to18[allData15to18$dbh>=gapProp$minSz[i] & allData15to18$dbh<gapProp$maxSz[i],"dbh"])/(areaSampled15to18tall)/10000
+    # gapProp$yr18to20[i] <- sum(allData18to20[allData18to20$dbh>=gapProp$minSz[i] & allData18to20$dbh<gapProp$maxSz[i],"dbh"])/(areaSampled18to20tall)/10000
     
     
-    # gapProp$oldGrowth[i] <- sum(oldGrowthGaps[oldGrowthGaps$dbh>=gapProp$minSz[i] & oldGrowthGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(oldGrowthGaps$dbh)
-    # gapProp$secondary[i] <- sum(secondaryGaps[secondaryGaps$dbh>=gapProp$minSz[i] & secondaryGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(secondaryGaps$dbh)
-    gapProp$oldGrowth[i] <- sum(oldGrowthGaps[oldGrowthGaps$dbh>=gapProp$minSz[i] & oldGrowthGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledOld18+areaSampledOld20)/10000
-    gapProp$secondary[i] <- sum(secondaryGaps[secondaryGaps$dbh>=gapProp$minSz[i] & secondaryGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledSec18+areaSampledSec20)/10000
+    gapProp$oldGrowth[i] <- sum(oldGrowthGaps[oldGrowthGaps$dbh>=gapProp$minSz[i] & oldGrowthGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(oldGrowthGaps$dbh)
+    gapProp$secondary[i] <- sum(secondaryGaps[secondaryGaps$dbh>=gapProp$minSz[i] & secondaryGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(secondaryGaps$dbh)
+    # gapProp$oldGrowth[i] <- sum(oldGrowthGaps[oldGrowthGaps$dbh>=gapProp$minSz[i] & oldGrowthGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledOld18+areaSampledOld20)/10000
+    # gapProp$secondary[i] <- sum(secondaryGaps[secondaryGaps$dbh>=gapProp$minSz[i] & secondaryGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledSec18+areaSampledSec20)/10000
     
     
-    # gapProp$parAnd[i] <- sum(andesiteGaps[andesiteGaps$dbh>=gapProp$minSz[i] & andesiteGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(andesiteGaps$dbh)
-    # gapProp$parBoh[i] <- sum(bohioGaps[bohioGaps$dbh>=gapProp$minSz[i] & bohioGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(bohioGaps$dbh)
-    # gapProp$parMar[i] <- sum(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapProp$minSz[i] & caimitoMarineGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(caimitoMarineGaps$dbh)
-    # gapProp$parVol[i] <- sum(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapProp$minSz[i] & caimitoVolcanicGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(caimitoVolcanicGaps$dbh)
-    gapProp$parAnd[i] <- sum(andesiteGaps[andesiteGaps$dbh>=gapProp$minSz[i] & andesiteGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledAnd18+areaSampledAnd20)/10000
-    gapProp$parBoh[i] <- sum(bohioGaps[bohioGaps$dbh>=gapProp$minSz[i] & bohioGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledBoh18+areaSampledBoh20)/10000
-    gapProp$parMar[i] <- sum(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapProp$minSz[i] & caimitoMarineGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledMar18+areaSampledMar20)/10000
-    gapProp$parVol[i] <- sum(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapProp$minSz[i] & caimitoVolcanicGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledVol18+areaSampledVol20)/10000
+    gapProp$parAnd[i] <- sum(andesiteGaps[andesiteGaps$dbh>=gapProp$minSz[i] & andesiteGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(andesiteGaps$dbh)
+    gapProp$parBoh[i] <- sum(bohioGaps[bohioGaps$dbh>=gapProp$minSz[i] & bohioGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(bohioGaps$dbh)
+    gapProp$parMar[i] <- sum(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapProp$minSz[i] & caimitoMarineGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(caimitoMarineGaps$dbh)
+    gapProp$parVol[i] <- sum(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapProp$minSz[i] & caimitoVolcanicGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(caimitoVolcanicGaps$dbh)
+    # gapProp$parAnd[i] <- sum(andesiteGaps[andesiteGaps$dbh>=gapProp$minSz[i] & andesiteGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledAnd18+areaSampledAnd20)/10000
+    # gapProp$parBoh[i] <- sum(bohioGaps[bohioGaps$dbh>=gapProp$minSz[i] & bohioGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledBoh18+areaSampledBoh20)/10000
+    # gapProp$parMar[i] <- sum(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapProp$minSz[i] & caimitoMarineGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledMar18+areaSampledMar20)/10000
+    # gapProp$parVol[i] <- sum(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapProp$minSz[i] & caimitoVolcanicGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledVol18+areaSampledVol20)/10000
     
     
-    # gapProp$formBro[i] <- sum(fineLoamGaps[fineLoamGaps$dbh>=gapProp$minSz[i] & fineLoamGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(fineLoamGaps$dbh)
-    # gapProp$formMot[i] <- sum(heavyClayGaps[heavyClayGaps$dbh>=gapProp$minSz[i] & heavyClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(heavyClayGaps$dbh)
-    # gapProp$formPal[i] <- sum(swellingClayGaps[swellingClayGaps$dbh>=gapProp$minSz[i] & swellingClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(swellingClayGaps$dbh)
-    # gapProp$formRed[i] <- sum(lightClayGaps[lightClayGaps$dbh>=gapProp$minSz[i] & lightClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(lightClayGaps$dbh)
-    gapProp$formBro[i] <- sum(fineLoamGaps[fineLoamGaps$dbh>=gapProp$minSz[i] & fineLoamGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledBro18+areaSampledBro20)/10000
-    gapProp$formMot[i] <- sum(heavyClayGaps[heavyClayGaps$dbh>=gapProp$minSz[i] & heavyClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledMot18+areaSampledMot20)/10000
-    gapProp$formPal[i] <- sum(swellingClayGaps[swellingClayGaps$dbh>=gapProp$minSz[i] & swellingClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledPal18+areaSampledPal20)/10000
-    gapProp$formRed[i] <- sum(lightClayGaps[lightClayGaps$dbh>=gapProp$minSz[i] & lightClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledRed18+areaSampledRed20)/10000
+    gapProp$formBro[i] <- sum(fineLoamGaps[fineLoamGaps$dbh>=gapProp$minSz[i] & fineLoamGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(fineLoamGaps$dbh)
+    gapProp$formMot[i] <- sum(heavyClayGaps[heavyClayGaps$dbh>=gapProp$minSz[i] & heavyClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(heavyClayGaps$dbh)
+    gapProp$formPal[i] <- sum(swellingClayGaps[swellingClayGaps$dbh>=gapProp$minSz[i] & swellingClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(swellingClayGaps$dbh)
+    gapProp$formRed[i] <- sum(lightClayGaps[lightClayGaps$dbh>=gapProp$minSz[i] & lightClayGaps$dbh<gapProp$maxSz[i],"dbh"])/sum(lightClayGaps$dbh)
+    # gapProp$formBro[i] <- sum(fineLoamGaps[fineLoamGaps$dbh>=gapProp$minSz[i] & fineLoamGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledBro18+areaSampledBro20)/10000
+    # gapProp$formMot[i] <- sum(heavyClayGaps[heavyClayGaps$dbh>=gapProp$minSz[i] & heavyClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledMot18+areaSampledMot20)/10000
+    # gapProp$formPal[i] <- sum(swellingClayGaps[swellingClayGaps$dbh>=gapProp$minSz[i] & swellingClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledPal18+areaSampledPal20)/10000
+    # gapProp$formRed[i] <- sum(lightClayGaps[lightClayGaps$dbh>=gapProp$minSz[i] & lightClayGaps$dbh<gapProp$maxSz[i],"dbh"])/(areaSampledRed18+areaSampledRed20)/10000
+  }
+  
+  # Make data frame
+  gapPropN <- data.frame(minSz = gapBins[1:(length(gapBins)-1)],
+                        maxSz = gapBins[2:(length(gapBins))],
+                        yr15to18 = NA,
+                        yr18to20 = NA,
+                        oldGrowth = NA,
+                        secondary = NA,
+                        parAnd = NA,
+                        parBoh = NA,
+                        parMar = NA,
+                        parVol = NA,
+                        formBro = NA,
+                        formMot = NA,
+                        formPal = NA,
+                        formRed = NA)
+  
+  for(i in 1:(length(gapBins)-1)){
+    gapPropN$yr15to18[i] <- length(allData15to18[allData15to18$dbh>=gapPropN$minSz[i] & allData15to18$dbh<gapPropN$maxSz[i],"dbh"])/length(allData15to18$dbh)
+    gapPropN$yr18to20[i] <- length(allData18to20[allData18to20$dbh>=gapPropN$minSz[i] & allData18to20$dbh<gapPropN$maxSz[i],"dbh"])/length(allData18to20$dbh)
+    # gapPropN$yr15to18[i] <- length(allData15to18[allData15to18$dbh>=gapPropN$minSz[i] & allData15to18$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampled15to18tall)/10000
+    # gapPropN$yr18to20[i] <- length(allData18to20[allData18to20$dbh>=gapPropN$minSz[i] & allData18to20$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampled18to20tall)/10000
+    
+    
+    gapPropN$oldGrowth[i] <- length(oldGrowthGaps[oldGrowthGaps$dbh>=gapPropN$minSz[i] & oldGrowthGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(oldGrowthGaps$dbh)
+    gapPropN$secondary[i] <- length(secondaryGaps[secondaryGaps$dbh>=gapPropN$minSz[i] & secondaryGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(secondaryGaps$dbh)
+    # gapPropN$oldGrowth[i] <- length(oldGrowthGaps[oldGrowthGaps$dbh>=gapPropN$minSz[i] & oldGrowthGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledOld18+areaSampledOld20)/10000
+    # gapPropN$secondary[i] <- length(secondaryGaps[secondaryGaps$dbh>=gapPropN$minSz[i] & secondaryGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledSec18+areaSampledSec20)/10000
+    
+    
+    gapPropN$parAnd[i] <- length(andesiteGaps[andesiteGaps$dbh>=gapPropN$minSz[i] & andesiteGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(andesiteGaps$dbh)
+    gapPropN$parBoh[i] <- length(bohioGaps[bohioGaps$dbh>=gapPropN$minSz[i] & bohioGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(bohioGaps$dbh)
+    gapPropN$parMar[i] <- length(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapPropN$minSz[i] & caimitoMarineGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(caimitoMarineGaps$dbh)
+    gapPropN$parVol[i] <- length(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapPropN$minSz[i] & caimitoVolcanicGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(caimitoVolcanicGaps$dbh)
+    # gapPropN$parAnd[i] <- length(andesiteGaps[andesiteGaps$dbh>=gapPropN$minSz[i] & andesiteGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledAnd18+areaSampledAnd20)/10000
+    # gapPropN$parBoh[i] <- length(bohioGaps[bohioGaps$dbh>=gapPropN$minSz[i] & bohioGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledBoh18+areaSampledBoh20)/10000
+    # gapPropN$parMar[i] <- length(caimitoMarineGaps[caimitoMarineGaps$dbh>=gapPropN$minSz[i] & caimitoMarineGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledMar18+areaSampledMar20)/10000
+    # gapPropN$parVol[i] <- length(caimitoVolcanicGaps[caimitoVolcanicGaps$dbh>=gapPropN$minSz[i] & caimitoVolcanicGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledVol18+areaSampledVol20)/10000
+    
+    
+    gapPropN$formBro[i] <- length(fineLoamGaps[fineLoamGaps$dbh>=gapPropN$minSz[i] & fineLoamGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(fineLoamGaps$dbh)
+    gapPropN$formMot[i] <- length(heavyClayGaps[heavyClayGaps$dbh>=gapPropN$minSz[i] & heavyClayGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(heavyClayGaps$dbh)
+    gapPropN$formPal[i] <- length(swellingClayGaps[swellingClayGaps$dbh>=gapPropN$minSz[i] & swellingClayGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(swellingClayGaps$dbh)
+    gapPropN$formRed[i] <- length(lightClayGaps[lightClayGaps$dbh>=gapPropN$minSz[i] & lightClayGaps$dbh<gapPropN$maxSz[i],"dbh"])/length(lightClayGaps$dbh)
+    # gapPropN$formBro[i] <- length(fineLoamGaps[fineLoamGaps$dbh>=gapPropN$minSz[i] & fineLoamGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledBro18+areaSampledBro20)/10000
+    # gapPropN$formMot[i] <- length(heavyClayGaps[heavyClayGaps$dbh>=gapPropN$minSz[i] & heavyClayGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledMot18+areaSampledMot20)/10000
+    # gapPropN$formPal[i] <- length(swellingClayGaps[swellingClayGaps$dbh>=gapPropN$minSz[i] & swellingClayGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledPal18+areaSampledPal20)/10000
+    # gapPropN$formRed[i] <- length(lightClayGaps[lightClayGaps$dbh>=gapPropN$minSz[i] & lightClayGaps$dbh<gapPropN$maxSz[i],"dbh"])/(areaSampledRed18+areaSampledRed20)/10000
   }
   
   # Make plots
@@ -1280,6 +1329,11 @@
     gapPropAge <- as.matrix(gapProp[,c("oldGrowth","secondary")])
     gapPropParent <- as.matrix(gapProp[,c("parAnd","parBoh","parMar","parVol")])
     gapPropForm <- as.matrix(gapProp[,c("formBro","formMot","formPal","formRed")])
+    
+    gapPropYearN <- as.matrix(gapPropN[,c("yr15to18","yr18to20")])
+    gapPropAgeN <- as.matrix(gapPropN[,c("oldGrowth","secondary")])
+    gapPropParentN <- as.matrix(gapPropN[,c("parAnd","parBoh","parMar","parVol")])
+    gapPropFormN <- as.matrix(gapPropN[,c("formBro","formMot","formPal","formRed")])
     
     yRange <- 0.02+max(apply(gapPropYear,2,"sum"),apply(gapPropAge,2,"sum"),apply(gapPropParent,2,"sum"),apply(gapPropForm,2,"sum"))
     gapCols <- viridis::viridis(nrow(gapProp))
@@ -1297,36 +1351,47 @@
            paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
            title="Gap size (m2)")
 
-    barplot(gapPropAge,
+    par(mfrow=c(2,3), mar=c(0,1,1,0), oma=c(3,3,5,1))
+    
+    barplot(gapPropAgeN,
+            ylim=c(0,yRange),
+            col=gapCols,
+            ylab="Proportion of disturbances",
+            cex.axis=1.5)
+
+    barplot(gapPropParentN,
+            ylim=c(0,yRange),
+            yaxt="n", ylab = NA,
+            col=gapCols)
+    
+    legend(x=-4,y=1.45,col=gapCols,pch=19,bty="n",horiz=F,
+           xpd=NA,
+           ncol=5,
+           c(paste0(gapBins[1:(length(gapBins)-2)],"-",gapBins[2:(length(gapBins)-1)]),"6400+"),
+           cex = 1.5)
+    
+    barplot(gapPropFormN,
+            ylim=c(0,yRange),
+            yaxt="n", ylab = NA,
+            col=gapCols)
+    
+    barplot(gapPropAgeN,
             names = c("Old growth","Secondary"),
             ylim=c(0,yRange),
             col=gapCols,
-            ylab="Proportion of area")
-    
-    legend(x=0.15,y=0.085,col=gapCols,pch=19,bty="n",horiz=F,xpd=T,ncol=5,
-           paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
-           title="Gap size (m2)")
-    
+            ylab="Proportion of area",
+            cex.axis=1.5)
 
     barplot(gapPropParent,
             names = c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
             ylim=c(0,yRange),
-            col=gapCols,
-            ylab="Proportion of area")
-    
-    legend(x=0.15,y=0.085,col=gapCols,pch=19,bty="n",horiz=F,xpd=T,ncol=5,
-           paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
-           title="Gap size (m2)")
-    
+            yaxt="n", ylab = NA,
+            col=gapCols)
 
     barplot(gapPropForm,
             names = c("Brown fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
             ylim=c(0,yRange),
-            col=gapCols,
-            ylab="Proportion of area")
-    
-    legend(x=0.15,y=0.085,col=gapCols,pch=19,bty="n",horiz=F,xpd=T,ncol=5,
-           paste0(gapBins[1:(length(gapBins)-1)],"-",gapBins[2:(length(gapBins))]),
-           title="Gap size (m2)")
+            yaxt="n", ylab = NA,
+            col=gapCols)
     
   
