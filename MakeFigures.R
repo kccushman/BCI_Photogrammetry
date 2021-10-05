@@ -1982,17 +1982,17 @@ legend(x=35,y=0.05,
       predFixRed <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="RedLightClay","fix_pred"]  
       
 # MAKE PLOT  
-    yLimVal_a <- range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"]) + c(0,0.003)
-    yLimVal_b <- range(c(0,gapProps[,-1]))
-    yLimVal_c <- range(c(chm_all$y, chm_Old$y, chm_Sec$y,
+    yLimVal_a <- 100*range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"]) + c(0,0.3)
+    yLimVal_b <- 100*range(c(0,gapProps[,-1]))
+    yLimVal_c <- 100*range(c(chm_all$y, chm_Old$y, chm_Sec$y,
                          chm_And$y, chm_Boh$y, chm_Mar$y, chm_Vol$y,
                          chm_Bro$y, chm_Mot$y, chm_Pal$y, chm_Red$y))  
-    cxAxis = 1.2
+    cxAxis = 1.4
     
     par(mfrow=c(3,3), mar=c(1,1,0,1), oma=c(3,5,2,1), las=1)
   
   # VIOLIN PLOTS OF PREDICTED VALUES FROM FIXED EFFECTS
-    vioplot::vioplot(fix_pred~age, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+    vioplot::vioplot(100*fix_pred~age, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
                      ylim = yLimVal_a,
                      col = c(colOld, colSec),
                      cex=1.5,
@@ -2000,35 +2000,35 @@ legend(x=35,y=0.05,
                      xaxt = "n",
                      cex.axis = cxAxis)
     mtext("Pred. disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
-    text("a", x = 0.5, y = 0.0243, cex=1.2)
+    text("a", x = 0.5, y = 2.43, cex=cxAxis)
     mtext("Forest age", side=3, outer=F, line=0.5)
     
-    vioplot::vioplot(fix_pred~soilParent, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+    vioplot::vioplot(100*fix_pred~soilParent, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
                      ylim = yLimVal_a,
                      cex=1.5,
                      range=-1,
                      col = c(colAnd, colBoh, colMar, colVol),
                      xaxt = "n",
                      yaxt="n")
-    text("b", x = 0.5, y = 0.0243, cex=1.2)
+    text("b", x = 0.5, y = 2.43, cex=cxAxis)
     mtext("Soil parent material", side=3, outer=F, line=0.5)
     
     
-    vioplot::vioplot(fix_pred~soilForm, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+    vioplot::vioplot(100*fix_pred~soilForm, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
                      ylim = yLimVal_a,
                      cex=1.5,
                      range=-1,
                      col = c(colBro, colMot, colPal, colRed),
                      xaxt = "n",
                      yaxt="n")
-    text("c", x = 0.5, y = 0.0243, cex=1.2)
+    text("c", x = 0.5, y = 2.43, cex=cxAxis)
     mtext("Soil form", side=3, outer=F, line=0.5)
     
     
   # PROPORTION OF AREA IN NEW GAPS
     
     # age
-      plot(Age_OldGrowth~ht, data = gapProps,
+      plot(100*Age_OldGrowth~ht, data = gapProps,
            type = "l",
            xaxt="n",
            xlim = c(0,50),
@@ -2036,7 +2036,7 @@ legend(x=35,y=0.05,
            lwd = 2,
            col = adjustcolor(colOld, 0.8),
            cex.axis = cxAxis)
-      lines(Age_Secondary~ht, data = gapProps,
+      lines(100*Age_Secondary~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colSec, 0.8))
       # abline(h=max(gapCDFs$Age_OldGrowth),
@@ -2045,7 +2045,7 @@ legend(x=35,y=0.05,
       # abline(h=max(gapCDFs$Age_Secondary),
       #        col = adjustcolor(colSec, 0.4),
       #        lwd=2, lty=1)
-      text("d", x = 0, y = 0.036, cex=1.2)
+      text("d", x = 0, y = 3.6, cex=cxAxis)
       
       # legend(x=15,y=0.012,
       #        c("Old growth","Secondary"),
@@ -2056,7 +2056,7 @@ legend(x=35,y=0.05,
       
       
       # parent material 
-      plot(Parent_Bohio~ht, data = gapProps,
+      plot(100*Parent_Bohio~ht, data = gapProps,
            type = "l",
            xaxt="n",yaxt="n",
            xlim = c(0,50),
@@ -2064,13 +2064,13 @@ legend(x=35,y=0.05,
            lwd = 2,
            col = adjustcolor(colBoh, 0.8),
            cex.axis = cxAxis)
-      lines(Parent_CaimitoVolcanic~ht, data = gapProps,
+      lines(100*Parent_CaimitoVolcanic~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colVol, 0.8))
-      lines(Parent_CaimitoMarineSedimentary~ht, data = gapProps,
+      lines(100*Parent_CaimitoMarineSedimentary~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colMar, 0.8))
-      lines(Parent_Andesite~ht, data = gapProps,
+      lines(100*Parent_Andesite~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colAnd, 0.8))
       # abline(h=max(gapCDFs$Parent_Bohio),
@@ -2085,7 +2085,7 @@ legend(x=35,y=0.05,
       # abline(h=max(gapCDFs$Parent_Andesite),
       #        col = adjustcolor(colAnd, 0.4),
       #        lwd=2, lty=1)
-      text("e", x = 0, y = 0.036, cex=1.2)
+      text("e", x = 0, y = 3.6, cex=cxAxis)
       # legend(x=15,y=0.012,
       #        c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
       #        col=adjustcolor(c(colAnd,colBoh,colMar,colVol),0.8),
@@ -2093,7 +2093,7 @@ legend(x=35,y=0.05,
       #        bty="n")
       
       # soil form
-      plot(Form_RedLightClay~ht, data = gapProps,
+      plot(100*Form_RedLightClay~ht, data = gapProps,
            type = "l",
            xaxt="n",yaxt="n",
            xlim = c(0,50),
@@ -2101,13 +2101,13 @@ legend(x=35,y=0.05,
            lwd = 2,
            col = adjustcolor(colRed, 0.8),
            cex.axis = cxAxis)
-      lines(Form_BrownFineLoam~ht, data = gapProps,
+      lines(100*Form_BrownFineLoam~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colBro, 0.8))
-      lines(Form_PaleSwellingClay~ht, data = gapProps,
+      lines(100*Form_PaleSwellingClay~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colPal, 0.8))
-      lines(Form_MottledHeavyClay~ht, data = gapProps,
+      lines(100*Form_MottledHeavyClay~ht, data = gapProps,
             lwd = 2,
             col = adjustcolor(colMot, 0.8))
       # abline(h=max(gapCDFs$Form_RedLightClay),
@@ -2122,7 +2122,7 @@ legend(x=35,y=0.05,
       # abline(h=max(gapCDFs$Form_MottledHeavyClay),
       #        col = adjustcolor(colMot, 0.4),
       #        lwd=2, lty=1)
-      text("f", x = 0, y = 0.036, cex=1.2)
+      text("f", x = 0, y = 3.6, cex=cxAxis)
       # legend(x=15,y=0.012,
       #        c("Fine loam","Mottled heavy clay","Pale swelling clay","Red light clay"),
       #        col=adjustcolor(c(colBro,colMot,colPal,colRed),0.8),
@@ -2131,7 +2131,7 @@ legend(x=35,y=0.05,
       
     # CANOPY HEIGHT DISTRIBUTIONS
       # age
-      plot(chm_Old,
+      plot(x=chm_Old$x, y = 100*chm_Old$y,
            type = "l",
            main = NA,
            xlim = c(0,50),
@@ -2139,15 +2139,15 @@ legend(x=35,y=0.05,
            lwd = 2,
            col = adjustcolor(colOld, 0.8),
            cex.axis = cxAxis)
-      lines(chm_Sec,
+      lines(x=chm_Sec$x, y = 100*chm_Sec$y,
             lwd = 2,
             col = adjustcolor(colSec, 0.8))
-      text("g", x = 0, y = 0.048, cex=1.2)
+      text("g", x = 0, y = 4.8, cex=cxAxis)
       mtext("Canopy height distribution", side=2, outer=F, line=4, las=0, cex=0.8)
       
     
       # parent material
-      plot(chm_Boh,
+      plot(x=chm_Boh$x, y = 100*chm_Boh$y,
            type = "l",
            yaxt = "n",
            main = NA,
@@ -2156,19 +2156,19 @@ legend(x=35,y=0.05,
            lwd = 2,
            col = adjustcolor(colBoh, 0.8),
            cex.axis = cxAxis)
-      lines(chm_Vol,
+      lines(x=chm_Vol$x, y = 100*chm_Vol$y,
             lwd = 2,
             col = adjustcolor(colVol, 0.8))
-      lines(chm_Mar,
+      lines(x=chm_Mar$x, y = 100*chm_Mar$y,
             lwd = 2,
             col = adjustcolor(colMar, 0.8))
-      lines(chm_And,
+      lines(x=chm_And$x, y = 100*chm_And$y,
             lwd = 2,
             col = adjustcolor(colAnd, 0.8))
-      text("h", x = 0, y = 0.048, cex=1.2)
+      text("h", x = 0, y = 4.8, cex=cxAxis)
       
       # soil form    
-        plot(chm_Red,
+        plot(x=chm_Red$x, y = 100*chm_Red$y,
              type = "l",
              yaxt = "n",
              main = NA,
@@ -2177,16 +2177,16 @@ legend(x=35,y=0.05,
              lwd = 2,
              col = adjustcolor(colRed, 0.8),
              cex.axis = cxAxis)
-        lines(chm_Bro,
+        lines(x=chm_Bro$x, y = 100*chm_Bro$y,
               lwd = 2,
               col = adjustcolor(colBro, 0.8))
-        lines(chm_Pal,
+        lines(x=chm_Pal$x, y = 100*chm_Pal$y,
               lwd = 2,
               col = adjustcolor(colPal, 0.8))
-        lines(chm_Mot,
+        lines(x=chm_Mot$x, y = 100*chm_Mot$y,
               lwd = 2,
               col = adjustcolor(colMot, 0.8))
-        text("i", x = 0, y = 0.048, cex=1.2)
+        text("i", x = 0, y = 4.8, cex=cxAxis)
         
         mtext("Canopy height (m)", side=1, outer=T, line=1.5)
     
