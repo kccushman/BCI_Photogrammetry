@@ -811,111 +811,194 @@ dev.off()
                bty="n", box=F, xaxt="n", yaxt="n",
                main = "Predicted (fixed + random) 2018-2020")  
   
-#### Plot S#: Predicted vs observed values at 40 m resolution ####
-summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),]))
+#### Plot S15: Predicted vs observed values at various resolutions ####
+
+# First, aggregate predicted and observed rasters to different spatial scales
+obsRaster18_80m <- raster::aggregate(obsRaster18, fact=2, fun=mean)  
+obsRaster20_80m <- raster::aggregate(obsRaster20, fact=2, fun=mean)  
+obsRaster18_160m <- raster::aggregate(obsRaster18, fact=4, fun=mean)  
+obsRaster20_160m <- raster::aggregate(obsRaster20, fact=4, fun=mean)  
   
-  smoothAll <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"pred"],
-                            y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],
-                            degree=1, span = 1.2)
-  smooth18 <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2018","pred"],
-                            y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2018","gapPropCens"],
-                            degree=1, span = 1.2)
-  smooth20 <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2020","pred"],
-                            y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2020","gapPropCens"],
-                            degree=1, span = 1.2)
+predRaster18_80m <- raster::aggregate(predMeanRaster18, fact=2, fun=mean)  
+predRaster20_80m <- raster::aggregate(predMeanRaster20, fact=2, fun=mean)  
+predRaster18_160m <- raster::aggregate(predMeanRaster18, fact=4, fun=mean)  
+predRaster20_160m <- raster::aggregate(predMeanRaster20, fact=4, fun=mean)
+
+predFixRaster18_80m <- raster::aggregate(fixRaster18, fact=2, fun=mean)  
+predFixRaster20_80m <- raster::aggregate(fixRaster20, fact=2, fun=mean)  
+predFixRaster18_160m <- raster::aggregate(fixRaster18, fact=4, fun=mean)  
+predFixRaster20_160m <- raster::aggregate(fixRaster20, fact=4, fun=mean)
+  
+summary(lm(c(raster::values(obsRaster18),raster::values(obsRaster20))~c(raster::values(predMeanRaster18),raster::values(predMeanRaster20))))
+summary(lm(c(raster::values(obsRaster18_80m),raster::values(obsRaster20_80m))~c(raster::values(predRaster18_80m),raster::values(predRaster20_80m))))
+summary(lm(c(raster::values(obsRaster18_160m),raster::values(obsRaster20_160m))~c(raster::values(predRaster18_160m),raster::values(predRaster20_160m))))
+
+
+smooth40m <- loess.smooth(x = c(raster::values(predMeanRaster18),raster::values(predMeanRaster20)),
+                          y = c(raster::values(obsRaster18),raster::values(obsRaster20)),
+                          degree=2, span = 1/3)
+smooth80m <- loess.smooth(x = c(raster::values(predRaster18_80m),raster::values(predRaster20_80m)),
+                          y = c(raster::values(obsRaster18_80m),raster::values(obsRaster20_80m)),
+                          degree=2, span = 1/3)
+smooth160m <- loess.smooth(x = c(raster::values(predRaster18_160m),raster::values(predRaster20_160m)),
+                           y = c(raster::values(obsRaster18_160m),raster::values(obsRaster20_160m)),
+                           degree=2, span = 1/3)
   
   
-  par(las=1, mfrow=c(1,3), mar=c(3,3,1,0),oma=c(1,3,1,1))
+par(las=1, mfrow=c(1,3), mar=c(3,3,1,0),oma=c(1,3,1,1))
   plot(gapPropCens~pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
        xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
        ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
        col = adjustcolor("black", 0.08),
-       main = "All years",
+       main = "0.16 ha",
        ylab = NA,
        xlab = NA,
        cex = 0.5,
        pch=19)
-  lines(smoothAll, col="red",lwd=2, lty=2)
+  lines(smooth40m, col="red",lwd=2, lty=2)
   abline(a=0,b=1,col="red")
-  mtext("Observed disturbance proportion", side=2,outer=T, las=0)
-  mtext("Predicted disturbance proportion (fixed + random effects)", side=1,outer=T)
+  
+  plot(x = c(raster::values(predRaster18_80m),raster::values(predRaster20_80m)),
+       y = c(raster::values(obsRaster18_80m),raster::values(obsRaster20_80m)),
+       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
+       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
+       col = adjustcolor("black", 0.08),
+       main = "0.64 ha",
+       yaxt = "n",
+       ylab = NA,
+       xlab = NA,
+       cex = 0.75,
+       pch=19)  
+  lines(smooth80m, col="red",lwd=2, lty=2)
+  abline(a=0,b=1,col="red")
+  
+  plot(x = c(raster::values(predRaster18_160m),raster::values(predRaster20_160m)),
+       y = c(raster::values(obsRaster18_160m),raster::values(obsRaster20_160m)),
+       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
+       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
+       col = adjustcolor("black", 0.08),
+       main = "2.56 ha",
+       yaxt = "n",
+       ylab = NA,
+       xlab = NA,
+       cex = 1.2,
+       pch=19)
+  lines(smooth160m, col="red",lwd=2, lty=2)
+  abline(a=0,b=1,col="red")
+  mtext("Observed disturbance rate", side=2,outer=T, las=0)
+  mtext("Predicted disturbance rate (fixed + random effects)", side=1,outer=T)
 
-  
-  plot(gapPropCens~pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2018",],
-       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
-       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
-       col = adjustcolor(col18, 0.08),
-       main = "2015-2018",
-       ylab = NA,
-       xlab = NA,
-       yaxt="n",
-       cex = 0.5,
-       pch=19)
-  lines(smooth18, col="red", lwd=2, lty=2)
-  abline(a=0,b=1,col="red")
-  
-  plot(gapPropCens~pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2020",],
-       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
-       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"gapPropCens"],na.rm=T),
-       col = adjustcolor(col20, 0.08),
-       main = "2015-2018",
-       ylab = NA,
-       xlab = NA,
-       yaxt="n",
-       cex = 0.5,
-       pch=19)
-  lines(smooth20, col="red", lwd=2, lty=2)
-  abline(a=0,b=1,col="red")
+  resd40m <- c(raster::values(obsRaster18),raster::values(obsRaster20)) - c(raster::values(predMeanRaster18),raster::values(predMeanRaster20))
+  resd80m <- c(raster::values(obsRaster18_80m),raster::values(obsRaster20_80m)) - c(raster::values(predRaster18_80m),raster::values(predRaster20_80m))
+  resd160m <- c(raster::values(obsRaster18_160m),raster::values(obsRaster20_160m)) - c(raster::values(predRaster18_160m),raster::values(predRaster20_160m))
   
   
-  smoothAllb <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],
-                            y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],
-                            degree=1, span = 1.2)
-  smooth18b <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2018","fix_pred"],
-                           y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2018","resd"],
-                           degree=1, span = 1.2)
-  smooth20b <- loess.smooth(x = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2020","fix_pred"],
-                           y = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens)& bci.gapsAll$Year=="2020","resd"],
-                           degree=1, span = 1.2)
+  # Plot residuals with respect to predicted values from fixed + random and only fixed effects
+  smooth40m_b <- loess.smooth(x = c(raster::values(predMeanRaster18),raster::values(predMeanRaster20)),
+                            y = resd40m,
+                            degree=2, span = 1/3)
+  smooth80m_b <- loess.smooth(x = c(raster::values(predRaster18_80m),raster::values(predRaster20_80m)),
+                            y = resd80m,
+                            degree=2, span = 1/3)
+  smooth160m_b <- loess.smooth(x = c(raster::values(predRaster18_160m),raster::values(predRaster20_160m)),
+                             y = resd160m,
+                             degree=2, span = 1/3)
+  
+  smooth40m_c <- loess.smooth(x = c(raster::values(fixRaster18),raster::values(fixRaster20)),
+                              y = resd40m,
+                              degree=2, span = 1/3)
+  smooth80m_c <- loess.smooth(x = c(raster::values(predFixRaster18_80m),raster::values(predFixRaster20_80m)),
+                              y = resd80m,
+                              degree=2, span = 1/3)
+  smooth160m_c <- loess.smooth(x = c(raster::values(predFixRaster18_160m),raster::values(predFixRaster20_160m)),
+                               y = resd160m,
+                               degree=2, span = 1/3)
   
   par(las=1, mfrow=c(1,3), mar=c(3,3,1,0),oma=c(1,3,1,1))
-  plot(resd~fix_pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
-       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],na.rm=T),
-       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],na.rm=T),
+  plot(x = c(raster::values(predMeanRaster18),raster::values(predMeanRaster20)),
+       y = resd40m,
+       xlim=range(c(raster::values(predMeanRaster18),raster::values(predMeanRaster20)),na.rm=T),
+       ylim=range(resd40m,na.rm=T),
        col = adjustcolor("black", 0.08),
-       #main = "All years",
        ylab = NA,
        xlab = NA,
        cex = 0.5,
        pch=19)
-  lines(smoothAllb, col="red",lwd=2, lty=1)
-  mtext("Predicted disturbance distribubtion (fixed effects only)", side=1,outer=T)
+  lines(smooth40m_b, col="red",lwd=2, lty=2)
+  abline(h=0, col="red",lwd=1)
+  
+  plot(x = c(raster::values(predRaster18_80m),raster::values(predRaster20_80m)),
+       y = resd80m,
+       xlim=range(c(raster::values(predMeanRaster18),raster::values(predMeanRaster20)),na.rm=T),
+       ylim=range(resd40m,na.rm=T),
+       col = adjustcolor("black", 0.08),
+       yaxt="n",
+       ylab = NA,
+       xlab = NA,
+       cex = 0.75,
+       pch=19)
+  lines(smooth80m_b, col="red",lwd=2, lty=2)
+  abline(h=0, col="red",lwd=1)
+  
+  plot(x = c(raster::values(predRaster18_160m),raster::values(predRaster20_160m)),
+       y = resd160m,
+       xlim=range(c(raster::values(predMeanRaster18),raster::values(predMeanRaster20)),na.rm=T),
+       ylim=range(resd40m,na.rm=T),
+       col = adjustcolor("black", 0.08),
+       yaxt="n",
+       ylab = NA,
+       xlab = NA,
+       cex = 1.2,
+       pch=19)
+  lines(smooth160m_b, col="red",lwd=2, lty=2)
+  abline(h=0, col="red",lwd=1)
+  
+  mtext("Predicted disturbance rate (fixed + random effects)", side=1,outer=T)
   mtext("Residual", side=2,outer=T, las=0)
 
+  par(las=1, mfrow=c(1,3), mar=c(3,3,1,0),oma=c(1,3,1,1))
+  plot(x = c(raster::values(fixRaster18),raster::values(fixRaster20)),
+       y = resd40m,
+       xlim=range(c(raster::values(fixRaster18),raster::values(fixRaster20)),na.rm=T),
+       ylim=range(resd40m,na.rm=T),
+       col = adjustcolor("black", 0.08),
+       ylab = NA,
+       xlab = NA,
+       cex = 0.5,
+       pch=19)
+  lines(smooth40m_c, col="red",lwd=2, lty=2)
+  abline(h=0, col="red",lwd=1)
   
-  plot(resd~fix_pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2018",],
-       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],na.rm=T),
-       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],na.rm=T),
-       col = adjustcolor(col18, 0.08),
-       #main = "2015-2018",
+  plot(x = c(raster::values(predFixRaster18_80m),raster::values(predFixRaster20_80m)),
+       y = resd80m,
+       xlim=range(c(raster::values(fixRaster18),raster::values(fixRaster20)),na.rm=T),
+       ylim=range(resd40m,na.rm=T),
+       col = adjustcolor("black", 0.08),
+       yaxt="n",
        ylab = NA,
        xlab = NA,
-       yaxt="n",
-       cex = 0.5,
+       cex = 0.75,
        pch=19)
-  lines(smooth18b, col="red", lwd=2, lty=1)
-
-  plot(resd~fix_pred, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$Year=="2020",],
-       xlim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"],na.rm=T),
-       ylim=range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"resd"],na.rm=T),
-       col = adjustcolor(col20, 0.08),
-       #main = "2015-2018",
+  lines(smooth80m_c, col="red",lwd=2, lty=2)
+  abline(h=0, col="red",lwd=1)
+  
+  plot(x = c(raster::values(predFixRaster18_160m),raster::values(predFixRaster20_160m)),
+       y = resd160m,
+       xlim=range(c(raster::values(fixRaster18),raster::values(fixRaster20)),na.rm=T),
+       ylim=range(resd40m,na.rm=T),
+       col = adjustcolor("black", 0.08),
+       yaxt="n",
        ylab = NA,
        xlab = NA,
-       yaxt="n",
-       cex = 0.5,
+       cex = 1.2,
        pch=19)
-  lines(smooth20b, col="red", lwd=2, lty=1)
+  lines(smooth160m_c, col="red",lwd=2, lty=2)
+  abline(h=0, col="red",lwd=1)
+  
+  mtext("Predicted disturbance rate (fixed effects only)", side=1,outer=T)
+  mtext("Residual", side=2,outer=T, las=0)
+  
+ 
 
 #### Figure 4c: Fixed effects sizes ####  
   fixedResults <- model_full$summary.fixed
@@ -1166,7 +1249,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
       drainSq <- bci.gapsAll$drainMean^2
       drainScaleLinear <- lm(Sc_drainMean~drainMean, data = bci.gapsAll)
       drainScaleQuad <- lm(bci.gapsAll$Sc_drainMean_Sq~drainSq)
-    
+      
     # Find the range of curvature, slope, and HAND; choose new values for plotting
       slopeRange <- seq(range(bci.gapsAll$slopeMean_16)[1],
                         range(bci.gapsAll$slopeMean_16)[2],
@@ -1177,7 +1260,7 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
       drainRange <- seq(range(bci.gapsAll$drainMean)[1],
                         range(bci.gapsAll$drainMean)[2],
                         length.out=100)
-    
+      
     # Generate new y values for ranges from linear models
       curvVals <- model_full$summary.fixed[2,"mean"]*predict(curveScaleLinear, data.frame(curvMean_2 = curvRange))
       
@@ -1186,15 +1269,36 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
       
       drainVals <- (model_full$summary.fixed[5,"mean"]*predict(drainScaleLinear, data.frame(drainMean = drainRange)) 
                     + model_full$summary.fixed[6,"mean"]*predict(drainScaleQuad, data.frame(drainSq = drainRange^2)))
+      
+    # Calculate what this means for predicted disturbance rates,assuming other fixed effects are at their mean
+        # calculate fixed effect mean values
+        meanInt <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_int"], na.rm=T)
+        meanC <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_C"], na.rm=T)
+        meanS <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_S"], na.rm=T)
+        meanS2 <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_S2"], na.rm=T)
+        meanH <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_H"], na.rm=T)
+        meanH2 <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_H2"], na.rm=T)
+        meanParent <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_soilParent"], na.rm=T)
+        meanForm <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_soilForm"], na.rm=T)
+        meanAge <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_age"], na.rm=T)
+        meanYear <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_year"], na.rm=T)
         
-  
-  par(mfrow=c(2,3), mar=c(0,4,0,1), oma=c(5,1,3,1), las=1)
+        curvValsSum <- curvVals + sum(meanInt + meanS + meanS2 + meanH + meanH2 + meanParent + meanForm + meanAge + meanYear)
+        slopeValsSum <- slopeVals + sum(meanInt + meanC + meanH + meanH2 + meanParent + meanForm + meanAge + meanYear)
+        drainValsSum <- drainVals + sum(meanInt + meanC + meanS + meanS2 + meanParent + meanForm + meanAge + meanYear)
+        
+        curvValsRate <- exp(curvValsSum)/(1 + exp(curvValsSum))
+        slopeValsRate <- exp(slopeValsSum)/(1 + exp(slopeValsSum))
+        drainValsRate <- exp(drainValsSum)/(1 + exp(drainValsSum))
+      
+  par(mfrow=c(3,3), mar=c(0,1,0,1), oma=c(5,5,3,1), las=1)
   
   hist(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)],
        xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
        border="white",col="black",
        ylim=c(0,6000),
        main=NA, xaxt="n")
+  mtext("Frequency", side=2, outer=F, las=0, line=3, cex=0.8)
   
   hist(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)],
        xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
@@ -1213,36 +1317,72 @@ summary(lm(gapPropCens~pred, data=bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),])
        xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
        ylim=c(-0.4,0.35), 
-       ylab = "Fixed effect",
+       xaxt="n",
        col="black",
        cex=1.5)
   text("a", x = -3.9, y = 0.35)
-  mtext("Curvature (LaPlacian convexity)",side=1,outer=F, line=3, cex = 0.8)
-  
+  mtext("Fixed effect", side=2, outer=F, las=0, line=3, cex=0.8)
   
   plot(y = slopeVals,
        x = slopeRange,       
        xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
        ylim=c(-0.4,0.35),
+       xaxt="n",
+       yaxt="n",
        ylab = NA,
        col="black",
        cex=1.5)  
   text("b", x = 2, y = 0.35)
-  mtext("Slope (degree)",side=1,outer=F, line=3, cex = 0.8)
-  
+
   plot(y = drainVals,
        x = drainRange,
        xlim=range(bci.gapsAll$drainMean[!is.na(bci.gapsAll$gapPropCens)]),
        type= "l", lwd=2,
+       yaxt="n",
+       xaxt="n",
        pch=20, ylim=c(-0.4,0.35),
        col="black",
        ylab = NA,
        cex=1.5)
   text("c", x = 0, y = 0.35)
+
+  plot(y = curvValsRate*100,
+       x = curvRange, 
+       xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
+       type= "l", lwd=2,
+       ylim=100*range(curvValsRate, slopeValsRate, drainValsRate), 
+       col="black",
+       cex=1.5)
+  text("d", x = -3.9, y = 1.48)
+  mtext("Disturbance rate (%/yr)", side=2, outer=F, las=0, line=3, cex=0.8)
+  mtext("Curvature (LaPlacian convexity)",side=1,outer=F, line=3, cex = 0.8)
+  
+  plot(y = slopeValsRate*100,
+       x = slopeRange,       
+       xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
+       type= "l", lwd=2,
+       ylim=100*range(curvValsRate, slopeValsRate, drainValsRate), 
+       ylab = NA,
+       yaxt="n",
+       
+       col="black",
+       cex=1.5)  
+  text("e", x = 2, y = 1.48)
+  mtext("Slope (degree)",side=1,outer=F, line=3, cex = 0.8)
+  
+  plot(y = drainValsRate*100,
+       x = drainRange,
+       xlim=range(bci.gapsAll$drainMean[!is.na(bci.gapsAll$gapPropCens)]),
+       type= "l", lwd=2,
+       yaxt="n",
+       pch=20,
+       ylim=100*range(curvValsRate, slopeValsRate, drainValsRate), 
+       col="black",
+       ylab = NA,
+       cex=1.5)
+  text("f", x = 0, y = 1.48)
   mtext("Height above drainage (m)",side=1,outer=F, line=3, cex = 0.8)
-  
-  
   
 #### Figure 7: aggregate and look at R2 ####          
     
