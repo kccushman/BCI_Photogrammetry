@@ -544,7 +544,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     
     legendWidth = 2
     legendCex = 2
-    jpeg(filename = "Figure S4. Smoothing scales example.jpg", width=1000,height = 1100)
+    jpeg(filename = "Figure S6. Smoothing scales example.jpg", width=1000,height = 1100)
     par(mfrow = c(4,3), mar=c(1,2,2,5), oma=c(0,1,2,1))
     
     raster::plot(dem1,
@@ -637,7 +637,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     legendWidth = 2
     legendCex = 2
     
-    jpeg(filename = "Figure S5. INLA scale example.jpg", width=1000,height = 600)
+    jpeg(filename = "Figure S7. INLA scale example.jpg", width=1000,height = 600)
     par(mfrow = c(2,3), mar=c(1,2,2,5), oma=c(1,1,2,1))
       
       # 1 m scale
@@ -645,19 +645,19 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
-      mtext(expression("Curvature (LaPlacian convexity)"),side=3, outer=F, cex=1.8, line=2)
+      mtext(expression("Curvature (LaPlacian convexity)"),side=3, outer=F, cex=1.8, line=1)
       
       raster::plot(slopeCrop,col = viridis::plasma(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
-      mtext(expression("Slope (degrees)"),side=3, outer=F, cex=1.8, line=2)
+      mtext(expression("Slope (degrees)"),side=3, outer=F, cex=1.8, line=1)
       
       raster::plot(drainCrop,col = viridis::viridis(128),
                    bty="n", box=F, yaxt="n", xaxt="n",
                    axis.args=list(cex.axis=legendCex),
                    legend.width=legendWidth)
-      mtext(expression("Height above drainage (m)"),side=3, outer=F, cex=1.8, line=2)
+      mtext(expression("Height above drainage (m)"),side=3, outer=F, cex=1.8, line=1)
       
       # resampled
       raster::plot(curvMean, col = viridis::cividis(128),
