@@ -207,6 +207,133 @@ raster::plot(plot18to20,
 raster::plot(buffer,add=T)
 raster::plot(gaps18to20, col = "red",add=T, legend=F)
 
+#### Figure #: Topography and predicted values for a sample area ####
+# Read polygon buffer 25 m inland from lake
+buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs") 
+
+# stream shapefile
+streams <- rgdal::readOGR("D:/BCI_Spatial/BCI_Topo/StreamShapefile/StreamFeature.shp")
+
+# use dem with sigma = 2
+demRaster <- raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/DEM_smooth_",2,".tif")) 
+curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_2.tif")
+slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
+drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
+
+
+cropExtent <- raster::extent(c(626450,626950,1010837,1011357))
+
+# Must run resultsINLA.R through Figure 2i section!# 
+avgPredictedCrop <- raster::crop(avgPredictedRaster, cropExtent)
+avgPredictedCrop <- 100*avgPredictedCrop
+
+demCrop <- raster::resample(demRaster,avgPredictedCrop)
+curvCrop <- raster::resample(curvRaster,avgPredictedCrop)
+slopeCrop <- raster::resample(slopeRaster, avgPredictedCrop)
+drainCrop <- raster::resample(drainRaster, avgPredictedCrop)
+streamCrop <- raster::crop(streams, cropExtent)
+
+legendWidth = 2
+legendCex = 2
+titleCex = 1
+par(mfrow = c(2,3), mar=c(1,2,2,5), oma=c(1,1,2,1))
+
+# Location
+raster::plot(buffer)
+raster::plot(cropExtent, add=T, col="red", lwd=2)
+
+# Elevation
+raster::plot(demCrop,
+             bty="n", box=F, yaxt="n", xaxt="n",
+             axis.args=list(cex.axis=legendCex),
+             legend.width=legendWidth)
+raster::plot(streamCrop, add=T, lwd=1, col="white")
+mtext(expression("Elevation (m)"),side=3, outer=F, cex=titleCex, line=1)
+
+# raster::plot(demMean,
+#              bty="n", box=F, yaxt="n", xaxt="n",
+#              axis.args=list(cex.axis=legendCex),
+#              legend.width=legendWidth)
+# mtext(expression("Elevation (m)"),side=3, outer=F, cex=titleCex, line=1)
+
+# Curvature
+raster::plot(curvCrop,col = viridis::cividis(128),
+             bty="n", box=F, yaxt="n", xaxt="n",
+             axis.args=list(cex.axis=legendCex),
+             legend.width=legendWidth)
+raster::plot(streamCrop, add=T, lwd=1, col="white")
+mtext(expression("Curvature (LaPlacian convexity)"),side=3, outer=F, cex=titleCex, line=1)
+
+raster::plot(slopeCrop,col = viridis::plasma(128),
+             bty="n", box=F, yaxt="n", xaxt="n",
+             axis.args=list(cex.axis=legendCex),
+             legend.width=legendWidth)
+raster::plot(streamCrop, add=T, lwd=1, col="white")
+mtext(expression("Slope (degrees)"),side=3, outer=F, cex=titleCex, line=1)
+
+raster::plot(drainCrop,col = viridis::viridis(128),
+             bty="n", box=F, yaxt="n", xaxt="n",
+             axis.args=list(cex.axis=legendCex),
+             legend.width=legendWidth)
+raster::plot(streamCrop, add=T, lwd=1, col="white")
+mtext(expression("HAND (m)"),side=3, outer=F, cex=titleCex, line=1)
+
+raster::plot(avgPredictedCrop,col = colorRampPalette(c("blue", "red"))(128),
+             bty="n", box=F, yaxt="n", xaxt="n",
+             axis.args=list(cex.axis=legendCex),
+             legend.width=legendWidth)
+raster::plot(streamCrop, add=T, lwd=1, col="white")
+mtext(expression("Predicted disturbance rate (% yr-1)"),side=3, outer=F, cex=titleCex, line=1)
+
+
+par(mfrow = c(2,3), mar=c(4,4,3,1), oma=c(1,1,2,1))
+
+plot(x = raster::values(drainCrop), y = raster::values(curvCrop),
+     pch = 19,
+     xlab = "HAND",
+     ylab = "Curvature")
+text(paste0("r = ",round(cor.test(x = raster::values(drainCrop),
+                                  y = raster::values(curvCrop))$estimate,2)),
+     x = 20, y = -3)
+plot(x = raster::values(drainCrop), y = raster::values(slopeCrop),
+     pch = 19,
+     xlab = "HAND",
+     ylab = "Slope")
+text(paste0("r = ",round(cor.test(x = raster::values(drainCrop),
+                                  y = raster::values(slopeCrop))$estimate,2)),
+     x = 20, y = 6)
+plot(x = raster::values(slopeCrop), y = raster::values(curvCrop),
+     pch = 19,
+     xlab = "Slope",
+     ylab = "Curvature")
+text(paste0("r = ",round(cor.test(x = raster::values(slopeCrop),
+                                  y = raster::values(curvCrop))$estimate,2)),
+     x = 20, y = -3)
+
+plot(x = raster::values(curvCrop), y = raster::values(avgPredictedCrop),
+     pch = 19,
+     xlab = "Curvature",
+     ylab = "Predicted disturbance rate (% yr-1")
+text(paste0("r = ",round(cor.test(x = raster::values(curvCrop),
+                                  y = raster::values(avgPredictedCrop))$estimate,2)),
+     x = -2, y = 0.9)
+
+plot(x = raster::values(slopeCrop), y = raster::values(avgPredictedCrop),
+     pch = 19,
+     xlab = "Slope",
+     ylab = NA)
+text(paste0("r = ",round(cor.test(x = (raster::values(slopeCrop)+raster::values(slopeCrop)^2),
+                                  y = raster::values(avgPredictedCrop))$estimate,2)),
+     x = 10, y = 0.9)
+plot(x = raster::values(drainCrop), y = raster::values(avgPredictedCrop),
+     pch = 19,
+     xlab = "HAND",
+     ylab = NA)
+text(paste0("r = ",round(cor.test(x = (raster::values(drainCrop)+raster::values(drainCrop)^2),
+                                  y = raster::values(avgPredictedCrop))$estimate,2)),
+     x = 10, y = 0.9)
+
 #### Figure S1: plot corrected and uncorrected dCHM #### 
   # Read polygon buffer 25 m inland from lake
     buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
@@ -620,7 +747,7 @@ raster::plot(gaps18to20, col = "red",add=T, legend=F)
     dev.off()
     
     
-#### Figure S5. Spatial averaging at scale of INLA analysis ####
+#### Figure S7. Spatial averaging at scale of INLA analysis ####
     curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_2.tif")
     slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
     drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
@@ -1962,27 +2089,38 @@ legend(x=35,y=0.05,
         print(i)
       }
       
-# Get predicted values from fixed effects from INLA model
+# Get predicted and observed values from fixed effects from INLA model
   # RUN CODE FROM "resultsINLA.R", first two sections
       
     # Forest age  
       predFixOld <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$age=="OldGrowth","fix_pred"]
       predFixSec <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$age=="Secondary","fix_pred"]
+      obsFixOld <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$age=="OldGrowth","gapProp"]
+      obsFixSec <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$age=="Secondary","gapProp"]
       
     # Soil parent material  
       predFixAnd <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="Andesite","fix_pred"]
       predFixBoh <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="Bohio","fix_pred"]
       predFixMar <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="CaimitoMarineSedimentary","fix_pred"]
       predFixVol <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="CaimitoVolcanic","fix_pred"]
+      obsFixAnd <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="Andesite","gapProp"]
+      obsFixBoh <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="Bohio","gapProp"]
+      obsFixMar <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="CaimitoMarineSedimentary","gapProp"]
+      obsFixVol <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilParent=="CaimitoVolcanic","gapProp"]
       
     # Soil form
       predFixBro <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="BrownFineLoam","fix_pred"]
       predFixMot <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="MottledHeavyClay","fix_pred"]
       predFixPal <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="PaleSwellingClay","fix_pred"]
       predFixRed <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="RedLightClay","fix_pred"]  
+      obsFixBro <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="BrownFineLoam","gapProp"]
+      obsFixMot <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="MottledHeavyClay","gapProp"]
+      obsFixPal <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="PaleSwellingClay","gapProp"]
+      obsFixRed <- bci.gapsAll[!is.na(bci.gapsAll$gapPropCens) & bci.gapsAll$soilForm=="RedLightClay","gapProp"]  
+      
       
 # MAKE PLOT  
-    yLimVal_a <- 100*range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"]) + c(0,0.3)
+    yLimVal_a <- 100*range(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_pred"]) + c(0,0.8)
     yLimVal_b <- 100*range(c(0,gapProps[,-1]))
     yLimVal_c <- 100*range(c(chm_all$y, chm_Old$y, chm_Sec$y,
                          chm_And$y, chm_Boh$y, chm_Mar$y, chm_Vol$y,
@@ -1995,42 +2133,113 @@ legend(x=35,y=0.05,
     vioplot::vioplot(100*fix_pred~age, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
                      ylim = yLimVal_a,
                      col = c(colOld, colSec),
+                     drawRect = F,
                      cex=1.5,
                      range=-1,
                      xaxt = "n",
                      cex.axis = cxAxis)
-    mtext("Pred. disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
-    text("a", x = 0.5, y = 2.43, cex=cxAxis)
+    points(x=1:2, y=100*c(mean(obsFixOld),mean(obsFixSec)),
+           col="black",pch=19, cex =2)
+    
+    mtext("Disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
+    text("g", x = 0.5, y = 2.93, cex=cxAxis)
     mtext("Forest age", side=3, outer=F, line=0.5)
     
     vioplot::vioplot(100*fix_pred~soilParent, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
                      ylim = yLimVal_a,
+                     drawRect = F,
                      cex=1.5,
                      range=-1,
                      col = c(colAnd, colBoh, colMar, colVol),
                      xaxt = "n",
                      yaxt="n")
-    text("b", x = 0.5, y = 2.43, cex=cxAxis)
+    points(x=1:4, y=100*c(mean(obsFixAnd),mean(obsFixBoh),mean(obsFixMar),mean(obsFixVol)),
+           col="black",pch=19, cex =2)
+    text("h", x = 0.5, y = 2.93, cex=cxAxis)
     mtext("Soil parent material", side=3, outer=F, line=0.5)
     
     
     vioplot::vioplot(100*fix_pred~soilForm, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
                      ylim = yLimVal_a,
+                     drawRect = F,
                      cex=1.5,
                      range=-1,
                      col = c(colBro, colMot, colPal, colRed),
                      xaxt = "n",
                      yaxt="n")
-    text("c", x = 0.5, y = 2.43, cex=cxAxis)
+    points(x=1:4, y=100*c(mean(obsFixBro),mean(obsFixMot),mean(obsFixPal),mean(obsFixRed)),
+           col="black",pch=19, cex =2)
+    text("i", x = 0.5, y = 2.93, cex=cxAxis)
     mtext("Soil form", side=3, outer=F, line=0.5)
     
+    # CANOPY HEIGHT DISTRIBUTIONS
+    # age
+    plot(x=chm_Old$x, y = 100*chm_Old$y,
+         type = "l",
+         main = NA,
+         xlim = c(0,50),
+         xaxt="n",
+         ylim=yLimVal_c,
+         lwd = 2,
+         col = adjustcolor(colOld, 0.8),
+         cex.axis = cxAxis)
+    lines(x=chm_Sec$x, y = 100*chm_Sec$y,
+          lwd = 2,
+          col = adjustcolor(colSec, 0.8))
+    text("a", x = 0, y = 4.8, cex=cxAxis)
+    mtext("Canopy height distribution", side=2, outer=F, line=4, las=0, cex=0.8)
     
+    
+    # parent material
+    plot(x=chm_Boh$x, y = 100*chm_Boh$y,
+         type = "l",
+         yaxt = "n",
+         xaxt="n",
+         main = NA,
+         xlim = c(0,50),
+         ylim=yLimVal_c,
+         lwd = 2,
+         col = adjustcolor(colBoh, 0.8),
+         cex.axis = cxAxis)
+    lines(x=chm_Vol$x, y = 100*chm_Vol$y,
+          lwd = 2,
+          col = adjustcolor(colVol, 0.8))
+    lines(x=chm_Mar$x, y = 100*chm_Mar$y,
+          lwd = 2,
+          col = adjustcolor(colMar, 0.8))
+    lines(x=chm_And$x, y = 100*chm_And$y,
+          lwd = 2,
+          col = adjustcolor(colAnd, 0.8))
+    text("b", x = 0, y = 4.8, cex=cxAxis)
+    
+    # soil form    
+    plot(x=chm_Red$x, y = 100*chm_Red$y,
+         type = "l",
+         yaxt = "n",
+         xaxt="n",
+         main = NA,
+         xlim = c(0,50),
+         ylim=yLimVal_c,
+         lwd = 2,
+         col = adjustcolor(colRed, 0.8),
+         cex.axis = cxAxis)
+    lines(x=chm_Bro$x, y = 100*chm_Bro$y,
+          lwd = 2,
+          col = adjustcolor(colBro, 0.8))
+    lines(x=chm_Pal$x, y = 100*chm_Pal$y,
+          lwd = 2,
+          col = adjustcolor(colPal, 0.8))
+    lines(x=chm_Mot$x, y = 100*chm_Mot$y,
+          lwd = 2,
+          col = adjustcolor(colMot, 0.8))
+    text("c", x = 0, y = 4.8, cex=cxAxis)
+    
+      
   # PROPORTION OF AREA IN NEW GAPS
     
     # age
       plot(100*Age_OldGrowth~ht, data = gapProps,
            type = "l",
-           xaxt="n",
            xlim = c(0,50),
            ylim = yLimVal_b,
            lwd = 2,
@@ -2052,13 +2261,13 @@ legend(x=35,y=0.05,
       #        col=adjustcolor(c(colOld,colSec),0.8),
       #        lwd=2,
       #        bty="n")
-      mtext("Disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
+      mtext("Obs. disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
       
       
       # parent material 
       plot(100*Parent_Bohio~ht, data = gapProps,
            type = "l",
-           xaxt="n",yaxt="n",
+           yaxt="n",
            xlim = c(0,50),
            ylim = yLimVal_b,
            lwd = 2,
@@ -2095,7 +2304,7 @@ legend(x=35,y=0.05,
       # soil form
       plot(100*Form_RedLightClay~ht, data = gapProps,
            type = "l",
-           xaxt="n",yaxt="n",
+           yaxt="n",
            xlim = c(0,50),
            ylim = yLimVal_b,
            lwd = 2,
@@ -2129,65 +2338,6 @@ legend(x=35,y=0.05,
       #        lwd=2,
       #        bty="n")
       
-    # CANOPY HEIGHT DISTRIBUTIONS
-      # age
-      plot(x=chm_Old$x, y = 100*chm_Old$y,
-           type = "l",
-           main = NA,
-           xlim = c(0,50),
-           ylim=yLimVal_c,
-           lwd = 2,
-           col = adjustcolor(colOld, 0.8),
-           cex.axis = cxAxis)
-      lines(x=chm_Sec$x, y = 100*chm_Sec$y,
-            lwd = 2,
-            col = adjustcolor(colSec, 0.8))
-      text("g", x = 0, y = 4.8, cex=cxAxis)
-      mtext("Canopy height distribution", side=2, outer=F, line=4, las=0, cex=0.8)
-      
-    
-      # parent material
-      plot(x=chm_Boh$x, y = 100*chm_Boh$y,
-           type = "l",
-           yaxt = "n",
-           main = NA,
-           xlim = c(0,50),
-           ylim=yLimVal_c,
-           lwd = 2,
-           col = adjustcolor(colBoh, 0.8),
-           cex.axis = cxAxis)
-      lines(x=chm_Vol$x, y = 100*chm_Vol$y,
-            lwd = 2,
-            col = adjustcolor(colVol, 0.8))
-      lines(x=chm_Mar$x, y = 100*chm_Mar$y,
-            lwd = 2,
-            col = adjustcolor(colMar, 0.8))
-      lines(x=chm_And$x, y = 100*chm_And$y,
-            lwd = 2,
-            col = adjustcolor(colAnd, 0.8))
-      text("h", x = 0, y = 4.8, cex=cxAxis)
-      
-      # soil form    
-        plot(x=chm_Red$x, y = 100*chm_Red$y,
-             type = "l",
-             yaxt = "n",
-             main = NA,
-             xlim = c(0,50),
-             ylim=yLimVal_c,
-             lwd = 2,
-             col = adjustcolor(colRed, 0.8),
-             cex.axis = cxAxis)
-        lines(x=chm_Bro$x, y = 100*chm_Bro$y,
-              lwd = 2,
-              col = adjustcolor(colBro, 0.8))
-        lines(x=chm_Pal$x, y = 100*chm_Pal$y,
-              lwd = 2,
-              col = adjustcolor(colPal, 0.8))
-        lines(x=chm_Mot$x, y = 100*chm_Mot$y,
-              lwd = 2,
-              col = adjustcolor(colMot, 0.8))
-        text("i", x = 0, y = 4.8, cex=cxAxis)
-        
         mtext("Canopy height (m)", side=1, outer=T, line=1.5)
     
     
@@ -2860,4 +3010,37 @@ legend(x=35,y=0.05,
       mtext("Canopy height (m)", side=1, outer=T, line=1.5)
       mtext("Proportion of area", side=2, outer=T, line=2.5, las=0)
       
+      
+#### scratch: violin plots using observed values ####
+      
+      par(mfrow=c(1,3))
+      vioplot::vioplot(100*gapProp~age, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+                       col = c(colOld, colSec),
+                       ylog=T,
+                       cex=1.5,
+                       range=-1,
+                       xaxt = "n",
+                       cex.axis = cxAxis)
+
+      
+      mtext("Disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
+
+      mtext("Forest age", side=3, outer=F, line=0.5)
+      
+      vioplot::vioplot(100*gapProp~soilParent, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+                       cex=1.5,
+                       range=-1,
+                       col = c(colAnd, colBoh, colMar, colVol),
+                       xaxt = "n",
+                       yaxt="n")
+      mtext("Soil parent material", side=3, outer=F, line=0.5)
+      
+      
+      vioplot::vioplot(100*gapProp~soilForm, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
+                       cex=1.5,
+                       range=-1,
+                       col = c(colBro, colMot, colPal, colRed),
+                       xaxt = "n",
+                       yaxt="n")
+      mtext("Soil form", side=3, outer=F, line=0.5)      
       
