@@ -43,6 +43,9 @@ raster::plot(examplesGaps, add=T, border="black", lwd=3)
 
 #### Figure 2: Raster plots of landscape predictors ####
 
+load("INLA/INLA_prelim_40m_tin.RData")
+gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
+
 buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
 buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
 
@@ -50,9 +53,22 @@ buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_d
 plotShp <- rgdal::readOGR("D:/BCI_Spatial/BCI50ha/BCI_50ha.shp")
 plotShp <- sp::spTransform(plotShp, sp::proj4string(buffer))
 
-curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_16.tif")
-slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
-drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
+# Curvature
+  curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_2.tif")
+  curvRaster <- raster::crop(curvRaster, raster::extent(bci.gaps18))
+  curvRaster <- raster::aggregate(curvRaster, 40)
+
+# Slope
+  slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
+  slopeRaster <- raster::crop(slopeRaster, raster::extent(bci.gaps18))
+  slopeRaster <- raster::aggregate(slopeRaster, 40)
+
+# Distance above drainage raster
+  drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
+  # resample to same extent as gap rasters (adds NA area to edges)
+  drainRaster <- raster::resample(drainRaster, gaps18to20)
+  drainRaster <- raster::crop(drainRaster, raster::extent(bci.gaps18))
+  drainRaster <- raster::aggregate(drainRaster, 40)
 
 curvRaster <- raster::mask(curvRaster, buffer)
 slopeRaster <- raster::mask(slopeRaster, buffer)
