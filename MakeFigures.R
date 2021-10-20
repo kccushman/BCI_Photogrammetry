@@ -208,6 +208,7 @@ raster::plot(buffer,add=T)
 raster::plot(gaps18to20, col = "red",add=T, legend=F)
 
 #### Figure #: Topography and predicted values for a sample area ####
+
 # Read polygon buffer 25 m inland from lake
 buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
 buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs") 
@@ -221,41 +222,44 @@ curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_2.tif")
 slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
 drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
 
-
 cropExtent <- raster::extent(c(626450,626950,1010837,1011357))
 
 # Must run resultsINLA.R through Figure 2i section!# 
 avgPredictedCrop <- raster::crop(avgPredictedRaster, cropExtent)
 avgPredictedCrop <- 100*avgPredictedCrop
 
-demCrop <- raster::resample(demRaster,avgPredictedCrop)
+demCrop <- raster::crop(demRaster,cropExtent)
+demCropShade <- hillshader::hillshader(elevation = demCrop, 
+                                       shader = c("ray_shade", "ambient_shade"),
+                                       sunangle = 90,
+                                       sunaltitude = 25)
 curvCrop <- raster::resample(curvRaster,avgPredictedCrop)
 slopeCrop <- raster::resample(slopeRaster, avgPredictedCrop)
 drainCrop <- raster::resample(drainRaster, avgPredictedCrop)
 streamCrop <- raster::crop(streams, cropExtent)
 
 legendWidth = 2
-legendCex = 2
+legendCex = 1.5
 titleCex = 1
 par(mfrow = c(2,3), mar=c(1,2,2,5), oma=c(1,1,2,1))
 
-# Location
-raster::plot(buffer)
-raster::plot(cropExtent, add=T, col="red", lwd=2)
+# Shaded relief
+raster::plot(demCropShade,
+             bty="n", box=F, yaxt="n", xaxt="n",
+             col = grey.colors(n=100,1,0),
+             legend=F,
+             axis.args=list(cex.axis=legendCex),
+             legend.width=legendWidth)
+raster::plot(streamCrop, add=T, lwd=1, col="black")
+mtext(expression("Shaded relief"),side=3, outer=F, cex=titleCex, line=1)
 
 # Elevation
 raster::plot(demCrop,
              bty="n", box=F, yaxt="n", xaxt="n",
              axis.args=list(cex.axis=legendCex),
              legend.width=legendWidth)
-raster::plot(streamCrop, add=T, lwd=1, col="white")
+raster::plot(streamCrop, add=T, lwd=1, col="black")
 mtext(expression("Elevation (m)"),side=3, outer=F, cex=titleCex, line=1)
-
-# raster::plot(demMean,
-#              bty="n", box=F, yaxt="n", xaxt="n",
-#              axis.args=list(cex.axis=legendCex),
-#              legend.width=legendWidth)
-# mtext(expression("Elevation (m)"),side=3, outer=F, cex=titleCex, line=1)
 
 # Curvature
 raster::plot(curvCrop,col = viridis::cividis(128),
@@ -333,6 +337,13 @@ plot(x = raster::values(drainCrop), y = raster::values(avgPredictedCrop),
 text(paste0("r = ",round(cor.test(x = (raster::values(drainCrop)+raster::values(drainCrop)^2),
                                   y = raster::values(avgPredictedCrop))$estimate,2)),
      x = 10, y = 0.9)
+
+
+# Location
+par(mfrow=c(1,1))
+raster::plot(buffer)
+raster::plot(cropExtent, add=T, col="red", lwd=2)
+
 
 #### Figure S1: plot corrected and uncorrected dCHM #### 
   # Read polygon buffer 25 m inland from lake
