@@ -19,6 +19,7 @@
 # Block values for bootstrapping
   blockData <- read.csv("bootstrapBlocks.csv")
 
+
 #### AREA SAMPLED EACH YEAR ####
   
 # All area
@@ -38,6 +39,10 @@
 # Total number of new canopy disturbance events
   length(c(gaps15to18sp$area,
            gaps18to20sp$area))
+  
+# Total area of new canopy disturbances (in ha)
+  sum(c(gaps15to18sp$area,
+           gaps18to20sp$area))/10000
   
 # Area sampled in old growth and secondary forest [> 10 m height]
   # Forest age polygon
