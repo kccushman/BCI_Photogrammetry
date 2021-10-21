@@ -72,7 +72,7 @@ library(INLA)
     # resample to same extent as gap rasters (adds NA area to edges)
     aspectRaster <- raster::resample(aspectRaster, gaps18to20)
     
-  aspect# Distance above drainage raster
+  # Distance above drainage raster
     drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
     # resample to same extent as gap rasters (adds NA area to edges)
     drainRaster <- raster::resample(drainRaster, gaps18to20)
@@ -1036,7 +1036,7 @@ library(INLA)
                       control.family = list(beta.censor.value = cens))
   
   save(model_full_alt, model_full2_alt, file = "INLA/INLA_fullModelResult_noLargeGaps.RData")
-### Run full model with initial canopy height ####
+#### Run full model with initial canopy height ####
   
   library(INLA)
   load("INLA/INLA_prelim_40m_tin.RData")
