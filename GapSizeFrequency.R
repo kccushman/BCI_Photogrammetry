@@ -744,7 +744,7 @@
        log = logOption,
        pch=19,
        cex.axis = 0.8,
-       ylab = expression("Disturbance frequency (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
+       ylab = expression("Disturbance rate (events m"^"-2"~"yr"^"-1"~"ha"^"-1"~")"),
        xlab = NA)
   mtext(expression("Disturbance area (m"^"2"~")"), side=1,outer = T)
   text("a", x = range(brksMids)[1], y = yRange[2])
