@@ -76,6 +76,16 @@
     qaqcMask18 <- raster::resample(qaqcMask18, chm18)
     qaqcMask20 <- raster::resample(qaqcMask20, chm20)
   
+  # What % of pixels have clouds or fail QAQC?
+    # Clouds
+      100*length(which(!is.na(raster::values(cloudMask15)) & raster::values(cloudMask15)<=0.99))/length(which(!is.na(raster::values(cloudMask15))))
+      100*length(which(!is.na(raster::values(cloudMask18)) & raster::values(cloudMask18)<=0.99))/length(which(!is.na(raster::values(cloudMask18))))
+      100*length(which(!is.na(raster::values(cloudMask20)) & raster::values(cloudMask20)<=0.99))/length(which(!is.na(raster::values(cloudMask20))))
+    # QAQC
+      100*length(which(!is.na(raster::values(cloudMask15)) & raster::values(qaqcMask15)<=0.99))/length(which(!is.na(raster::values(cloudMask15))))
+      100*length(which(!is.na(raster::values(cloudMask18)) & raster::values(qaqcMask18)<=0.99))/length(which(!is.na(raster::values(cloudMask18))))
+      100*length(which(!is.na(raster::values(cloudMask20)) & raster::values(qaqcMask20)<=0.99))/length(which(!is.na(raster::values(cloudMask20))))
+      
   # Remove masked pixels
     chm15[!(cloudMask15>0.99)] <- NA
     chm18[!(cloudMask18>0.99)] <- NA
@@ -120,6 +130,11 @@
     
   # Mask out areas that are initially < 10 m in height and decrease between two years
     shortThresh <- 10
+    
+    # Find proportion of cells that are < 10 m
+    100*length(which(raster::values(chm15c)<shortThresh & !is.na(raster::values(chm15c))))/length(which(!is.na(raster::values(chm15c))))
+    100*length(which(raster::values(chm18)<shortThresh & !is.na(raster::values(chm18))))/length(which(!is.na(raster::values(chm18))))
+    100*length(which(raster::values(chm20)<shortThresh & !is.na(raster::values(chm20))))/length(which(!is.na(raster::values(chm20))))
     
     # 2015 - 2018
       short15 <- rep(0, length(raster::values(chm15c)))
