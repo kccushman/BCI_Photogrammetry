@@ -3182,36 +3182,3 @@ legend(x=35,y=0.05,
       mtext("Proportion of area", side=2, outer=T, line=2.5, las=0)
       
       
-#### scratch: violin plots using observed values ####
-      
-      par(mfrow=c(1,3))
-      vioplot::vioplot(100*gapProp~age, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
-                       col = c(colOld, colSec),
-                       ylog=T,
-                       cex=1.5,
-                       range=-1,
-                       xaxt = "n",
-                       cex.axis = cxAxis)
-
-      
-      mtext("Disturbance rate (% yr-1)", side=2, outer=F, line=4, las=0, cex=0.8)
-
-      mtext("Forest age", side=3, outer=F, line=0.5)
-      
-      vioplot::vioplot(100*gapProp~soilParent, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
-                       cex=1.5,
-                       range=-1,
-                       col = c(colAnd, colBoh, colMar, colVol),
-                       xaxt = "n",
-                       yaxt="n")
-      mtext("Soil parent material", side=3, outer=F, line=0.5)
-      
-      
-      vioplot::vioplot(100*gapProp~soilForm, data = bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),],
-                       cex=1.5,
-                       range=-1,
-                       col = c(colBro, colMot, colPal, colRed),
-                       xaxt = "n",
-                       yaxt="n")
-      mtext("Soil form", side=3, outer=F, line=0.5)      
-      

@@ -4,7 +4,7 @@
   d15to18 <- raster::raster("dCHM15to18_tin.tif")
   d18to20 <- raster::raster("dCHM18to20_tin.tif")
   
-# Canopy height change rasters where only possible gap values (> 5 m initially) are included  
+# Canopy height change rasters where only likely gap values (> 10 m initially) are included  
   d15to18tall <- raster::raster("dCHM15to18tall_tin.tif")
   d18to20tall <- raster::raster("dCHM18to20tall_tin.tif")
   
@@ -18,8 +18,49 @@
   
 # Block values for bootstrapping
   blockData <- read.csv("bootstrapBlocks.csv")
-
-
+  
+# Forest age polygon
+  age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+  age$AgeClass <- "Other"
+  age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
+  age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
+  ageUse <- age[!(age$AgeClass=="Other"),]
+  
+# Soil type polygon  
+  soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+  soil <- sp::spTransform(soil,raster::crs(d15to18tall))
+  
+  # Define parent material and soil form from soil class
+  soil$SoilParent <- NA
+  soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
+  soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
+  soil[soil$SOIL=="Fairchild",c("SoilParent")] <- c("Bohio")
+  soil[soil$SOIL=="Gross",c("SoilParent")] <- c("Bohio")
+  soil[soil$SOIL=="Harvard",c("SoilParent")] <- c("CaimitoVolcanic")
+  soil[soil$SOIL=="Hood",c("SoilParent")] <- c("CaimitoVolcanic")
+  soil[soil$SOIL=="Lake",c("SoilParent")] <- c("Andesite")
+  soil[soil$SOIL=="Lutz",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+  soil[soil$SOIL=="Marron",c("SoilParent")] <- c("Andesite")
+  soil[soil$SOIL=="Poacher",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+  soil[soil$SOIL=="Standley",c("SoilParent")] <- c("Bohio")
+  soil[soil$SOIL=="Wetmore",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+  soil[soil$SOIL=="Zetek",c("SoilParent")] <- c("CaimitoMarineSedimentary")
+  
+  soil$SoilForm <- NA
+  soil[soil$SOIL=="AVA", c("SoilForm")] <- c("RedLightClay")
+  soil[soil$SOIL=="Barbour", c("SoilForm")] <- c("PaleSwellingClay")
+  soil[soil$SOIL=="Fairchild",c("SoilForm")] <- c("RedLightClay")
+  soil[soil$SOIL=="Gross",c("SoilForm")] <- c("PaleSwellingClay")
+  soil[soil$SOIL=="Harvard",c("SoilForm")] <- c("RedLightClay")
+  soil[soil$SOIL=="Hood",c("SoilForm")] <- c("BrownFineLoam")
+  soil[soil$SOIL=="Lake",c("SoilForm")] <- c("PaleSwellingClay")
+  soil[soil$SOIL=="Lutz",c("SoilForm")] <- c("MottledHeavyClay")
+  soil[soil$SOIL=="Marron",c("SoilForm")] <- c("BrownFineLoam")
+  soil[soil$SOIL=="Poacher",c("SoilForm")] <- c("RedLightClay")
+  soil[soil$SOIL=="Standley",c("SoilForm")] <- c("BrownFineLoam")
+  soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
+  soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
+  
 #### AREA SAMPLED EACH YEAR ####
   
 # All area
@@ -45,13 +86,7 @@
            gaps18to20sp$area))/10000
   
 # Area sampled in old growth and secondary forest [> 10 m height]
-  # Forest age polygon
-    age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
-    age$AgeClass <- "Other"
-    age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
-    age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
-    ageUse <- age[!(age$AgeClass=="Other"),]
-  
+
   areaOld18 <- raster::mask(d15to18tall, ageUse[ageUse$AgeClass=="OldGrowth",])
   valsOld18 <- raster::values(areaOld18)
   areaSampledOld18 <- length(valsOld18[!is.na(valsOld18)])/10000
@@ -69,40 +104,6 @@
   areaSampledSec20 <- length(valsSec20[!is.na(valsSec20)])/10000
 
 # Area sampled by soil parent material [> 10 m height]
-    # Soil type polygon  
-    soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
-    soil <- sp::spTransform(soil,raster::crs(d15to18tall))
-    
-    # Define parent material and soil form from soil class
-    soil$SoilParent <- NA
-    soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
-    soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
-    soil[soil$SOIL=="Fairchild",c("SoilParent")] <- c("Bohio")
-    soil[soil$SOIL=="Gross",c("SoilParent")] <- c("Bohio")
-    soil[soil$SOIL=="Harvard",c("SoilParent")] <- c("CaimitoVolcanic")
-    soil[soil$SOIL=="Hood",c("SoilParent")] <- c("CaimitoVolcanic")
-    soil[soil$SOIL=="Lake",c("SoilParent")] <- c("Andesite")
-    soil[soil$SOIL=="Lutz",c("SoilParent")] <- c("CaimitoMarineSedimentary")
-    soil[soil$SOIL=="Marron",c("SoilParent")] <- c("Andesite")
-    soil[soil$SOIL=="Poacher",c("SoilParent")] <- c("CaimitoMarineSedimentary")
-    soil[soil$SOIL=="Standley",c("SoilParent")] <- c("Bohio")
-    soil[soil$SOIL=="Wetmore",c("SoilParent")] <- c("CaimitoMarineSedimentary")
-    soil[soil$SOIL=="Zetek",c("SoilParent")] <- c("CaimitoMarineSedimentary")
-    
-    soil$SoilForm <- NA
-    soil[soil$SOIL=="AVA", c("SoilForm")] <- c("RedLightClay")
-    soil[soil$SOIL=="Barbour", c("SoilForm")] <- c("PaleSwellingClay")
-    soil[soil$SOIL=="Fairchild",c("SoilForm")] <- c("RedLightClay")
-    soil[soil$SOIL=="Gross",c("SoilForm")] <- c("PaleSwellingClay")
-    soil[soil$SOIL=="Harvard",c("SoilForm")] <- c("RedLightClay")
-    soil[soil$SOIL=="Hood",c("SoilForm")] <- c("BrownFineLoam")
-    soil[soil$SOIL=="Lake",c("SoilForm")] <- c("PaleSwellingClay")
-    soil[soil$SOIL=="Lutz",c("SoilForm")] <- c("MottledHeavyClay")
-    soil[soil$SOIL=="Marron",c("SoilForm")] <- c("BrownFineLoam")
-    soil[soil$SOIL=="Poacher",c("SoilForm")] <- c("RedLightClay")
-    soil[soil$SOIL=="Standley",c("SoilForm")] <- c("BrownFineLoam")
-    soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
-    soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
   
   areaAnd18 <- raster::mask(d15to18tall, soil[soil$SoilParent=="Andesite",])
   valsAnd18 <- raster::values(areaAnd18)
@@ -1345,7 +1346,7 @@
     
     
 
-    par(mar=c(3,4,1,1))
+    par(mar=c(3,4,1,1), las=1)
     barplot(gapPropYear,
             names = c("2015-2018","2018-2020"),
             ylim=c(0,yRange),
@@ -1362,10 +1363,12 @@
             ylim=c(0,yRange),
             col=gapCols,
             ylab="Proportion of disturbances",
+            names=rep("",2),
             cex.axis=1.5)
 
     barplot(gapPropParentN,
             ylim=c(0,yRange),
+            names=rep("",4),
             yaxt="n", ylab = NA,
             col=gapCols)
     
@@ -1377,10 +1380,11 @@
     
     barplot(gapPropFormN,
             ylim=c(0,yRange),
+            names=rep("",4),
             yaxt="n", ylab = NA,
             col=gapCols)
     
-    barplot(gapPropAgeN,
+    barplot(gapPropAge,
             names = c("Old growth","Secondary"),
             ylim=c(0,yRange),
             col=gapCols,
