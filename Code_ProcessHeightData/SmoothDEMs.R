@@ -1,9 +1,9 @@
-# Read DEM at 1 m resolution
+##### Read DEM at 1 m resolution ####
 
-dem_1m <- raster::raster("LidarDEM_BCI.tif")  
+dem_1m <- raster::raster("Data_HeightRasters/LidarDEM_BCI.tif")  
 
 
-# Smooth over various scales
+#### Smooth over various scales ####
 
   # sigma = 1
   w1 <- raster::focalWeight(dem_1m, 1, "Gauss")
@@ -69,27 +69,4 @@ dem_1m <- raster::raster("LidarDEM_BCI.tif")
   raster::writeRaster(dem_1m_64x, "D:/BCI_Spatial/BCI_Topo/DEM_smooth_64.tif")
   
   
-
-
-# Read .mat Laplacian convexity files and convert to .tif
-fileNames <- list.files(path = "D:/BCI_Spatial/BCI_Topo", 
-                        pattern = "Laplacian", 
-                        full.names = T)
-
-for(i in 1:length(fileNames)){
-  data <- R.matlab::readMat(fileNames[i])
-  convex <- data[[1]]
-  convex <- raster::raster(convex)
-  raster::crs(convex) <- "+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs"
-  raster::extent(convex) <- raster::extent(dem_1m)
-  sigma <- strsplit(strsplit(fileNames[i],"_")[[1]][5],".mat")[[1]]
-  raster::writeRaster(convex,
-                      file = paste0("D:/BCI_Spatial/BCI_Topo/Convex_smooth_",sigma,".tif"))
-}
-
-
-# test
-# buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
-# buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
-# convex <- raster::mask(convex,buffer)
-# raster::plot(convex)
+  # NOTE: calculation of slope, curvature, and HAND was subsequently calculated in ArcGIS Pro from each smoothed DEM
