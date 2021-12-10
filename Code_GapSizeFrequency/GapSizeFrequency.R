@@ -1,36 +1,36 @@
 #### READ DATA ####
     
 # Canopy height change rasters
-  d15to18 <- raster::raster("dCHM15to18_tin.tif")
-  d18to20 <- raster::raster("dCHM18to20_tin.tif")
+  d15to18 <- raster::raster("Data_HeightRasters/dCHM15to18.tif")
+  d18to20 <- raster::raster("Data_HeightRasters/dCHM18to20.tif")
   
 # Canopy height change rasters where only likely gap values (> 10 m initially) are included  
-  d15to18tall <- raster::raster("dCHM15to18tall_tin.tif")
-  d18to20tall <- raster::raster("dCHM18to20tall_tin.tif")
+  d15to18tall <- raster::raster("Data_HeightRasters/dCHM15to18tall.tif")
+  d18to20tall <- raster::raster("Data_HeightRasters/dCHM18to20tall.tif")
   
 # Gap rasters
-  gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
-  gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
+  gaps15to18 <- raster::raster("Data_HeightRasters/newGaps15to18.tif")
+  gaps18to20 <- raster::raster("Data_HeightRasters/newGaps18to20.tif")
   
 # Gap polygons
-  gaps15to18sp <- rgdal::readOGR("gaps15to18_shapefile_tin/gaps15to18sp.shp")
-  gaps18to20sp <- rgdal::readOGR("gaps18to20_shapefile_tin/gaps18to20sp.shp")
+  gaps15to18sp <- rgdal::readOGR("Data_GapShapefiles/gaps15to18_shapefile/gaps15to18sp.shp")
+  gaps18to20sp <- rgdal::readOGR("Data_GapShapefiles/gaps18to20_shapefile/gaps18to20sp.shp")
   
 # Block values for bootstrapping
-  blockData <- read.csv("bootstrapBlocks.csv")
+  blockData <- read.csv("Data_Ancillary/bootstrapBlocks.csv")
   
 # Forest age polygon
-  age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+  age <- rgdal::readOGR("Data_Ancillary/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
   age$AgeClass <- "Other"
   age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
   age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
   ageUse <- age[!(age$AgeClass=="Other"),]
   
 # Soil type polygon  
-  soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+  soil <- rgdal::readOGR("Data_Ancillary/BCI_Soils/BCI_Soils.shp")
   soil <- sp::spTransform(soil,raster::crs(d15to18tall))
   
-  # Define parent material and soil form from soil class
+# Define soil parent material and soil form from soil class (based on Baillie soil survey)
   soil$SoilParent <- NA
   soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
   soil[soil$SOIL=="Barbour", c("SoilParent")] <- c("CaimitoVolcanic")
@@ -61,9 +61,9 @@
   soil[soil$SOIL=="Wetmore",c("SoilForm")] <- c("BrownFineLoam")
   soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
   
-#### AREA SAMPLED EACH YEAR ####
+#### CALCULATE AREA SAMPLED EACH YEAR ####
   
-# All area
+# All area (in ha)
   allVals15to18 <- raster::values(d15to18)
   areaSampled15to18 <- length(allVals15to18[!is.na(allVals15to18)])/10000
   
@@ -238,18 +238,17 @@
                                     bootBlocks = blockData,
                                     nBoot = 1000)
   
-  nYr15to18 <- as.numeric(as.Date("2018-06-07") - as.Date("2015-06-26"))/365
-  nYr18to20 <- as.numeric(as.Date("2020-07-31") - as.Date("2018-06-07"))/365
+  # Calculate the precise numnber of years sampled in each interval
+    nYr15to18 <- as.numeric(as.Date("2018-06-07") - as.Date("2015-06-26"))/365
+    nYr18to20 <- as.numeric(as.Date("2020-07-31") - as.Date("2018-06-07"))/365
   
   # Mean frequency of gaps per interval--percent of area
-  round(mean(gapSummary15to18$percentGap)/nYr15to18,2)
-  round(mean(gapSummary18to20$percentGap)/nYr18to20,2)
+    round(mean(gapSummary15to18$percentGap)/nYr15to18,2)
+    round(mean(gapSummary18to20$percentGap)/nYr18to20,2)
   
-  round(quantile(gapSummary15to18$percentGap,probs = c(0.025,0.975))/nYr15to18,2)
-  round(quantile(gapSummary18to20$percentGap,probs = c(0.025,0.975))/nYr18to20,2)
-  
-    # % higher in second interval
-    (2.05-1.79)/1.79*100
+    round(quantile(gapSummary15to18$percentGap,probs = c(0.025,0.975))/nYr15to18,2)
+    round(quantile(gapSummary18to20$percentGap,probs = c(0.025,0.975))/nYr18to20,2)
+
   
   # Mean frequency of gaps per interval--number of gaps
   round(mean(gapSummary15to18$gapsPerHa)/nYr15to18,2)
@@ -257,21 +256,22 @@
   
   round(quantile(gapSummary15to18$gapsPerHa,probs = c(0.025,0.975))/nYr15to18,2)
   round(quantile(gapSummary18to20$gapsPerHa,probs = c(0.025,0.975))/nYr18to20,2)
-  
-    # % higher in first interval
-    (1.92-1.64)/1.64*100
 
   
-#### BOOTSTRAPPED SIZE FREQUENCY DISTRIBUTIONS ####
-  source("makesizedistforRaquel.r")
-  source("fitsizedistforRaquel.R")
-  source("sizedistpart3forRaquel.R")
+#### BOOTSTRAPPED SIZE FREQUENCY DISTRIBUTIONS: SET UP ####
+  
+  # Read in code to fit gap size frequency distribution (from Helene)
+  # NOTE: this code was originally used to fit tree size frequency distributions
+      # so "dbh" is used for gap area and "quadnum" is used for bootstrapping block
+  # NOTE: the files below were written by H. Muller-Landau (mullerh@si.edu)
+  source("Code_GapSizeFrequency/FitSizeDist_1.R")
+  source("Code_GapSizeFrequency/FitSizeDist_2.R")
+  source("Code_GapSizeFrequency/FitSizeDist_3.R")
   
   # find max gap size
-  mxSz <- quantile(c(gaps15to18sp$area,
-              gaps18to20sp$area),1)
+  mxSz <- max(c(gaps15to18sp$area, gaps18to20sp$area))
   
-  # find which gap sizes are NA
+  # find which gap sizes are NA (omit in code to speed it up)
   gapPres <- data.frame(minSz = seq(24.5,(mxSz - 0.5),by=1),
                         maxSz = seq(25.5,(mxSz + 0.5),by=1),
                         n18 = NA,
@@ -358,7 +358,7 @@
   # size frequency
   
     i <- 1
-    datadir <- "SizeFreqResults/"
+    datadir <- "Results_GapSizeFrequency/"
     site <- "BCI"
     census <- "15to18"
     szFreq15to18 <- doallbootstrapdbhfits(alldata = allData15to18,
@@ -373,7 +373,7 @@
    
 
     i <- 1
-    datadir <- "SizeFreqResults/"
+    datadir <- "Results_GapSizeFrequency/"
     site <- "BCI"
     census <- "18to20"
     szFreq18to20 <- doallbootstrapdbhfits(alldata = allData18to20,
@@ -410,7 +410,7 @@
       
       # size frequency
       i <- 1
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "OldGrowth"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = oldGrowthGaps,
@@ -425,7 +425,7 @@
       
     
       i <- 1
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "Secondary"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = secondaryGaps,
@@ -472,7 +472,7 @@
       
       # size frequency
        i <- 1
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "Andesite"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = andesiteGaps,
@@ -486,7 +486,7 @@
       
 
       i <- 1
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "Bohio"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = bohioGaps,
@@ -500,7 +500,7 @@
       
   
       i <- 1
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "CaimitoVolcanic"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = caimitoVolcanicGaps,
@@ -513,7 +513,7 @@
                                             ddiv=szUse)
   
       i <- 1
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "CaimitoMarine"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = caimitoMarineGaps,
@@ -560,7 +560,7 @@
       
     # size frequency
       i <- 1
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "RedLightClay"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = lightClayGaps,
@@ -573,7 +573,7 @@
                                             ddiv=szUse)      
       
 
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "PaleSwellingClay"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = swellingClayGaps,
@@ -585,7 +585,7 @@
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
                                             ddiv=szUse)
     
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "MottledHeavyClay"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = heavyClayGaps,
@@ -597,7 +597,7 @@
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
                                             ddiv=szUse)
       
-      datadir <- "SizeFreqResults/"
+      datadir <- "Results_GapSizeFrequency/"
       site <- "BCI"
       census <- "BrownFineLoam"
       szFreq15to18 <- doallbootstrapdbhfits(alldata = fineLoamGaps,
@@ -609,14 +609,14 @@
                                             # ddiv=seq(24.5,(mxSz + 0.5),by=1) #old format
                                             ddiv=szUse) 
       
-#### Plot bootstrapped results by year ####
+#### Figure S9: Plot bootstrapped results by year ####
       
   col18 <- "blue"
   col20 <- "#d95f02"    
   
   # Read distribution results
-  szFreq15to18 <- read.table("SizeFreqResults/gaps15to18sizedistbsfit.txt", header = T)
-  szFreq18to20 <- read.table("SizeFreqResults/gaps18to20sizedistbsfit.txt", header = T)
+  szFreq15to18 <- read.table("Results_GapSizeFrequency/gaps15to18sizedistbsfit.txt", header = T)
+  szFreq18to20 <- read.table("Results_GapSizeFrequency/gaps18to20sizedistbsfit.txt", header = T)
 
   # Calculate AIC values for each model
   # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
@@ -792,11 +792,11 @@
   lines(smooth18, col=col18,lwd=3)
   lines(smooth20, col=col20,lwd=3)
   
-#### Plot bootstrapped results by forest age ####
+#### Figure S10a: Plot bootstrapped results by forest age ####
   
   # Read distribution results
-  szFreqOld <- read.table("SizeFreqResults/gapsOldGrowthsizedistbsfit.txt", header = T)
-  szFreqSec <- read.table("SizeFreqResults/gapsSecondarysizedistbsfit.txt", header = T)
+  szFreqOld <- read.table("Results_GapSizeFrequency/gapsOldGrowthsizedistbsfit.txt", header = T)
+  szFreqSec <- read.table("Results_GapSizeFrequency/gapsSecondarysizedistbsfit.txt", header = T)
   
   # Calculate AIC values for each model
   # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
@@ -935,13 +935,13 @@
   lines(x = xVals, y = yValsWeibSec, col = adjustcolor(colSec,0.6), lwd=2)
 
   
-#### Plot bootstrapped results by soil parent material ####
+#### Figure S10b: Plot bootstrapped results by soil parent material ####
   
   # Read distribution results
-  szFreqAnd <- read.table("SizeFreqResults/gapsAndesitesizedistbsfit.txt", header = T)
-  szFreqBoh <- read.table("SizeFreqResults/gapsBohiosizedistbsfit.txt", header = T)
-  szFreqMar <- read.table("SizeFreqResults/gapsCaimitoMarinesizedistbsfit.txt", header = T)
-  szFreqVol <- read.table("SizeFreqResults/gapsCaimitoVolcanicsizedistbsfit.txt", header = T)
+  szFreqAnd <- read.table("Results_GapSizeFrequency/gapsAndesitesizedistbsfit.txt", header = T)
+  szFreqBoh <- read.table("Results_GapSizeFrequency/gapsBohiosizedistbsfit.txt", header = T)
+  szFreqMar <- read.table("Results_GapSizeFrequency/gapsCaimitoMarinesizedistbsfit.txt", header = T)
+  szFreqVol <- read.table("Results_GapSizeFrequency/gapsCaimitoVolcanicsizedistbsfit.txt", header = T)
   
   # Calculate AIC values for each model
   # NOTE: the log likelihood returned by the size frequency code is the negative log likelihood, so multiply by -1 again
@@ -1100,13 +1100,13 @@
   lines(x = xVals, y = yValsWeibVol, col = adjustcolor(colVol,0.6), lwd=2)
   
   
-#### Plot bootstrapped results by soil form ####
+#### Figure S10c: Plot bootstrapped results by soil form ####
   
   # Read distribution results
-  szFreqBro <- read.table("SizeFreqResults/fineLoamGapssizedistbsfit.txt", header = T)
-  szFreqMot <- read.table("SizeFreqResults/heavyClayGapssizedistbsfit.txt", header = T)
-  szFreqPal <- read.table("SizeFreqResults/swellingClayGapssizedistbsfit.txt", header = T)
-  szFreqRed <- read.table("SizeFreqResults/lightClayGapssizedistbsfit.txt", header = T)
+  szFreqBro <- read.table("Results_GapSizeFrequency/fineLoamGapssizedistbsfit.txt", header = T)
+  szFreqMot <- read.table("Results_GapSizeFrequency/heavyClayGapssizedistbsfit.txt", header = T)
+  szFreqPal <- read.table("Results_GapSizeFrequency/swellingClayGapssizedistbsfit.txt", header = T)
+  szFreqRed <- read.table("Results_GapSizeFrequency/lightClayGapssizedistbsfit.txt", header = T)
   
   
   # Calculate AIC values for each model
@@ -1227,7 +1227,7 @@
 
 
   
-#### Make new stacked barplots ####  
+#### Figure S11: Make new stacked barplots ####  
 
   gapBins <- c(25,50,100,200,400,800,1600,3200,6400,19200)
   
