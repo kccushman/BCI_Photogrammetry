@@ -1,9 +1,10 @@
 #### Load data and results ####
 library(INLA)
-load("INLA/INLA_prelim_40m_tin.RData")
-load("INLA/INLA_fullModelResult.RData")
-load("INLA/INLA_fullModelResult_separate.RData")
-load("INLA/INLA_fullModelResult_noLargeGaps.RData")
+load("Code_INLA/INLA_prelim_40m_tin.RData")
+load("Code_INLA/INLA_fullModelResult.RData")
+load("Code_INLA/INLA_fullModelResult_separate.RData")
+load("Code_INLA/INLA_fullModelResult_noLargeGaps.RData")
+load("Code_INLA/INLA_fullModelResult_initialHt.RData")
 
   # Make an ID value for each cell
   bci.gapsAll$Order <- 1:nrow(bci.gapsAll)
@@ -3499,6 +3500,66 @@ par(las=1, mfrow=c(1,3), mar=c(3,3,1,0),oma=c(1,3,1,1))
 
 
     
+#### Figure S25: Alternate model with initial canopy height as predictor #### 
+    
+    fixedResults <- model_full$summary.fixed
+    
+    # separated by years
+    fixedResultsHt <- model_full_ht$summary.fixed
+    
+    fixedNames <- c("Curvature (linear)", "Slope (linear)", "Slope (quadratic)",                    
+                    "Height above drainage (linear)","Height above drainage (quadratic)",
+                    "Soil parent: Andesite", "Soil parent: Caimito marine", "Soil parent: Caimito volcanic",
+                    "Soil form: Mottled heavy clay", "Soil form: Pale swelling clay", "Soil form: Red light clay",
+                    "Forest age: Secondary",
+                    "Year: 2015-2018",
+                    "Initial Canopy Height")
+    
+    par(mfrow=c(1,1), mar=c(4,1,1,1), oma=c(0,0,0,0))
+    
+    plot(x = fixedResults[2:nrow(fixedResults),"mean"],
+         y = 1.2*nrow(fixedResultsHt):3,
+         xlim = range(fixedResults[2:nrow(fixedResults),c(3,5)]) + c(-0.4,0.6),
+         ylim=c(2,1.2*nrow(fixedResultsHt)),
+         xlab=NA,
+         pch = 19, 
+         cex = 1,
+         ylab = NA, yaxt = "n")
+    arrows(x0 = fixedResults[2:nrow(fixedResults),"0.025quant"],
+           x1 = fixedResults[2:nrow(fixedResults),"0.975quant"],
+           y0 = 1.2*nrow(fixedResultsHt):3,
+           y1 = 1.2*nrow(fixedResultsHt):3,
+           angle = 90, code=3,
+           length = 0.05)
+    
+    points(x = fixedResultsHt[2:nrow(fixedResultsHt),"mean"],
+           y = 1.2*nrow(fixedResultsHt):2 - 0.3,
+           pch = 19, 
+           cex = 1,
+           col = "grey")
+    arrows(x0 = fixedResultsHt[2:nrow(fixedResultsHt),"0.025quant"],
+           x1 = fixedResultsHt[2:nrow(fixedResultsHt),"0.975quant"],
+           y0 = 1.2*nrow(fixedResultsHt):2 - 0.3,
+           y1 = 1.2*nrow(fixedResultsHt):2 - 0.3,
+           angle = 90, code=3,
+           length = 0.05,
+           col = "grey")
+    
+    abline(v=0, lty=2)
+    text(fixedNames,
+         x = c(fixedResults[2:nrow(fixedResults),"0.975quant"]+0.03,fixedResultsHt[nrow(fixedResultsHt),"0.975quant"]),
+         y = 1.2*nrow(fixedResultsHt):2,
+         pos = 4)
+    
+    legend(x = -1.3,
+           y = 18,
+           c("Original full model",
+             "Model with canopy height"),
+           bty="n",
+           col = c("black", "darkgrey"),
+           pch=c(19,19))
+    mtext("Fixed effect", side=1, outer=F, line=2)
+    
 #### TO DELETE? Look at model residuals ####
     
     pdf(file = "residualsPlots.pdf", onefile=T, height=9, width=6.5)
@@ -4641,162 +4702,4 @@ par(las=1, mfrow=c(1,3), mar=c(3,3,1,0),oma=c(1,3,1,1))
     
     
     
-    
-#### TO DELETE? Fig S12. Fixed topographic effects ####
-    
-    slopeAll <- bci.gapsAll$fix_S + bci.gapsAll$fix_S2
-    htAll <- bci.gapsAll$fix_H + bci.gapsAll$fix_H2
-    curvAll <- bci.gapsAll$fix_C
-    
-    # calculate mean abs contribution of slope, HAND, curvature to linear predictor
-    mean(abs(curvAll[!is.na(bci.gapsAll$gapPropCens)]))
-    mean(abs(slopeAll[!is.na(bci.gapsAll$gapPropCens)]))
-    mean(abs(htAll[!is.na(bci.gapsAll$gapPropCens)]))
-    
-    # Make a simplified version for plotting
-    
-    # Find the relationship between each metric and its scaled (and squared) value
-    slopeSq <- bci.gapsAll$slopeMean_16^2
-    slopeScaleLinear <- lm(Sc_slopeMean_16~slopeMean_16, data = bci.gapsAll)
-    slopeScaleQuad <- lm(bci.gapsAll$Sc_slopeMean_16_Sq~slopeSq)
-    
-    curveScaleLinear <- lm(Sc_curvMean_2~curvMean_2, data = bci.gapsAll)
-    
-    drainSq <- bci.gapsAll$drainMean^2
-    drainScaleLinear <- lm(Sc_drainMean~drainMean, data = bci.gapsAll)
-    drainScaleQuad <- lm(bci.gapsAll$Sc_drainMean_Sq~drainSq)
-    
-    # Find the range of curvature, slope, and HAND; choose new values for plotting
-    slopeRange <- seq(range(bci.gapsAll$slopeMean_16)[1],
-                      range(bci.gapsAll$slopeMean_16)[2],
-                      length.out=100)
-    curvRange <- seq(range(bci.gapsAll$curvMean_2)[1],
-                     range(bci.gapsAll$curvMean_2)[2],
-                     length.out=100)
-    drainRange <- seq(range(bci.gapsAll$drainMean)[1],
-                      range(bci.gapsAll$drainMean)[2],
-                      length.out=100)
-    
-    # Generate new y values for ranges from linear models
-    curvVals <- model_full$summary.fixed[2,"mean"]*predict(curveScaleLinear, data.frame(curvMean_2 = curvRange))
-    
-    slopeVals <- (model_full$summary.fixed[3,"mean"]*predict(slopeScaleLinear, data.frame(slopeMean_16 = slopeRange)) 
-                  + model_full$summary.fixed[4,"mean"]*predict(slopeScaleQuad, data.frame(slopeSq = slopeRange^2)))
-    
-    drainVals <- (model_full$summary.fixed[5,"mean"]*predict(drainScaleLinear, data.frame(drainMean = drainRange)) 
-                  + model_full$summary.fixed[6,"mean"]*predict(drainScaleQuad, data.frame(drainSq = drainRange^2)))
-    
-    # Calculate what this means for predicted disturbance rates,assuming other fixed effects are at their mean
-    # calculate fixed effect mean values
-    meanInt <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_int"], na.rm=T)
-    meanC <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_C"], na.rm=T)
-    meanS <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_S"], na.rm=T)
-    meanS2 <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_S2"], na.rm=T)
-    meanH <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_H"], na.rm=T)
-    meanH2 <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_H2"], na.rm=T)
-    meanParent <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_soilParent"], na.rm=T)
-    meanForm <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_soilForm"], na.rm=T)
-    meanAge <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_age"], na.rm=T)
-    meanYear <- mean(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),"fix_year"], na.rm=T)
-    
-    curvValsSum <- curvVals + sum(meanInt + meanS + meanS2 + meanH + meanH2 + meanParent + meanForm + meanAge + meanYear)
-    slopeValsSum <- slopeVals + sum(meanInt + meanC + meanH + meanH2 + meanParent + meanForm + meanAge + meanYear)
-    drainValsSum <- drainVals + sum(meanInt + meanC + meanS + meanS2 + meanParent + meanForm + meanAge + meanYear)
-    
-    curvValsRate <- exp(curvValsSum)/(1 + exp(curvValsSum))
-    slopeValsRate <- exp(slopeValsSum)/(1 + exp(slopeValsSum))
-    drainValsRate <- exp(drainValsSum)/(1 + exp(drainValsSum))
-    
-    par(mfrow=c(3,3), mar=c(0,1,0,1), oma=c(5,5,3,1), las=1)
-    
-    hist(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)],
-         xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
-         border="white",col="black",
-         ylim=c(0,6000),
-         main=NA, xaxt="n")
-    mtext("Frequency", side=2, outer=F, las=0, line=3, cex=0.8)
-    
-    hist(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)],
-         xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
-         border="white",col="black",
-         ylim=c(0,6000),
-         main=NA, xaxt="n", yaxt="n", ylab=NA)
-    
-    hist(bci.gapsAll$drainMean[!is.na(bci.gapsAll$gapPropCens)],
-         xlim=range(bci.gapsAll$drainMean[!is.na(bci.gapsAll$gapPropCens)]),
-         border="white",col="black",
-         ylim=c(0,6000),
-         main=NA, xaxt="n", yaxt="n", ylab=NA)
-    
-    plot(y = curvVals,
-         x = curvRange, 
-         xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
-         type= "l", lwd=2,
-         ylim=c(-0.4,0.35), 
-         xaxt="n",
-         col="black",
-         cex=1.5)
-    text("a", x = -3.9, y = 0.35)
-    mtext("Fixed effect", side=2, outer=F, las=0, line=3, cex=0.8)
-    
-    plot(y = slopeVals,
-         x = slopeRange,       
-         xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
-         type= "l", lwd=2,
-         ylim=c(-0.4,0.35),
-         xaxt="n",
-         yaxt="n",
-         ylab = NA,
-         col="black",
-         cex=1.5)  
-    text("b", x = 2, y = 0.35)
-    
-    plot(y = drainVals,
-         x = drainRange,
-         xlim=range(bci.gapsAll$drainMean[!is.na(bci.gapsAll$gapPropCens)]),
-         type= "l", lwd=2,
-         yaxt="n",
-         xaxt="n",
-         pch=20, ylim=c(-0.4,0.35),
-         col="black",
-         ylab = NA,
-         cex=1.5)
-    text("c", x = 0, y = 0.35)
-    
-    plot(y = curvValsRate*100,
-         x = curvRange, 
-         xlim=range(bci.gapsAll$curvMean_2[!is.na(bci.gapsAll$gapPropCens)]),
-         type= "l", lwd=2,
-         ylim=100*range(curvValsRate, slopeValsRate, drainValsRate), 
-         col="black",
-         cex=1.5)
-    text("d", x = -3.9, y = 1.48)
-    mtext("Disturbance rate (%/yr)", side=2, outer=F, las=0, line=3, cex=0.8)
-    mtext("Curvature (LaPlacian convexity)",side=1,outer=F, line=3, cex = 0.8)
-    
-    plot(y = slopeValsRate*100,
-         x = slopeRange,       
-         xlim=range(bci.gapsAll$slopeMean_16[!is.na(bci.gapsAll$gapPropCens)]),
-         type= "l", lwd=2,
-         ylim=100*range(curvValsRate, slopeValsRate, drainValsRate), 
-         ylab = NA,
-         yaxt="n",
-         
-         col="black",
-         cex=1.5)  
-    text("e", x = 2, y = 1.48)
-    mtext("Slope (degree)",side=1,outer=F, line=3, cex = 0.8)
-    
-    plot(y = drainValsRate*100,
-         x = drainRange,
-         xlim=range(bci.gapsAll$drainMean[!is.na(bci.gapsAll$gapPropCens)]),
-         type= "l", lwd=2,
-         yaxt="n",
-         pch=20,
-         ylim=100*range(curvValsRate, slopeValsRate, drainValsRate), 
-         col="black",
-         ylab = NA,
-         cex=1.5)
-    text("f", x = 0, y = 1.48)
-    mtext("Height above drainage (m)",side=1,outer=F, line=3, cex = 0.8)
     
