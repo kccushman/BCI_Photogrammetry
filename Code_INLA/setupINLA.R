@@ -1089,3 +1089,44 @@ library(INLA)
   
   save(model_full_ht, model_full_htlog, file = "INLA/INLA_fullModelResult_initialHt.RData")
   
+#### Run full model without any soil terms ####
+  library(INLA)
+  load("Code_INLA/INLA_prelim_40m_tin.RData")
+  
+  curvScale <- 2
+  slopeScale <- 16
+  
+  # Make an ID value for each cell
+  bci.gapsAll$Order <- 1:nrow(bci.gapsAll)
+  
+  # Reorder so that INLA thinks there is one spatial pattern
+  newOrder <- c()
+  for(i in 1:nCellX){
+    # Interval 1
+    newOrder <- c(newOrder,(1 + (i-1)*(nCellY)):(i*nCellY))
+    # Interval 2
+    newOrder <- c(newOrder,(1 + (i-1)*(nCellY) + nCellX*nCellY):(i*nCellY + nCellX*nCellY))
+  }
+  
+  # Reorder and make a new ID column
+  bci.gapsAll_Order <- bci.gapsAll[newOrder,]
+  bci.gapsAll_Order$ID <- 1:nrow(bci.gapsAll_Order)
+  
+  # Reorder factors so that "base" level is the group with the most data
+  bci.gapsAll_Order$soilParent <- relevel(as.factor(bci.gapsAll_Order$soilParent), "Bohio")
+  bci.gapsAll_Order$soilForm <- relevel(as.factor(bci.gapsAll_Order$soilForm), "BrownFineLoam")
+  bci.gapsAll_Order$age <- relevel(as.factor(bci.gapsAll_Order$age), "OldGrowth")
+  bci.gapsAll_Order$Year <- relevel(as.factor(bci.gapsAll_Order$Year), "2020")
+  
+  # Run the best models with full spatial autocorrelation AND add initial canopy height
+  fixed_noSoil <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + age + Year")
+  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
+  form_noSoil <- formula(paste0("gapPropCens ~ ",fixed_noSoil," + ",random_full))
+  
+  model_noSoil <- inla(form_noSoil,
+                        family = "beta",
+                        data = bci.gapsAll_Order,
+                        control.compute = list(dic = TRUE),
+                        control.family = list(beta.censor.value = cens))
+  
+  save(model_full_ht, model_full_htlog, file = "Code_INLA/INLA_fullModelResult_noSoil.RData")
