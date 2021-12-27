@@ -1129,4 +1129,18 @@ library(INLA)
                         control.compute = list(dic = TRUE),
                         control.family = list(beta.censor.value = cens))
   
-  save(model_full_ht, model_full_htlog, file = "Code_INLA/INLA_fullModelResult_noSoil.RData")
+  save(model_noSoil, file = "Code_INLA/INLA_fullModelResult_noSoil.RData")
+  
+  fixed_noTopo <- paste0("soilParent + soilForm + age + Year")
+  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
+  form_noTopo <- formula(paste0("gapPropCens ~ ",fixed_noTopo," + ",random_full))
+  
+  model_noTopo <- inla(form_noTopo,
+                       family = "beta",
+                       data = bci.gapsAll_Order,
+                       control.compute = list(dic = TRUE),
+                       control.family = list(beta.censor.value = cens))
+  
+  save(model_noTopo, file = "Code_INLA/INLA_fullModelResult_noTopo.RData")
+  
+  
