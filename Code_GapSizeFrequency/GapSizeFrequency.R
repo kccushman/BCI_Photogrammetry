@@ -85,6 +85,13 @@
   sum(c(gaps15to18sp$area,
            gaps18to20sp$area))/10000
   
+# Mean and median disturbance sizes
+  mean(c(gaps15to18sp$area,
+        gaps18to20sp$area))
+  median(c(gaps15to18sp$area,
+         gaps18to20sp$area))
+  
+  
 # Area sampled in old growth and secondary forest [> 10 m height]
 
   areaOld18 <- raster::mask(d15to18tall, ageUse[ageUse$AgeClass=="OldGrowth",])
