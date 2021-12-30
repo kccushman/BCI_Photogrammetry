@@ -1089,7 +1089,7 @@ library(INLA)
   
   save(model_full_ht, model_full_htlog, file = "INLA/INLA_fullModelResult_initialHt.RData")
   
-#### Run full model isloating soil, topography, and age terms ####
+#### Run full model isolating soil, topography, and age terms ####
   library(INLA)
   load("Code_INLA/INLA_prelim_40m_tin.RData")
   
