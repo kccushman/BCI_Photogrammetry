@@ -1089,7 +1089,7 @@ library(INLA)
   
   save(model_full_ht, model_full_htlog, file = "INLA/INLA_fullModelResult_initialHt.RData")
   
-#### Run full model without any soil terms ####
+#### Run full model isloating soil, topography, and age terms ####
   library(INLA)
   load("Code_INLA/INLA_prelim_40m_tin.RData")
   
@@ -1118,29 +1118,69 @@ library(INLA)
   bci.gapsAll_Order$age <- relevel(as.factor(bci.gapsAll_Order$age), "OldGrowth")
   bci.gapsAll_Order$Year <- relevel(as.factor(bci.gapsAll_Order$Year), "2020")
   
-  # Run the best models with full spatial autocorrelation AND add initial canopy height
-  fixed_noSoil <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + age + Year")
+  # Model with only forest age and year
+  fixed_ageOnly <- paste0("age + Year")
   random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
-  form_noSoil <- formula(paste0("gapPropCens ~ ",fixed_noSoil," + ",random_full))
+  form_ageOnly <- formula(paste0("gapPropCens ~ ",fixed_ageOnly," + ",random_full))
   
-  model_noSoil <- inla(form_noSoil,
+  model_ageOnly <- inla(form_ageOnly,
                         family = "beta",
                         data = bci.gapsAll_Order,
                         control.compute = list(dic = TRUE),
                         control.family = list(beta.censor.value = cens))
   
-  save(model_noSoil, file = "Code_INLA/INLA_fullModelResult_noSoil.RData")
+  save(model_ageOnly, file = "Code_INLA/INLA_ModelResult_ageOnly.RData")
   
-  fixed_noTopo <- paste0("soilParent + soilForm + age + Year")
+
+  
+  # Model with only soils terms
+  fixed_soilsOnly <- paste0("soilParent + soilForm + Year")
   random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
-  form_noTopo <- formula(paste0("gapPropCens ~ ",fixed_noTopo," + ",random_full))
+  form_soilsOnly <- formula(paste0("gapPropCens ~ ",fixed_soilsOnly," + ",random_full))
   
-  model_noTopo <- inla(form_noTopo,
+  model_soilsOnly <- inla(form_soilsOnly,
                        family = "beta",
                        data = bci.gapsAll_Order,
                        control.compute = list(dic = TRUE),
                        control.family = list(beta.censor.value = cens))
   
-  save(model_noTopo, file = "Code_INLA/INLA_fullModelResult_noTopo.RData")
+  save(model_soilsOnly, file = "Code_INLA/INLA_ModelResult_soilsOnly.RData")
   
+  # Model with only topography terms
+  fixed_topoOnly <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + Year")
+  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
+  form_topoOnly <- formula(paste0("gapPropCens ~ ",fixed_topoOnly," + ",random_full))
   
+  model_topoOnly <- inla(form_topoOnly,
+                          family = "beta",
+                          data = bci.gapsAll_Order,
+                          control.compute = list(dic = TRUE),
+                          control.family = list(beta.censor.value = cens))
+  
+  save(model_topoOnly, file = "Code_INLA/INLA_ModelResult_topoOnly.RData")
+  
+  # Model with soils and age
+  fixed_soilsAge <- paste0("soilParent + soilForm + age + Year")
+  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
+  form_soilsAge <- formula(paste0("gapPropCens ~ ",fixed_soilsAge," + ",random_full))
+  
+  model_soilsAge <- inla(form_soilsAge,
+                          family = "beta",
+                          data = bci.gapsAll_Order,
+                          control.compute = list(dic = TRUE),
+                          control.family = list(beta.censor.value = cens))
+  
+  save(model_soilsAge, file = "Code_INLA/INLA_ModelResult_soilsAge.RData")
+  
+  # Model with topography and age
+  fixed_topoAge <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + age + Year")
+  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
+  form_topoAge <- formula(paste0("gapPropCens ~ ",fixed_topoAge," + ",random_full))
+  
+  model_topoAge <- inla(form_topoAge,
+                         family = "beta",
+                         data = bci.gapsAll_Order,
+                         control.compute = list(dic = TRUE),
+                         control.family = list(beta.censor.value = cens))
+  
+  save(model_topoAge, file = "Code_INLA/INLA_ModelResult_topoAge.RData")
