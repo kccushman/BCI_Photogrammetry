@@ -43,63 +43,37 @@ raster::plot(examplesGaps, add=T, border="black", lwd=3)
 
 #### Figure 2: Raster plots of landscape predictors, area sampled, and gaps ####
 
-load("INLA/INLA_prelim_40m_tin.RData")
-gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
+load("Code_INLA/INLA_prelim_40m_tin.RData")
+gaps18to20 <- raster::raster("Data_HeightRasters/newGaps18to20.tif")
 
-buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
+buffer <- rgdal::readOGR("Data_Ancillary/BCI_Outline_Minus25/BCI_Outline_Minus25.shp")
 buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
 
-# Read plot outline  
-plotShp <- rgdal::readOGR("D:/BCI_Spatial/BCI50ha/BCI_50ha.shp")
-plotShp <- sp::spTransform(plotShp, sp::proj4string(buffer))
 
 # Curvature
-  curvRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Curv_smooth_2.tif")
+  curvRaster <- raster::raster("Data_TopographyRasters/Curv_smooth_2.tif")
   curvRaster <- raster::crop(curvRaster, raster::extent(bci.gaps18))
   curvRaster <- raster::aggregate(curvRaster, 40)
 
 # Slope
-  slopeRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Slope_smooth_16.tif")
+  slopeRaster <- raster::raster("Data_TopographyRasters/Slope_smooth_16.tif")
   slopeRaster <- raster::crop(slopeRaster, raster::extent(bci.gaps18))
   slopeRaster <- raster::aggregate(slopeRaster, 40)
 
 # Distance above drainage raster
-  drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
+  drainRaster <- raster::raster("Data_TopographyRasters/distAboveStream_10000.tif")
   # resample to same extent as gap rasters (adds NA area to edges)
   drainRaster <- raster::resample(drainRaster, gaps18to20)
   drainRaster <- raster::crop(drainRaster, raster::extent(bci.gaps18))
   drainRaster <- raster::aggregate(drainRaster, 40)
 
+# Mask to extent of analysis  
 curvRaster <- raster::mask(curvRaster, buffer)
 slopeRaster <- raster::mask(slopeRaster, buffer)
 drainRaster <- raster::mask(drainRaster, buffer)
 
 
-
-par(mar=c(1,0,1,1), mfrow=c(2,3), oma=c(0,0,0,2))
-raster::plot(curvRaster, col = viridis::cividis(128),
-             ext = raster::extent(buffer),
-             bty="n", box=F, yaxt="n", xaxt="n",
-             legend.width=1.5,
-             legend.args=list(text="",line=-5),
-             axis.args = list(cex.axis=1.8))
-#raster::plot(plotShp,add=T, lwd=2, border="white")
-
-raster::plot(slopeRaster, col = viridis::plasma(128),
-             bty="n", box=F, yaxt="n", xaxt="n",
-             ext = raster::extent(buffer),
-             legend.width=1.5,
-             axis.args = list(cex.axis=1.8))
-#raster::plot(plotShp,add=T, lwd=2, border="white")
-
-raster::plot(drainRaster, col = viridis::viridis(128),
-             bty="n", box=F, yaxt="n", xaxt="n",
-             legend.width=1.5,
-             ext = raster::extent(buffer),
-             axis.args = list(cex.axis=1.8))
-#raster::plot(plotShp,add=T, lwd=2, border="white")
-
-soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+soil <- rgdal::readOGR("Data_Ancillary/BCI_Soils/BCI_Soils.shp")
 # Define parent material and soil form from soil class
 soil$SoilParent <- NA
 soil[soil$SOIL=="AVA", c("SoilParent")] <- c("Andesite")
@@ -145,19 +119,7 @@ soil[soil$SoilParent=="Bohio","parentCol"] = wesanderson::wes_palette("Chevalier
 
 soil <- sp::spTransform(soil, sp::proj4string(buffer))
 
-raster::plot(soil,
-             ext = raster::extent(buffer),
-             col = soil$formCol,
-             border="NA")
-# raster::plot(plotShp,add=T, lwd=2, border="white")
-
-raster::plot(soil,
-             ext = raster::extent(buffer),
-             col = soil$parentCol,
-             border="NA")
-# raster::plot(plotShp,add=T, lwd=2, border="white")
-
-age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+age <- rgdal::readOGR("Data_Ancillary/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
 age$AgeClass <- "Other"
 age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
 age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
@@ -168,29 +130,18 @@ age[age$AgeClass=="OldGrowth","ageCol"] <- wesanderson::wes_palette("Moonrise2",
 age[age$AgeClass=="Secondary","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[2]
 age[age$AgeClass=="Other","ageCol"] <- wesanderson::wes_palette("Moonrise2",4)[3]
 
-age <- raster::crop(age,buffer)
-raster::plot(age ,
-             ext = raster::extent(buffer),
-             col = age$ageCol,
-             border="NA")
-# raster::plot(plotShp,add=T, lwd=2, border="white")
-
-
-
-
 
 # Load gap rasters    
-d15to18 <- raster::raster("dCHM15to18_tin.tif")     
-d18to20 <- raster::raster("dCHM18to20_tin.tif")  
+d15to18 <- raster::raster("Data_HeightRasters/dCHM15to18.tif")     
+d18to20 <- raster::raster("Data_HeightRasters/dCHM18to20.tif")  
 
-gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
-gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
+gaps15to18 <- raster::raster("Data_HeightRasters/newGaps15to18.tif")
+gaps18to20 <- raster::raster("Data_HeightRasters/newGaps18to20.tif")
 
+gaps15to18sp <- rgdal::readOGR("Data_GapShapefiles/gaps15to18_shapefile/gaps15to18sp.shp")
+gaps18to20sp <- rgdal::readOGR("Data_GapShapefiles/gaps18to20_shapefile/gaps18to20sp.shp")
 
-buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")
-buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")  
-
-
+# Make a function so that gaps are red and masked areas are grey
 makePlotRaster <- function(dRaster, buffer){
   plotRaster <- dRaster
   plotRaster[is.na(plotRaster)] <- -1000
@@ -202,25 +153,94 @@ plot15to18 <- makePlotRaster(d15to18, buffer)
 plot18to20 <- makePlotRaster(d18to20, buffer)  
 
 
-par(mfrow=c(1,2), mar=c(2,1,1,1), oma=c(1,1,1,3))
-raster::plot(plot15to18,
-             bty="n", box=F,yaxt="n",
-             breaks = c(-1001,-999,1000),
-             col = c("lightgrey","white"),
-             main = NA,
-             legend=F)
-raster::plot(buffer,add=T)
-raster::plot(gaps15to18, col = "red",add=T, legend=F)
+# Load average predicted raster (INLA fixed effects)
+avgPredictedRaster <- raster::raster("Code_INLA/avgPredictedFix.tif")
 
 
-raster::plot(plot18to20,
-             bty="n", box=F,yaxt="n",
-             breaks = c(-1001,-999,1000),
-             col = c("lightgrey","white"),
-             main = NA,
-             legend=F)
-raster::plot(buffer,add=T)
-raster::plot(gaps18to20, col = "red",add=T, legend=F)
+# MAKE PLOT
+
+cxSca = 1.1
+cxLab = 0.7
+cxLeg = 1
+
+pdf("Figure_3.pdf", width=6.81, height=5)
+  par(mar=c(1,0,1,1), mfrow=c(3,3), oma=c(0,0,1,4))
+  raster::plot(curvRaster, col = viridis::cividis(128),
+               ext = raster::extent(buffer),
+               bty="n", box=F, yaxt="n", xaxt="n",
+               legend.width=1.5,
+               legend.args=list(text="",line=-5),
+               axis.args = list(cex.axis=cxSca))
+  mtext("a. Curvature (LaPlacian convexity)", side=3, cex=cxLab)
+  arrows(x0=628600,x1=629600, y0=1010000, y1=1010000, length = 0, lwd=2)
+  text("1 km", x=629100, y=1010300)
+  
+  
+  raster::plot(slopeRaster, col = viridis::plasma(128),
+               bty="n", box=F, yaxt="n", xaxt="n",
+               ext = raster::extent(buffer),
+               legend.width=1.5,
+               axis.args = list(cex.axis=cxSca))
+  mtext("b. Slope (degrees)", side=3, cex=cxLab)
+  
+  raster::plot(drainRaster, col = viridis::viridis(128),
+               bty="n", box=F, yaxt="n", xaxt="n",
+               legend.width=1.5,
+               ext = raster::extent(buffer),
+               axis.args = list(cex.axis=cxSca))
+  mtext("c. Height above nearest drainage (m)", side=3, cex=cxLab)
+  
+  raster::plot(soil,
+               ext = raster::extent(buffer),
+               col = soil$formCol,
+               border=soil$formCol)
+  mtext("d. Soil form", side=3, cex=cxLab)
+  
+  raster::plot(soil,
+               ext = raster::extent(buffer),
+               col = soil$parentCol,
+               border=soil$parentCol)
+  mtext("e. Soil parent material", side=3, cex=cxLab)
+  
+  age <- raster::crop(age,buffer)
+  raster::plot(age ,
+               ext = raster::extent(buffer),
+               col = age$ageCol,
+               border=age$ageCol)
+  mtext("f. Forest age", side=3, cex=cxLab)
+  
+  raster::plot(plot15to18,
+               bty="n", box=F, yaxt="n", xaxt = "n",
+               ext = raster::extent(buffer),
+               breaks = c(-1001,-999,1000),
+               col = c("lightgrey","white"),
+               main = NA,
+               legend=F)
+  raster::plot(buffer,add=T, lwd=0.5)
+  raster::plot(gaps15to18sp, col = "red", add=T, border=NA)
+  mtext("g. Observed disturbances '15-'18", side=3, cex=cxLab)
+  
+  
+  raster::plot(plot18to20,
+               bty="n", box=F,yaxt="n", xaxt = "n",
+               ext = raster::extent(buffer),
+               breaks = c(-1001,-999,1000),
+               col = c("lightgrey","white"),
+               main = NA,
+               legend=F)
+  raster::plot(buffer,add=T, lwd=0.5)
+  raster::plot(gaps18to20sp, col = "red", add=T, border=NA)
+  
+  mtext("h. Observed disturbances '18-'20", side=3, cex=cxLab)
+  
+  raster::plot(avgPredictedRaster,
+               col=viridis::cividis(50),
+               bty="n", box=F, xaxt="n", yaxt="n",
+               legend.width=1.5,
+               legend.args=list(text="",line=-5),
+               axis.args = list(cex.axis=cxSca))  
+  mtext("i. Predicted disturbance rate (% yr-1)", side=3, cex=cxLab)
+dev.off()
 
 #### Figure 3: gap frequencies and distribution of 2009 canopy height per forest type ####
 

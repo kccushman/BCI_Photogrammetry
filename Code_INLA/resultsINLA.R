@@ -36,6 +36,10 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
   colOld <- wesanderson::wes_palette("Moonrise2",4)[1]
   colSec <- wesanderson::wes_palette("Moonrise2",4)[2]
   
+  # load buffer for BCI
+  buffer <- rgdal::readOGR("Data_Ancillary/BCI_Outline_Minus25/BCI_Outline_Minus25.shp")
+  buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs")
+  
 # smoothScales <- c(1,2,3,4,6,8,12,16,24,32,48,64)
 # curvScale <- 2
 # slopeScale <- 16
@@ -101,6 +105,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
       all_random[is.na(bci.gapsAll$age)] <- NA
       all_random <- all_random[!is.na(all_random)]
       
+      bci.gapsAll$fix_pred <- NA
       for(i in 1:nrow(bci.gapsAll)){
         if(!is.na(bci.gapsAll$fix_sum[i])){
           bci.gapsAll$fix_pred[i] <- mean(exp(bci.gapsAll$fix_sum[i] + all_random)/(1 + exp(bci.gapsAll$fix_sum[i] + all_random)))
@@ -110,11 +115,6 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
     # bci.gapsAll$fix_pred <- exp(bci.gapsAll$fix_sum)/(1 + exp(bci.gapsAll$fix_sum))
     
     bci.gapsAll$fix_resd <- bci.gapsAll$gapPropCens - bci.gapsAll$fix_pred
-    
-  
-  # load buffer for BCI
-  buffer <- rgdal::readOGR("Data_Ancillary/BCI_Outline_Minus25/BCI_Outline_Minus25.shp")
-  buffer <- sp::spTransform(buffer,"+proj=utm +zone=17 +datum=WGS84 +units=m +no_defs") 
   
   fixRaster18 <- raster::raster(x = matrix(data = bci.gapsAll[bci.gapsAll$Year=="2018","fix_pred"],
                                            nrow = nCellY,
@@ -137,7 +137,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                 ymx = raster::extent(bci.gaps20)@ymax)
   fixRaster20 <- raster::mask(fixRaster20, buffer)
   
-#### Make plots of observed, average predicted, and SD predicted values for each year ####
+#### Make plots of observed, average predicted, and SD predicted values ####
 
   allMeans <-  model_full$summary.fitted.values$mean[order(bci.gapsAll_Order$Order)]
 #  allMeans[is.na(bci.gapsAll$gapPropCens)] <- NA
@@ -226,21 +226,17 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
   predSdRaster20[is.na(predMeanRaster20)] <- NA
   
 
-#### Figure 2i: Make rasters of average spatial pattern across all years ####
+  ## Rasters of average spatial pattern across all years
 
-  avgStackFix <- raster::stack(fixRaster18,fixRaster20)
+    avgStackFix <- raster::stack(fixRaster18,fixRaster20)
+    avgPredictedRaster <- raster::calc(avgStackFix, mean, na.rm=T)
+    raster::writeRaster(avgPredictedRaster, file = "Code_INLA/avgPredictedFix.tif")
   
-  avgPredictedRaster <- raster::calc(avgStackFix, mean, na.rm=T)
-  avgPredictedRaster[avgPredictedRaster==0] <- NA
-  
-  avgStackObs <- raster::stack(obsRaster18,obsRaster20)
-  avgObservedRaster <- raster::calc(avgStackObs, mean, na.rm=T)
-  avgObservedRaster[avgObservedRaster==0] <- NA
+    avgStackObs <- raster::stack(obsRaster18,obsRaster20)
+    avgObservedRaster <- raster::calc(avgStackObs, mean, na.rm=T)
+    avgObservedRaster[avgObservedRaster==0] <- NA
 
-  par(mfrow=c(1,1), mar=c(2,2,1,2), oma=c(0,0,0,0))
-  raster::plot(avgPredictedRaster,
-               col=viridis::cividis(50),
-               bty="n", box=F, xaxt="n", yaxt="n")  
+
 
 
 #### Figure 4c: Fixed effects sizes ####  
