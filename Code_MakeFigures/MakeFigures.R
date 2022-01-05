@@ -593,12 +593,25 @@ pdf("Figure_3.pdf", width=6.81, height=5)
                col = soil$formCol,
                border=soil$formCol)
   mtext("d. Soil form", side=3, cex=cxLab)
+  par(xpd=T)
+  points(x=rep(627324,4), y = seq(from=1010313,to=1009300,length.out = 4), 
+         pch=15,cex=1.2,
+         col=c(colBro,colMot,colPal,colRed))
+  text(x=rep(627500,4), y = seq(from=1010313,to=1009300,length.out = 4),
+       c("Brown fine loam","Mottlead heavy clay","Pale swelling clay","Red light clay"),
+       adj=0, cex=0.68)
   
   raster::plot(soil,
                ext = raster::extent(buffer),
                col = soil$parentCol,
                border=soil$parentCol)
   mtext("e. Soil parent material", side=3, cex=cxLab)
+  points(x=rep(627324,4), y = seq(from=1010313,to=1009300,length.out = 4), 
+         pch=15,cex=1.2,
+         col=c(colAnd,colBoh,colMar,colVol))
+  text(x=rep(627500,4), y = seq(from=1010313,to=1009300,length.out = 4),
+       c("Andesite","Bohio","Caimito marine","Caimito volcanic"),
+       adj=0, cex=0.68)
   
   age <- raster::crop(age,buffer)
   raster::plot(age ,
@@ -606,6 +619,12 @@ pdf("Figure_3.pdf", width=6.81, height=5)
                col = age$ageCol,
                border=age$ageCol)
   mtext("f. Forest age", side=3, cex=cxLab)
+  points(x=rep(627324,2), y = seq(from=1010313,to=1009300,length.out = 4)[1:2], 
+         pch=15,cex=1.2,
+         col=c(colOld,colSec))
+  text(x=rep(627500,2), y = seq(from=1010313,to=1009300,length.out = 4)[1:2],
+       c("Old growth","Secondary"),
+       adj=0, cex=0.68)
   
   raster::plot(plot15to18,
                bty="n", box=F, yaxt="n", xaxt = "n",
@@ -617,7 +636,12 @@ pdf("Figure_3.pdf", width=6.81, height=5)
   raster::plot(buffer,add=T, lwd=0.5)
   raster::plot(gaps15to18sp, col = "red", add=T, border=NA)
   mtext("g. Observed disturbances '15-'18", side=3, cex=cxLab)
-  
+  points(x=rep(627324,2), y = seq(from=1010313,to=1009300,length.out = 4)[1:2], 
+         pch=15,cex=1.2,
+         col=c("red","lightgrey"))
+  text(x=rep(627500,2), y = seq(from=1010313,to=1009300,length.out = 4)[1:2],
+       c("Canopy disturbance","No data (masked)"),
+       adj=0, cex=0.68)
   
   raster::plot(plot18to20,
                bty="n", box=F,yaxt="n", xaxt = "n",
@@ -628,6 +652,7 @@ pdf("Figure_3.pdf", width=6.81, height=5)
                legend=F)
   raster::plot(buffer,add=T, lwd=0.5)
   raster::plot(gaps18to20sp, col = "red", add=T, border=NA)
+
   
   mtext("h. Observed disturbances '18-'20", side=3, cex=cxLab)
   
@@ -637,7 +662,7 @@ pdf("Figure_3.pdf", width=6.81, height=5)
                legend.width=1.5,
                legend.args=list(text="",line=-5),
                axis.args = list(cex.axis=cxSca))  
-  mtext("i. Predicted disturbance rate (% yr-1)", side=3, cex=cxLab)
+  mtext(expression(i.~Predicted~disturbance~rate~"(%"~yr^-1~")"), side=3, cex=cxLab)
 dev.off()
 
 #### Figure 4: code in script resultsINLA.R ####
@@ -732,7 +757,7 @@ pdf("Figure_5.pdf", width=6.81, height=7)
                axis.args=list(cex.axis=legendCex),
                legend.width=legendWidth)
   raster::plot(streamCrop, add=T, lwd=1, col="white")
-  mtext(expression("f. Predicted disturbance rate (% yr-1)"),side=3, outer=F, cex=titleCex, line=0)
+  mtext(expression(f.~Predicted~rate~"(%"~yr^-1~")"),side=3, outer=F, cex=titleCex, line=0)
   
   
   
@@ -855,6 +880,7 @@ raster::plot(buffer)
 raster::plot(cropExtent, add=T, col="red", lwd=2)
 
 
+#### Figure 6: code in script resultsINLA.R ####
 #### Figure S1: plot corrected and uncorrected dCHM #### 
   # Read polygon buffer 25 m inland from lake
     buffer <- rgdal::readOGR("D:/BCI_Spatial/BCI_Outline_Minus25.shp")

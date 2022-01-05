@@ -481,10 +481,10 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                   "Forest age: Secondary",
                   "Year: 2015-2018")
 # Plot
-  cexPt <- 0.5
+  cexPt <- 0.4
   lengthArr <- 0.01
   
-  pdf("Figure4c.pdf", width=4.33, height=3)
+pdf("Figure4c.pdf", width=4.33, height=3)
   
   par(mfrow=c(1,1), mar=c(1,1,0,0), oma=c(2,2,0.5,1))
   
@@ -494,8 +494,9 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
        ylim=c(2,1.2*nrow(fixedResults)),
        xlab=NA,
        pch = 19, 
-       cex = 0.5,
+       cex = cexPt,
        cex.axis = cexAx,
+       col = adjustcolor("black",0.99),
        ylab = NA, yaxt = "n")
   arrows(x0 = fixedResults[2:nrow(fixedResults),"0.025quant"],
          x1 = fixedResults[2:nrow(fixedResults),"0.975quant"],
@@ -507,8 +508,8 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
   points(x = fixedResults1[2:nrow(fixedResults),"mean"],
        y = 1.2*nrow(fixedResults):2 - 0.2,
        pch = 19, 
-       cex = 0.5,
-       col = col18)
+       cex = cexPt,
+       col = adjustcolor(col18,0.99))
   arrows(x0 = fixedResults1[2:nrow(fixedResults),"0.025quant"],
          x1 = fixedResults1[2:nrow(fixedResults),"0.975quant"],
          y0 = 1.2*nrow(fixedResults):2- 0.2,
@@ -520,8 +521,8 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
   points(x = fixedResults2[2:nrow(fixedResults),"mean"],
          y = 1.2*nrow(fixedResults):2 - 0.4,
          pch = 19, 
-         cex = 0.5,
-         col = col20)
+         cex = cexPt,
+         col = adjustcolor(col20,0.99))
   arrows(x0 = fixedResults2[2:nrow(fixedResults),"0.025quant"],
          x1 = fixedResults2[2:nrow(fixedResults),"0.975quant"],
          y0 = 1.2*nrow(fixedResults):2- 0.4,
@@ -533,8 +534,8 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
   points(x = fixedResults2_alt[2:nrow(fixedResults),"mean"],
          y = 1.2*nrow(fixedResults):2 - 0.6,
          pch = 1, 
-         cex = 0.5,
-         col = col20)
+         cex = cexPt,
+         col = adjustcolor(col20,0.99))
   arrows(x0 = fixedResults2_alt[2:nrow(fixedResults),"0.025quant"],
          x1 = fixedResults2_alt[2:nrow(fixedResults),"0.975quant"],
          y0 = 1.2*nrow(fixedResults):2- 0.6,
@@ -558,7 +559,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
            "2018-2020 only",
            "2018-2020 only (no blowdown)"),
          bty="n",
-         col = c("black", col18, col20, col20),
+         col = adjustcolor(c("black", col18, col20, col20),0.99),
          pch=c(19,19,19,1),
          cex=cexLab)
   text("c", x = -1.25, y = 1.2*nrow(fixedResults), cex=cexAx)
@@ -621,9 +622,9 @@ dev.off()
     fixRaster20n[!is.na(raster::values(fixRaster20n))] <- 1
     
     # Raster of low canopy area in 2009
-    lo09 <- raster::raster("binaryLoCanopy.tif") # pixels with value 1 are => 10 m height, 0 are < 10 m
+    lo09 <- raster::raster("Data_HeightRasters/loCanopy2009.tif") # pixels with value 1 are => 10 m height, 0 are < 10 m
     # Raster of canopy height in 2009
-    chm09 <- raster::raster("CHM_2009_QAQC.tif") 
+    chm09 <- raster::raster("Data_HeightRasters/CHM_2009_QAQC.tif") 
     
     
     # Make raster of overall sampling effort
@@ -1010,10 +1011,15 @@ dev.off()
       loResults_c$obsRchm_hi[i] <- cor.test(x = log(c(agChm09_mat)[valsKeep]), y = log(c(agObs_mat)[valsKeep]))$conf.int[2]
     }
     
-    # Plot results
+# Plot results
     
-    # Significance with aggregation scale    
-    axisCex <- 1.2
+  # Significance with aggregation scale    
+  axisCex <- 1.2
+  labCex <- 0.8
+  
+  
+  pdf("Figure_6.pdf", width=4.33, height = 5)
+  
     par(mfrow=c(3,2), mar=c(1,1,0,0), oma=c(5,4,3,1), las=1)
     
     xVals <- ((loResults$agBy*40)^2)/10000
@@ -1030,14 +1036,13 @@ dev.off()
          xaxt="n",
          lwd=2)
     par(las=0)
-    text("All forest", x=0.15, y=-0.8, cex=1.5, adj=0)
-    mtext("Proportion of low canopy area", side=3, outer=F)
-    mtext(expression("Pearson correlation (r)"),
-          side=2, outer=T, line=2)
+    text("All forest", x=0.15, y=-0.8, cex=axisCex, adj=0)
+    mtext("Proportion of low canopy area", side=3, outer=F, cex = labCex)
+    mtext(bquote("Pearson correlation ("~italic(rho)~")"), side=2, outer=T, line=2, cex = labCex)
     par(las=1)
     text("a",
          x = 0.15,
-         y = 1, adj=0, cex=1.5)
+         y = 0.95, adj=0, cex=axisCex)
     abline(h=0,lty=2)
     lines(x = xVals,
           y = loResults$obsRlo,
@@ -1054,10 +1059,10 @@ dev.off()
             border=NA)
     legend(x = 0.15,
            y = 0,
-           c("Predicted disturbance rate (fixed effects)",
-             "Observed disturbance rate"),
+           c("Predicted rate (fixed effects)",
+             "Observed rate"),
            col=c("black","grey"),
-           cex = 1.2,
+           cex = 0.9,
            lty=c(1,2),
            lwd=2,
            bty="n")
@@ -1075,7 +1080,7 @@ dev.off()
          xaxt="n",
          lwd=2)
     abline(h=0,lty=2)
-    mtext("Mean canopy height", side=3, outer=F)
+    mtext("Mean canopy height", side=3, outer=F, cex = labCex)
     
     lines(x = xVals,
           y = loResults$obsRchm,
@@ -1092,7 +1097,7 @@ dev.off()
             border=NA)
     text("b",
          x = 0.15,
-         y = 1, adj=0, cex=1.5)
+         y = 0.95, adj=0, cex=axisCex)
     
     
     plot(x = xVals,
@@ -1112,7 +1117,7 @@ dev.off()
     par(las=1)
     text("c",
          x = 0.15,
-         y = 1, adj=0, cex=1.5)
+         y = 0.95, adj=0, cex=axisCex)
     abline(h=0,lty=2)
     lines(x = xVals,
           y = loResults_b$obsRlo,
@@ -1161,7 +1166,7 @@ dev.off()
     
     text("d",
          x = 0.15,
-         y = 1, adj=0, cex=1.5)
+         y = 0.95, adj=0, cex=axisCex)
     
     
     plot(x = xVals,
@@ -1181,7 +1186,7 @@ dev.off()
     par(las=1)
     text("e",
          x = 0.15,
-         y = 1, adj=0, cex=1.5)
+         y = 0.95, adj=0, cex=axisCex)
     abline(h=0,lty=2)
     lines(x = xVals,
           y = loResults_c$obsRlo,
@@ -1230,10 +1235,10 @@ dev.off()
     
     text("f",
          x = 0.15,
-         y = 1, adj=0, cex=1.5)
+         y = 0.95, adj=0, cex=axisCex)
     
-    mtext("Spatial resolution (ha)", side=1, outer=T, line=2)
-    
+    mtext("Spatial resolution (ha)", side=1, outer=T, line=2, cex = labCex)
+  dev.off()  
     
     
 #### Figures S14-17: Plot correlations at 3 different spatial grains ####
