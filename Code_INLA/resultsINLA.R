@@ -104,11 +104,15 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
       # Keep only non-NA values
       all_random[is.na(bci.gapsAll$age)] <- NA
       all_random <- all_random[!is.na(all_random)]
+      # define inverse logit function
+      invLogit <- function(x){
+        return(exp(x)/(1+exp(x)))
+      }
       
       bci.gapsAll$fix_pred <- NA
       for(i in 1:nrow(bci.gapsAll)){
         if(!is.na(bci.gapsAll$fix_sum[i])){
-          bci.gapsAll$fix_pred[i] <- mean(exp(bci.gapsAll$fix_sum[i] + all_random)/(1 + exp(bci.gapsAll$fix_sum[i] + all_random)))
+          bci.gapsAll$fix_pred[i] <- mean(invLogit(bci.gapsAll$fix_sum[i]+all_random))
         }
       }
   
@@ -177,19 +181,6 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                 ymx = raster::extent(bci.gaps18)@ymax)
   obsRaster18 <- raster::mask(obsRaster18, buffer)
   
-  
-  
-  predSdRaster18 <- raster::raster(x = matrix(data = bci.gaps18$predictedSD,
-                                              nrow = nCellY,
-                                              ncol = nCellX,
-                                              byrow = F),
-                                   xmn = raster::extent(bci.gaps18)@xmin,
-                                   xmx = raster::extent(bci.gaps18)@xmax,
-                                   ymn = raster::extent(bci.gaps18)@ymin,
-                                   ymx = raster::extent(bci.gaps18)@ymax)
-  predSdRaster18[is.na(predMeanRaster18)] <- NA
-  
-  
   # 2020
   predMeanRaster20 <- raster::raster(x = matrix(data = bci.gaps20$predictedMean,
                                                 nrow = nCellY,
@@ -212,19 +203,6 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                 ymn = raster::extent(bci.gaps20)@ymin,
                                 ymx = raster::extent(bci.gaps20)@ymax)
   obsRaster20 <- raster::mask(obsRaster20, buffer)
-  
-  
-  
-  predSdRaster20 <- raster::raster(x = matrix(data = bci.gaps20$predictedSD,
-                                              nrow = nCellY,
-                                              ncol = nCellX,
-                                              byrow = F),
-                                   xmn = raster::extent(bci.gaps20)@xmin,
-                                   xmx = raster::extent(bci.gaps20)@xmax,
-                                   ymn = raster::extent(bci.gaps20)@ymin,
-                                   ymx = raster::extent(bci.gaps20)@ymax)
-  predSdRaster20[is.na(predMeanRaster20)] <- NA
-  
 
   ## Rasters of average spatial pattern across all years
 
@@ -239,104 +217,9 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
 
 
 
-#### Figure 4c: Fixed effects sizes ####  
-  fixedResults <- model_full$summary.fixed
-  
-  # separated by years
-  fixedResults1 <- model_full1$summary.fixed
-  fixedResults2 <- model_full2$summary.fixed
-  
-  # main model and second interval without large gaps
-  fixedResults_alt <- model_full_alt$summary.fixed
-  fixedResults2_alt <- model_full2_alt$summary.fixed
-  
-  
-  fixedNames <- c("Curvature (linear)", "Slope (linear)", "Slope (quadratic)",                    
-                  "Height above drainage (linear)","Height above drainage (quadratic)",
-                  "Soil parent: Andesite", "Soil parent: Caimito marine", "Soil parent: Caimito volcanic",
-                  "Soil form: Mottled heavy clay", "Soil form: Pale swelling clay", "Soil form: Red light clay",
-                  "Forest age: Secondary",
-                  "Year: 2015-2018")
-  
-  par(mfrow=c(1,1), mar=c(4,1,1,1), oma=c(0,0,0,0))
-  
-  plot(x = fixedResults[2:nrow(fixedResults),"mean"],
-       y = 1.2*nrow(fixedResults):2,
-       xlim = range(fixedResults[2:nrow(fixedResults),c(3,5)]) + c(-0.4,0.6),
-       ylim=c(2,1.2*nrow(fixedResults)),
-       xlab=NA,
-       pch = 19, 
-       cex = 1,
-       ylab = NA, yaxt = "n")
-  arrows(x0 = fixedResults[2:nrow(fixedResults),"0.025quant"],
-         x1 = fixedResults[2:nrow(fixedResults),"0.975quant"],
-         y0 = 1.2*nrow(fixedResults):2,
-         y1 = 1.2*nrow(fixedResults):2,
-         angle = 90, code=3,
-         length = 0.05)
-  
-  points(x = fixedResults1[2:nrow(fixedResults),"mean"],
-       y = 1.2*nrow(fixedResults):2 - 0.2,
-       pch = 19, 
-       cex = 1,
-       col = col18)
-  arrows(x0 = fixedResults1[2:nrow(fixedResults),"0.025quant"],
-         x1 = fixedResults1[2:nrow(fixedResults),"0.975quant"],
-         y0 = 1.2*nrow(fixedResults):2- 0.2,
-         y1 = 1.2*nrow(fixedResults):2- 0.2,
-         angle = 90, code=3,
-         length = 0.05,
-         col = col18)
-  
-  points(x = fixedResults2[2:nrow(fixedResults),"mean"],
-         y = 1.2*nrow(fixedResults):2 - 0.4,
-         pch = 19, 
-         cex = 1,
-         col = col20)
-  arrows(x0 = fixedResults2[2:nrow(fixedResults),"0.025quant"],
-         x1 = fixedResults2[2:nrow(fixedResults),"0.975quant"],
-         y0 = 1.2*nrow(fixedResults):2- 0.4,
-         y1 = 1.2*nrow(fixedResults):2- 0.4,
-         angle = 90, code=3,
-         length = 0.05,
-         col = col20)
-  
-  points(x = fixedResults2_alt[2:nrow(fixedResults),"mean"],
-         y = 1.2*nrow(fixedResults):2 - 0.6,
-         pch = 1, 
-         cex = 1,
-         col = col20)
-  arrows(x0 = fixedResults2_alt[2:nrow(fixedResults),"0.025quant"],
-         x1 = fixedResults2_alt[2:nrow(fixedResults),"0.975quant"],
-         y0 = 1.2*nrow(fixedResults):2- 0.6,
-         y1 = 1.2*nrow(fixedResults):2- 0.6,
-         angle = 90, code=3,
-         length = 0.05,
-         lty=2,
-         col = col20)
-  
-  
-  abline(v=0, lty=2)
-  text(fixedNames,
-      x = fixedResults[2:nrow(fixedResults),"0.975quant"]+0.03,
-       y = 1.2*nrow(fixedResults):2,
-       pos = 4)
-  
-  legend(x = -1.3,
-         y = 6,
-         c("Full model",
-           "2015-2018 only",
-           "2018-2020 only",
-           "2018-2020 only (no blowdown)"),
-         bty="n",
-         col = c("black", col18, col20, col20),
-         pch=c(19,19,19,1))
-  text("c", x = -1.25, y = 1.2*nrow(fixedResults))
-  mtext("Fixed effect", side=1, outer=F, line=2)
-  
-#### Figure 3: aggregate and look at R2 ####          
+#### Figure 4ab: aggregate and look at correlation with observed rates ####          
     
-  #Create rasters where all non-NA values are 1
+    #Create rasters where all non-NA values are 1
     predMeanRaster18n <- predMeanRaster18
     predMeanRaster18n[!is.na(raster::values(predMeanRaster18n))] <- 1
     fixRaster18n <- fixRaster18
@@ -346,7 +229,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
     fixRaster20n <- fixRaster20
     fixRaster20n[!is.na(raster::values(fixRaster20n))] <- 1
     
-  # Create data frame to store results  
+    # Create data frame to store results  
     agResults <- data.frame(agBy = 1:20,
                             fixR_18 = NA,
                             fixR_18lo = NA,
@@ -377,57 +260,57 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
       agObs18_mat <- raster::values(agObs18, format = "matrix")
       nMat <- raster::values(agPred18_all_n, format = "matrix")
       
-        # matrix of cells that need to be combined
-        combineMat <- which(nMat<minObs, arr.ind = T)
+      # matrix of cells that need to be combined
+      combineMat <- which(nMat<minObs, arr.ind = T)
+      
+      while(nrow(combineMat)>0){
         
-        while(nrow(combineMat)>0){
+        # get surrounding cells for each matrix
+        rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+        rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+        cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+        cols <- cols[which(cols>0 & cols <= ncol(nMat))]
         
-          # get surrounding cells for each matrix
-            rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
-            rows <- rows[which(rows>0 & rows <= nrow(nMat))]
-            cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
-            cols <- cols[which(cols>0 & cols <= ncol(nMat))]
-            
-            agPred18_all_mat_j <- agPred18_all_mat[rows,cols]
-            agPred18_fix_mat_j <- agPred18_fix_mat[rows,cols]
-            agObs18_mat_j <- agObs18_mat[rows,cols]
-            nMat_j <- nMat[rows,cols]
-              # set cell of interest to 0
-              nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+        agPred18_all_mat_j <- agPred18_all_mat[rows,cols]
+        agPred18_fix_mat_j <- agPred18_fix_mat[rows,cols]
+        agObs18_mat_j <- agObs18_mat[rows,cols]
+        nMat_j <- nMat[rows,cols]
+        # set cell of interest to 0
+        nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+        
+        # Only proceed if there are non-NA neighboring cells
+        if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){  
           
-          # Only proceed if there are non-NA neighboring cells
-          if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){  
-              
-            # find neighboring cell with most nearby observations
-              new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
-              
-            
-            # replace value for new cell with a weighted mean of all other values
-              agPred18_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_all_mat_j[new_j[1],new_j[2]],agPred18_all_mat[combineMat[1,1],combineMat[1,2]]),
-                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
-              agPred18_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_fix_mat_j[new_j[1],new_j[2]],agPred18_fix_mat[combineMat[1,1],combineMat[1,2]]),
-                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
-              agObs18_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs18_mat_j[new_j[1],new_j[2]],agObs18_mat[combineMat[1,1],combineMat[1,2]]),
-                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
-              nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
-              
-            # replace neighborhood in original matrices
-              agPred18_all_mat[rows,cols] <- agPred18_all_mat_j
-              agPred18_fix_mat[rows,cols] <- agPred18_fix_mat_j
-              agObs18_mat[rows,cols] <- agObs18_mat_j
-              nMat[rows,cols] <- nMat_j
-          }
-              
-          # Replace original observation with NaN
-            agPred18_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
-            agPred18_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
-            agObs18_mat[combineMat[1,1],combineMat[1,2]] <- NaN
-            nMat[combineMat[1,1],combineMat[1,2]] <- NaN
-            
-          # Redefine combineMat
-            combineMat <- which(nMat<minObs, arr.ind = T)
+          # find neighboring cell with most nearby observations
+          new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+          
+          
+          # replace value for new cell with a weighted mean of all other values
+          agPred18_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_all_mat_j[new_j[1],new_j[2]],agPred18_all_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                 w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agPred18_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_fix_mat_j[new_j[1],new_j[2]],agPred18_fix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                 w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          agObs18_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs18_mat_j[new_j[1],new_j[2]],agObs18_mat[combineMat[1,1],combineMat[1,2]]),
+                                                            w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+          nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+          
+          # replace neighborhood in original matrices
+          agPred18_all_mat[rows,cols] <- agPred18_all_mat_j
+          agPred18_fix_mat[rows,cols] <- agPred18_fix_mat_j
+          agObs18_mat[rows,cols] <- agObs18_mat_j
+          nMat[rows,cols] <- nMat_j
         }
         
+        # Replace original observation with NaN
+        agPred18_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agPred18_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        agObs18_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+        nMat[combineMat[1,1],combineMat[1,2]] <- NaN
+        
+        # Redefine combineMat
+        combineMat <- which(nMat<minObs, arr.ind = T)
+      }
+      
       agResults$fixR_18[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$estimate
       agResults$fixR_18lo[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[1]
       agResults$fixR_18hi[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[2]
@@ -493,7 +376,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
         agPred20_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
         agObs20_mat[combineMat[1,1],combineMat[1,2]] <- NaN
         nMat[combineMat[1,1],combineMat[1,2]] <- NaN
-      
+        
         # Redefine combineMat
         combineMat <- which(nMat<minObs, arr.ind = T)
       }
@@ -507,9 +390,13 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
       
     }
     
-    # Plot results
+  # Plot results
+  cexLab <- 0.6
+  cexAx <- 0.5
     
-    par(mfrow=c(1,2), mar=c(4,1,1,0), oma=c(1,4,1,1), las=1)
+  pdf("Figure4ab.pdf", width=4.33, height=2)
+  
+    par(mfrow=c(1,2), mar=c(1,1,0,0), oma=c(2,2,0.5,1), las=1)
     
     xVals <- (agResults$agBy*40)^2/10000
     
@@ -521,12 +408,13 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
          ylab = NA,
          type = "l",
          col = col18,
-         lwd=2)
-    text("a. Fixed effects only", x = 0.15, y = 1.02, adj=0)
+         lwd=2,
+         cex.axis = cexAx)
+    text("a. Fixed effects only", x = 0.15, y = 1.02, adj=0, cex=cexAx)
     lines(x = xVals,
-         y = agResults$fixR_20,
-         col=col20,
-         lwd=2)
+          y = agResults$fixR_20,
+          col=col20,
+          lwd=2)
     polygon(x = c(xVals,rev(xVals),xVals[1]),
             y = c(agResults$fixR_18lo,rev(agResults$fixR_18hi),agResults$fixR_18lo[1]),
             col=adjustcolor(col18,0.15),
@@ -540,7 +428,8 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
            x=0.15,y=0.95,
            col=c(col18,col20),
            bty="n",
-           lwd=2)
+           lwd=2,
+           cex=cexLab)
     
     plot(x = xVals,
          y = agResults$allR_18,
@@ -551,8 +440,9 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
          ylab = NA,
          type = "l",
          col = col18,
-         lwd=2)
-    text("b. Fixed + random effects", x = 0.15, y = 1.02, adj=0)
+         lwd=2,
+         cex.axis = cexAx)
+    text("b. Fixed + random effects", x = 0.15, y = 1.02, adj=0, cex=cexAx)
     lines(x = xVals,
           y = agResults$allR_20,
           col=col20,
@@ -565,10 +455,115 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
             y = c(agResults$allR_20lo,rev(agResults$allR_20hi)),
             col=adjustcolor(col20,0.15),
             border=NA)
-
     
-    mtext("Spatial grain (ha)", side=1, outer=T, line=-2)
-    mtext("Pearson correlation (r)", side=2, outer=T, line=1.5, las=0)
+    
+    mtext("Spatial grain (ha)", side=1, outer=T, line=0.5, cex=cexLab)
+    mtext("Pearson correlation (r)", side=2, outer=T, line=0.5, las=0, cex=cexLab)
+    
+  dev.off()  
+    
+#### Figure 4c: Fixed effects sizes ####  
+  fixedResults <- model_full$summary.fixed
+  
+  # separated by years
+  fixedResults1 <- model_full1$summary.fixed
+  fixedResults2 <- model_full2$summary.fixed
+  
+  # main model and second interval without large gaps
+  fixedResults_alt <- model_full_alt$summary.fixed
+  fixedResults2_alt <- model_full2_alt$summary.fixed
+  
+  
+  fixedNames <- c("Curvature (linear)", "Slope (linear)", "Slope (quadratic)",                    
+                  "Height above drainage (linear)","Height above drainage (quadratic)",
+                  "Soil parent: Andesite", "Soil parent: Caimito marine", "Soil parent: Caimito volcanic",
+                  "Soil form: Mottled heavy clay", "Soil form: Pale swelling clay", "Soil form: Red light clay",
+                  "Forest age: Secondary",
+                  "Year: 2015-2018")
+# Plot
+  cexPt <- 0.5
+  lengthArr <- 0.01
+  
+  pdf("Figure4c.pdf", width=4.33, height=3)
+  
+  par(mfrow=c(1,1), mar=c(1,1,0,0), oma=c(2,2,0.5,1))
+  
+  plot(x = fixedResults[2:nrow(fixedResults),"mean"],
+       y = 1.2*nrow(fixedResults):2,
+       xlim = range(fixedResults[2:nrow(fixedResults),c(3,5)]) + c(-0.4,0.6),
+       ylim=c(2,1.2*nrow(fixedResults)),
+       xlab=NA,
+       pch = 19, 
+       cex = 0.5,
+       cex.axis = cexAx,
+       ylab = NA, yaxt = "n")
+  arrows(x0 = fixedResults[2:nrow(fixedResults),"0.025quant"],
+         x1 = fixedResults[2:nrow(fixedResults),"0.975quant"],
+         y0 = 1.2*nrow(fixedResults):2,
+         y1 = 1.2*nrow(fixedResults):2,
+         angle = 90, code=3,
+         length = lengthArr)
+  
+  points(x = fixedResults1[2:nrow(fixedResults),"mean"],
+       y = 1.2*nrow(fixedResults):2 - 0.2,
+       pch = 19, 
+       cex = 0.5,
+       col = col18)
+  arrows(x0 = fixedResults1[2:nrow(fixedResults),"0.025quant"],
+         x1 = fixedResults1[2:nrow(fixedResults),"0.975quant"],
+         y0 = 1.2*nrow(fixedResults):2- 0.2,
+         y1 = 1.2*nrow(fixedResults):2- 0.2,
+         angle = 90, code=3,
+         length = lengthArr,
+         col = col18)
+  
+  points(x = fixedResults2[2:nrow(fixedResults),"mean"],
+         y = 1.2*nrow(fixedResults):2 - 0.4,
+         pch = 19, 
+         cex = 0.5,
+         col = col20)
+  arrows(x0 = fixedResults2[2:nrow(fixedResults),"0.025quant"],
+         x1 = fixedResults2[2:nrow(fixedResults),"0.975quant"],
+         y0 = 1.2*nrow(fixedResults):2- 0.4,
+         y1 = 1.2*nrow(fixedResults):2- 0.4,
+         angle = 90, code=3,
+         length = lengthArr,
+         col = col20)
+  
+  points(x = fixedResults2_alt[2:nrow(fixedResults),"mean"],
+         y = 1.2*nrow(fixedResults):2 - 0.6,
+         pch = 1, 
+         cex = 0.5,
+         col = col20)
+  arrows(x0 = fixedResults2_alt[2:nrow(fixedResults),"0.025quant"],
+         x1 = fixedResults2_alt[2:nrow(fixedResults),"0.975quant"],
+         y0 = 1.2*nrow(fixedResults):2- 0.6,
+         y1 = 1.2*nrow(fixedResults):2- 0.6,
+         angle = 90, code=3,
+         length = lengthArr,
+         lty=2,
+         col = col20)
+  
+  
+  abline(v=0, lty=2)
+  text(fixedNames,
+      x = fixedResults[2:nrow(fixedResults),"0.975quant"]+0.03,
+       y = 1.2*nrow(fixedResults):2,
+       pos = 4, cex = cexAx)
+  
+  legend(x = -1.3,
+         y = 5.5,
+         c("Full model",
+           "2015-2018 only",
+           "2018-2020 only",
+           "2018-2020 only (no blowdown)"),
+         bty="n",
+         col = c("black", col18, col20, col20),
+         pch=c(19,19,19,1),
+         cex=cexLab)
+  text("c", x = -1.25, y = 1.2*nrow(fixedResults), cex=cexAx)
+  mtext("Fixed effect", side=1, outer=F, line=2, cex=cexLab)
+dev.off()  
 
 #### Define forest age and soil type polygons ####
     # Forest age polygon
@@ -3380,52 +3375,53 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
            pch=c(19,19))
     mtext("Fixed effect", side=1, outer=F, line=2)
     
-#### Figure S#?: Look at alternate models without soil predictors ####
+#### Figure S#?: Look at alternate models soil, forest age, and topography separately ####
   
+# SOIL ONLY
+    
   #1. Load these alternate models    
-    load("Code_INLA/INLA_fullModelResult_noSoil.RData")
+    load("Code_INLA/INLA_ModelResult_soilsOnly.RData")
 
   #2. First, calculate alternate predicted values with and without random effects
     
     # Duplicate 'bci.gapsAll' objects for alternate model
-    bci.gapsNoSoil <- bci.gapsAll
+    bci.gapsSoil <- bci.gapsAll
 
     # Get fitted values and reorder to match original data frame
-    bci.gapsNoSoil$pred <- model_noSoil$summary.fitted.values$mean[order(bci.gapsAll_Order$Order)]
+    bci.gapsSoil$pred <- model_soilsOnly$summary.fitted.values$mean[order(bci.gapsSoil_Order$Order)]
 
-    ## Fixed effects only -- no soil 
+    ## Fixed effects only
     
       # Intercept
-      bci.gapsNoSoil$fix_int <- model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="(Intercept)"]
+      bci.gapsSoil$fix_int <- model_soilsOnly$summary.fixed$mean[model_soilsOnly$names.fixed=="(Intercept)"]
       
-      # Curvature
-      bci.gapsNoSoil$fix_C <- bci.gapsNoSoil$Sc_curvMean_2*(model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="Sc_curvMean_2"])
+      # Soil form
+      bci.gapsSoil$fix_soilForm <- 0
       
-      # Slope
-      bci.gapsNoSoil$fix_S <- bci.gapsNoSoil$Sc_slopeMean_16*(model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="Sc_slopeMean_16"])
-      bci.gapsNoSoil$fix_S2 <- bci.gapsNoSoil$Sc_slopeMean_16_Sq*(model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="Sc_slopeMean_16_Sq"])
+      bci.gapsSoil[!is.na(bci.gapsSoil$soilForm) & bci.gapsSoil$soilForm=="MottledHeavyClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormMottledHeavyClay"]
+      bci.gapsSoil[!is.na(bci.gapsSoil$soilForm) & bci.gapsSoil$soilForm=="PaleSwellingClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormPaleSwellingClay"]
+      bci.gapsSoil[!is.na(bci.gapsSoil$soilForm) & bci.gapsSoil$soilForm=="RedLightClay","fix_soilForm"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilFormRedLightClay"]
       
-      # Height above drainage
-      bci.gapsNoSoil$fix_H <- bci.gapsNoSoil$Sc_drainMean*(model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="Sc_drainMean"])
-      bci.gapsNoSoil$fix_H2 <- bci.gapsNoSoil$Sc_drainMean_Sq*(model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="Sc_drainMean_Sq"])
+      
+      # Soil parent material
+      bci.gapsSoil$fix_soilParent <- 0
+      
+      bci.gapsSoil[!is.na(bci.gapsSoil$soilParent) & bci.gapsSoil$soilParent=="Andesite","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentAndesite"]
+      bci.gapsSoil[!is.na(bci.gapsSoil$soilParent) & bci.gapsSoil$soilParent=="CaimitoMarineSedimentary","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentCaimitoMarineSedimentary"]
+      bci.gapsSoil[!is.na(bci.gapsSoil$soilParent) & bci.gapsSoil$soilParent=="CaimitoVolcanic","fix_soilParent"] <- model_full$summary.fixed$mean[model_full$names.fixed=="soilParentCaimitoVolcanic"]
       
       # Year 
-      bci.gapsNoSoil$fix_year <- 0
-      bci.gapsNoSoil[bci.gapsNoSoil$Year=="2018","fix_year"] <- model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="Year2018"]
-      
-      # Age 
-      bci.gapsNoSoil$fix_age <- 0
-      bci.gapsNoSoil[bci.gapsNoSoil$age=="Secondary" & !(is.na(bci.gapsNoSoil$age)),"fix_age"] <- model_noSoil$summary.fixed$mean[model_noSoil$names.fixed=="ageSecondary"]
-      
+      bci.gapsSoil$fix_year <- 0
+      bci.gapsSoil[bci.gapsSoil$Year=="2018","fix_year"] <- model_soilsOnly$summary.fixed$mean[model_soilsOnly$names.fixed=="Year2018"]
       
       # All
-      bci.gapsNoSoil$fix_sum <- bci.gapsNoSoil$fix_int + bci.gapsNoSoil$fix_C + bci.gapsNoSoil$fix_S + bci.gapsNoSoil$fix_S2 + bci.gapsNoSoil$fix_H + bci.gapsNoSoil$fix_H2 + bci.gapsNoSoil$fix_age + bci.gapsNoSoil$fix_year
+      bci.gapsSoil$fix_sum <- bci.gapsSoil$fix_int + bci.gapsSoil$fix_soilForm + bci.gapsSoil$fix_soilParent + bci.gapsSoil$fix_year
       
       # Predicted value with just fixed effects
-      bci.gapsNoSoil$fix_pred <- exp(bci.gapsNoSoil$fix_sum)/(1 + exp(bci.gapsNoSoil$fix_sum))
+      bci.gapsSoil$fix_pred <- exp(bci.gapsSoil$fix_sum)/(1 + exp(bci.gapsSoil$fix_sum))
       
       # Make predicted raster (fixed and random effects)
-      predMeanRaster18noSoil <- raster::raster(x = matrix(data = bci.gapsNoSoil[bci.gapsNoSoil$Year=="2018","pred"],
+      predMeanRaster18Soil <- raster::raster(x = matrix(data = bci.gapsSoil[bci.gapsSoil$Year=="2018","pred"],
                                                      nrow = nCellY,
                                                      ncol = nCellX,
                                                      byrow = F),
@@ -3433,10 +3429,10 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                           xmx = raster::extent(bci.gaps18)@xmax,
                                           ymn = raster::extent(bci.gaps18)@ymin,
                                           ymx = raster::extent(bci.gaps18)@ymax)
-      predMeanRaster18noSoil <- raster::mask(predMeanRaster18noSoil, buffer)
+      predMeanRaster18Soil <- raster::mask(predMeanRaster18Soil, buffer)
       
       
-      predMeanRaster20noSoil <- raster::raster(x = matrix(data = bci.gapsNoSoil[bci.gapsNoSoil$Year=="2020","pred"],
+      predMeanRaster20Soil <- raster::raster(x = matrix(data = bci.gapsSoil[bci.gapsSoil$Year=="2020","pred"],
                                                      nrow = nCellY,
                                                      ncol = nCellX,
                                                      byrow = F),
@@ -3444,10 +3440,10 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                           xmx = raster::extent(bci.gaps20)@xmax,
                                           ymn = raster::extent(bci.gaps20)@ymin,
                                           ymx = raster::extent(bci.gaps20)@ymax)
-      predMeanRaster20noSoil <- raster::mask(predMeanRaster20noSoil, buffer)
+      predMeanRaster20Soil <- raster::mask(predMeanRaster20Soil, buffer)
       
       # Make predicted raster (fixed effects only)
-      fixRaster18noSoil <- raster::raster(x = matrix(data = bci.gapsNoSoil[bci.gapsNoSoil$Year=="2018","fix_pred"],
+      fixRaster18Soil <- raster::raster(x = matrix(data = bci.gapsSoil[bci.gapsSoil$Year=="2018","fix_pred"],
                                                nrow = nCellY,
                                                ncol = nCellX,
                                                byrow = F),
@@ -3455,10 +3451,10 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                     xmx = raster::extent(bci.gaps18)@xmax,
                                     ymn = raster::extent(bci.gaps18)@ymin,
                                     ymx = raster::extent(bci.gaps18)@ymax)
-      fixRaster18noSoil <- raster::mask(fixRaster18noSoil, buffer)
+      fixRaster18Soil <- raster::mask(fixRaster18Soil, buffer)
       
       
-      fixRaster20noSoil <- raster::raster(x = matrix(data = bci.gapsNoSoil[bci.gapsNoSoil$Year=="2020","fix_pred"],
+      fixRaster20Soil <- raster::raster(x = matrix(data = bci.gapsSoil[bci.gapsSoil$Year=="2020","fix_pred"],
                                                nrow = nCellY,
                                                ncol = nCellX,
                                                byrow = F),
@@ -3466,7 +3462,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                     xmx = raster::extent(bci.gaps20)@xmax,
                                     ymn = raster::extent(bci.gaps20)@ymin,
                                     ymx = raster::extent(bci.gaps20)@ymax)
-      fixRaster20noSoil <- raster::mask(fixRaster20noSoil, buffer)
+      fixRaster20Soil <- raster::mask(fixRaster20Soil, buffer)
     
 
     #3. Aggregate and look at correlations
@@ -3482,7 +3478,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
         fixRaster20n[!is.na(raster::values(fixRaster20n))] <- 1
         
         # Create data frame to store results  
-        agResultsNoSoil <- data.frame(agBy = 1:20,
+        agResultsSoil <- data.frame(agBy = 1:20,
                                 fixR_18 = NA,
                                 fixR_18lo = NA,
                                 fixR_18hi = NA,
@@ -3490,15 +3486,15 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
                                 fixR_20lo = NA,
                                 fixR_20hi = NA)
         
-        for(i in 1:nrow(agResultsNoSoil)){
+        for(i in 1:nrow(agResultsSoil)){
           
           # Get a matrix of observed cells
-          minObs <- 0.75*agResultsNoSoil$agBy[i]^2
+          minObs <- 0.75*agResultsSoil$agBy[i]^2
           
-          agPred18_all <- raster::aggregate(predMeanRaster18noSoil, fact = agResultsNoSoil$agBy[i], fun = mean, na.rm=T)
-          agPred18_fix <- raster::aggregate(fixRaster18noSoil, fact = agResultsNoSoil$agBy[i], fun = mean, na.rm=T)
-          agObs18 <- raster::aggregate(obsRaster18, fact = agResultsNoSoil$agBy[i], fun = mean, na.rm=T)
-          agPred18_all_n <- raster::aggregate(predMeanRaster18n, fact = agResultsNoSoil$agBy[i], fun = sum, na.rm=T)
+          agPred18_all <- raster::aggregate(predMeanRaster18Soil, fact = agResultsSoil$agBy[i], fun = mean, na.rm=T)
+          agPred18_fix <- raster::aggregate(fixRaster18Soil, fact = agResultsSoil$agBy[i], fun = mean, na.rm=T)
+          agObs18 <- raster::aggregate(obsRaster18, fact = agResultsSoil$agBy[i], fun = mean, na.rm=T)
+          agPred18_all_n <- raster::aggregate(predMeanRaster18n, fact = agResultsSoil$agBy[i], fun = sum, na.rm=T)
           
           # Get matrix of values for each aggregated raster
           agPred18_all_mat <- raster::values(agPred18_all, format = "matrix")
@@ -3557,14 +3553,14 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
             combineMat <- which(nMat<minObs, arr.ind = T)
           } 
           
-          agResultsNoSoil$fixR_18[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$estimate
-          agResultsNoSoil$fixR_18lo[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[1]
-          agResultsNoSoil$fixR_18hi[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[2]
+          agResultsSoil$fixR_18[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$estimate
+          agResultsSoil$fixR_18lo[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[1]
+          agResultsSoil$fixR_18hi[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[2]
           
-          agPred20_all <- raster::aggregate(predMeanRaster20noSoil, fact = agResultsNoSoil$agBy[i], fun = mean, na.rm=T)
-          agPred20_fix <- raster::aggregate(fixRaster20noSoil, fact = agResultsNoSoil$agBy[i], fun = mean, na.rm=T)
-          agObs20 <- raster::aggregate(obsRaster20, fact = agResultsNoSoil$agBy[i], fun = mean, na.rm=T)
-          agPred20_all_n <- raster::aggregate(predMeanRaster20n, fact = agResultsNoSoil$agBy[i], fun = sum, na.rm=T)
+          agPred20_all <- raster::aggregate(predMeanRaster20Soil, fact = agResultsSoil$agBy[i], fun = mean, na.rm=T)
+          agPred20_fix <- raster::aggregate(fixRaster20Soil, fact = agResultsSoil$agBy[i], fun = mean, na.rm=T)
+          agObs20 <- raster::aggregate(obsRaster20, fact = agResultsSoil$agBy[i], fun = mean, na.rm=T)
+          agPred20_all_n <- raster::aggregate(predMeanRaster20n, fact = agResultsSoil$agBy[i], fun = sum, na.rm=T)
           
           # Get matrix of values for each aggregated raster
           agPred20_all_mat <- raster::values(agPred20_all, format = "matrix")
@@ -3623,53 +3619,575 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
             combineMat <- which(nMat<minObs, arr.ind = T)
           }
           
-          agResultsNoSoil$fixR_20[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$estimate
-          agResultsNoSoil$fixR_20lo[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[1]
-          agResultsNoSoil$fixR_20hi[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[2]
+          agResultsSoil$fixR_20[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$estimate
+          agResultsSoil$fixR_20lo[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[1]
+          agResultsSoil$fixR_20hi[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[2]
           
         }
 
-      #4. Plot results compared to original model
+# TOPOGRAPHY ONLY
         
-        # Take average of both time intervals
-        agResults$fixR_mean <- 0.5*(agResults$fixR_18 + agResults$fixR_20)
-        agResults$fixR_lo <- 0.5*(agResults$fixR_18lo + agResults$fixR_18lo)
-        agResults$fixR_hi <- 0.5*(agResults$fixR_18hi + agResults$fixR_20hi)
-        agResultsNoSoil$fixR_mean <- 0.5*(agResultsNoSoil$fixR_18 + agResultsNoSoil$fixR_20)
-        agResultsNoSoil$fixR_lo <- 0.5*(agResultsNoSoil$fixR_18lo + agResultsNoSoil$fixR_18lo)
-        agResultsNoSoil$fixR_hi <- 0.5*(agResultsNoSoil$fixR_18hi + agResultsNoSoil$fixR_20hi)
+  #1. Load these alternate models    
+  load("Code_INLA/INLA_ModelResult_topoOnly.RData")
+  
+  #2. First, calculate alternate predicted values with and without random effects
+  
+  # Duplicate 'bci.gapsAll' objects for alternate model
+  bci.gapsTopo <- bci.gapsAll
+  
+  # Get fitted values and reorder to match original data frame
+  bci.gapsTopo$pred <- model_topoOnly$summary.fitted.values$mean[order(bci.gapsAll_Order$Order)]
+  
+  ## Fixed effects only
+  
+  # Intercept
+  bci.gapsTopo$fix_int <- model_topoOnly$summary.fixed$mean[model_topoOnly$names.fixed=="(Intercept)"]
+  
+  # Curvature
+  bci.gapsTopo$fix_C <- bci.gapsTopo$Sc_curvMean_2*(model_topoOnly$summary.fixed$mean[model_topoOnly$names.fixed=="Sc_curvMean_2"])
+  
+  # Slope
+  bci.gapsTopo$fix_S <- bci.gapsTopo$Sc_slopeMean_16*(model_topoOnly$summary.fixed$mean[model_topoOnly$names.fixed=="Sc_slopeMean_16"])
+  bci.gapsTopo$fix_S2 <- bci.gapsTopo$Sc_slopeMean_16_Sq*(model_topoOnly$summary.fixed$mean[model_topoOnly$names.fixed=="Sc_slopeMean_16_Sq"])
+  
+  # Height above drainage
+  bci.gapsTopo$fix_H <- bci.gapsTopo$Sc_drainMean*(model_topoOnly$summary.fixed$mean[model_topoOnly$names.fixed=="Sc_drainMean"])
+  bci.gapsTopo$fix_H2 <- bci.gapsTopo$Sc_drainMean_Sq*(model_topoOnly$summary.fixed$mean[model_topoOnly$names.fixed=="Sc_drainMean_Sq"])
+  
+  # Year 
+  bci.gapsTopo$fix_year <- 0
+  bci.gapsTopo[bci.gapsTopo$Year=="2018","fix_year"] <- model_topoOnly$summary.fixed$mean[model_topoOnly$names.fixed=="Year2018"]
+  
+  # All
+  bci.gapsTopo$fix_sum <- bci.gapsTopo$fix_int + bci.gapsTopo$fix_C + bci.gapsTopo$fix_S + bci.gapsTopo$fix_S2 + bci.gapsTopo$fix_H + bci.gapsTopo$fix_H2 + bci.gapsTopo$fix_year
+  
+  # Predicted value with just fixed effects
+    # Vector of random effects, in right order
+    all_random <- model_topoOnly$summary.random[[1]]$mean[order(bci.gapsAll_Order$Order)]
+    # Keep only non-NA values
+    all_random[is.na(bci.gapsAll$age)] <- NA
+    all_random <- all_random[!is.na(all_random)]
+    
+    bci.gapsTopo$fix_pred <- NA
+    for(i in 1:nrow(bci.gapsAll)){
+      if(!is.na(bci.gapsTopo$fix_sum[i])){
+        bci.gapsTopo$fix_pred[i] <- mean(exp(bci.gapsTopo$fix_sum[i] + all_random)/(1 + exp(bci.gapsTopo$fix_sum[i] + all_random)))
+      }
+    }
+  
+  # Make predicted raster (fixed and random effects)
+  predMeanRaster18Topo <- raster::raster(x = matrix(data = bci.gapsTopo[bci.gapsTopo$Year=="2018","pred"],
+                                                    nrow = nCellY,
+                                                    ncol = nCellX,
+                                                    byrow = F),
+                                         xmn = raster::extent(bci.gaps18)@xmin,
+                                         xmx = raster::extent(bci.gaps18)@xmax,
+                                         ymn = raster::extent(bci.gaps18)@ymin,
+                                         ymx = raster::extent(bci.gaps18)@ymax)
+  predMeanRaster18Topo <- raster::mask(predMeanRaster18Topo, buffer)
+  
+  
+  predMeanRaster20Topo <- raster::raster(x = matrix(data = bci.gapsTopo[bci.gapsTopo$Year=="2020","pred"],
+                                                    nrow = nCellY,
+                                                    ncol = nCellX,
+                                                    byrow = F),
+                                         xmn = raster::extent(bci.gaps20)@xmin,
+                                         xmx = raster::extent(bci.gaps20)@xmax,
+                                         ymn = raster::extent(bci.gaps20)@ymin,
+                                         ymx = raster::extent(bci.gaps20)@ymax)
+  predMeanRaster20Topo <- raster::mask(predMeanRaster20Topo, buffer)
+  
+  # Make predicted raster (fixed effects only)
+  fixRaster18Topo <- raster::raster(x = matrix(data = bci.gapsTopo[bci.gapsTopo$Year=="2018","fix_pred"],
+                                               nrow = nCellY,
+                                               ncol = nCellX,
+                                               byrow = F),
+                                    xmn = raster::extent(bci.gaps18)@xmin,
+                                    xmx = raster::extent(bci.gaps18)@xmax,
+                                    ymn = raster::extent(bci.gaps18)@ymin,
+                                    ymx = raster::extent(bci.gaps18)@ymax)
+  fixRaster18Topo <- raster::mask(fixRaster18Topo, buffer)
+  
+  
+  fixRaster20Topo <- raster::raster(x = matrix(data = bci.gapsTopo[bci.gapsTopo$Year=="2020","fix_pred"],
+                                               nrow = nCellY,
+                                               ncol = nCellX,
+                                               byrow = F),
+                                    xmn = raster::extent(bci.gaps20)@xmin,
+                                    xmx = raster::extent(bci.gaps20)@xmax,
+                                    ymn = raster::extent(bci.gaps20)@ymin,
+                                    ymx = raster::extent(bci.gaps20)@ymax)
+  fixRaster20Topo <- raster::mask(fixRaster20Topo, buffer)
         
-        par(mfrow=c(1,1), mar=c(4,1,1,0), oma=c(1,4,1,1), las=1)
         
-        xVals <- (agResultsOriginal$agBy*40)^2/10000
+        #3. Aggregate and look at correlations
         
-        plot(x = xVals,
-             y = agResults$fixR_mean,
-             log="x",
-             ylim=c(0,1.02),
-             xlab = NA,
-             ylab = NA,
-             type = "l",
-             col = "black",
-             lwd=2)
-        lines(x = xVals,
-              y = agResultsNoSoil$fixR_mean,
-              col="grey",
-              lwd=2)
+        #Create rasters where all non-NA values are 1
+        predMeanRaster18n <- predMeanRaster18
+        predMeanRaster18n[!is.na(raster::values(predMeanRaster18n))] <- 1
+        fixRaster18n <- fixRaster18
+        fixRaster18n[!is.na(raster::values(fixRaster18n))] <- 1
+        predMeanRaster20n <- predMeanRaster20
+        predMeanRaster20n[!is.na(raster::values(predMeanRaster20n))] <- 1
+        fixRaster20n <- fixRaster20
+        fixRaster20n[!is.na(raster::values(fixRaster20n))] <- 1
         
-        legend(c("Original model",
-                 "Model with no soil terms"),
-               x=0.15,y=0.95,
-               col=c("black","grey"),
-               bty="n",
-               lwd=2)
+        # Create data frame to store results  
+        agResultsTopo <- data.frame(agBy = 1:20,
+                                      fixR_18 = NA,
+                                      fixR_18lo = NA,
+                                      fixR_18hi = NA,
+                                      fixR_20 = NA,
+                                      fixR_20lo = NA,
+                                      fixR_20hi = NA)
         
-        mtext("Spatial grain (ha)", side=1, outer=T, line=-2)
-        mtext("Pearson correlation (r)", side=2, outer=T, line=1.5, las=0)
-        
-        
-        mean(agResults$fixR_mean^2-agResultsNoSoil$fixR_mean^2)
+        for(i in 1:nrow(agResultsTopo)){
           
+          # Get a matrix of observed cells
+          minObs <- 0.75*agResultsTopo$agBy[i]^2
+          
+          agPred18_all <- raster::aggregate(predMeanRaster18Topo, fact = agResultsTopo$agBy[i], fun = mean, na.rm=T)
+          agPred18_fix <- raster::aggregate(fixRaster18Topo, fact = agResultsTopo$agBy[i], fun = mean, na.rm=T)
+          agObs18 <- raster::aggregate(obsRaster18, fact = agResultsTopo$agBy[i], fun = mean, na.rm=T)
+          agPred18_all_n <- raster::aggregate(predMeanRaster18n, fact = agResultsTopo$agBy[i], fun = sum, na.rm=T)
+          
+          # Get matrix of values for each aggregated raster
+          agPred18_all_mat <- raster::values(agPred18_all, format = "matrix")
+          agPred18_fix_mat <- raster::values(agPred18_fix, format = "matrix")
+          agObs18_mat <- raster::values(agObs18, format = "matrix")
+          nMat <- raster::values(agPred18_all_n, format = "matrix")
+          
+          # matrix of cells that need to be combined
+          combineMat <- which(nMat<minObs, arr.ind = T)
+          
+          while(nrow(combineMat)>0){
+            
+            # get surrounding cells for each matrix
+            rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+            rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+            cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+            cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+            
+            agPred18_all_mat_j <- agPred18_all_mat[rows,cols]
+            agPred18_fix_mat_j <- agPred18_fix_mat[rows,cols]
+            agObs18_mat_j <- agObs18_mat[rows,cols]
+            nMat_j <- nMat[rows,cols]
+            # set cell of interest to 0
+            nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+            
+            # Only proceed if there are non-NA neighboring cells
+            if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){  
+              
+              # find neighboring cell with most nearby observations
+              new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+              
+              
+              # replace value for new cell with a weighted mean of all other values
+              agPred18_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_all_mat_j[new_j[1],new_j[2]],agPred18_all_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              agPred18_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_fix_mat_j[new_j[1],new_j[2]],agPred18_fix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              agObs18_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs18_mat_j[new_j[1],new_j[2]],agObs18_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+              
+              # replace neighborhood in original matrices
+              agPred18_all_mat[rows,cols] <- agPred18_all_mat_j
+              agPred18_fix_mat[rows,cols] <- agPred18_fix_mat_j
+              agObs18_mat[rows,cols] <- agObs18_mat_j
+              nMat[rows,cols] <- nMat_j
+            }
+            
+            # Replace original observation with NaN
+            agPred18_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            agPred18_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            agObs18_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            nMat[combineMat[1,1],combineMat[1,2]] <- NaN
+            
+            # Redefine combineMat
+            combineMat <- which(nMat<minObs, arr.ind = T)
+          } 
+          
+          agResultsTopo$fixR_18[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$estimate
+          agResultsTopo$fixR_18lo[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[1]
+          agResultsTopo$fixR_18hi[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[2]
+          
+          agPred20_all <- raster::aggregate(predMeanRaster20Topo, fact = agResultsTopo$agBy[i], fun = mean, na.rm=T)
+          agPred20_fix <- raster::aggregate(fixRaster20Topo, fact = agResultsTopo$agBy[i], fun = mean, na.rm=T)
+          agObs20 <- raster::aggregate(obsRaster20, fact = agResultsTopo$agBy[i], fun = mean, na.rm=T)
+          agPred20_all_n <- raster::aggregate(predMeanRaster20n, fact = agResultsTopo$agBy[i], fun = sum, na.rm=T)
+          
+          # Get matrix of values for each aggregated raster
+          agPred20_all_mat <- raster::values(agPred20_all, format = "matrix")
+          agPred20_fix_mat <- raster::values(agPred20_fix, format = "matrix")
+          agObs20_mat <- raster::values(agObs20, format = "matrix")
+          nMat <- raster::values(agPred20_all_n, format = "matrix")
+          
+          # matrix of cells that need to be combined
+          combineMat <- which(nMat<minObs, arr.ind = T)
+          
+          while(nrow(combineMat)>0){
+            
+            # get surrounding cells for each matrix
+            rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+            rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+            cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+            cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+            
+            agPred20_all_mat_j <- agPred20_all_mat[rows,cols]
+            agPred20_fix_mat_j <- agPred20_fix_mat[rows,cols]
+            agObs20_mat_j <- agObs20_mat[rows,cols]
+            nMat_j <- nMat[rows,cols]
+            # set cell of interest to 0
+            nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+            
+            # Only proceed if there are non-NA neighboring cells
+            if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){
+              
+              # find neighboring cell with most nearby observations
+              new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+              
+              
+              # replace value for new cell with a weighted mean of all other values
+              agPred20_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred20_all_mat_j[new_j[1],new_j[2]],agPred20_all_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              agPred20_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred20_fix_mat_j[new_j[1],new_j[2]],agPred20_fix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                     w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              agObs20_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs20_mat_j[new_j[1],new_j[2]],agObs20_mat[combineMat[1,1],combineMat[1,2]]),
+                                                                w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+              nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+              
+              # replace neighborhood in original matrices
+              agPred20_all_mat[rows,cols] <- agPred20_all_mat_j
+              agPred20_fix_mat[rows,cols] <- agPred20_fix_mat_j
+              agObs20_mat[rows,cols] <- agObs20_mat_j
+              nMat[rows,cols] <- nMat_j
+            }
+            
+            # Replace original observation with NaN
+            agPred20_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            agPred20_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            agObs20_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+            nMat[combineMat[1,1],combineMat[1,2]] <- NaN
+            
+            # Redefine combineMat
+            combineMat <- which(nMat<minObs, arr.ind = T)
+          }
+          
+          agResultsTopo$fixR_20[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$estimate
+          agResultsTopo$fixR_20lo[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[1]
+          agResultsTopo$fixR_20hi[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[2]
+        }        
+        
+# AGE ONLY
+        
+  #1. Load these alternate models    
+  load("Code_INLA/INLA_ModelResult_ageOnly.RData")
+  
+  #2. First, calculate alternate predicted values with and without random effects
+  
+  # Duplicate 'bci.gapsAll' objects for alternate model
+  bci.gapsAge <- bci.gapsAll
+  
+  # Get fitted values and reorder to match original data frame
+  bci.gapsAge$pred <- model_ageOnly$summary.fitted.values$mean[order(bci.gapsAll_Order$Order)]
+  
+  ## Fixed effects only
+  
+  # Intercept
+  bci.gapsAge$fix_int <- model_ageOnly$summary.fixed$mean[model_ageOnly$names.fixed=="(Intercept)"]
+
+  
+  # Year 
+  bci.gapsAge$fix_year <- 0
+  bci.gapsAge[bci.gapsAge$Year=="2018","fix_year"] <- model_ageOnly$summary.fixed$mean[model_ageOnly$names.fixed=="Year2018"]
+  
+  # Age 
+  bci.gapsAge$fix_age <- 0
+  bci.gapsAge[bci.gapsAge$age=="Secondary" & !(is.na(bci.gapsAge$age)),"fix_age"] <- model_ageOnly$summary.fixed$mean[model_ageOnly$names.fixed=="ageSecondary"]
+  
+  # All
+  bci.gapsAge$fix_sum <- bci.gapsAge$fix_int +bci.gapsAge$fix_age + bci.gapsAge$fix_year
+  
+  # Predicted value with just fixed effects
+  # Vector of random effects, in right order
+  all_random <- model_ageOnly$summary.random[[1]]$mean[order(bci.gapsAll_Order$Order)]
+  # Keep only non-NA values
+  all_random[is.na(bci.gapsAll$age)] <- NA
+  all_random <- all_random[!is.na(all_random)]
+  
+  bci.gapsAge$fix_pred <- NA
+  for(i in 1:nrow(bci.gapsAll)){
+    if(!is.na(bci.gapsAge$fix_sum[i])){
+      bci.gapsAge$fix_pred[i] <- mean(exp(bci.gapsAge$fix_sum[i] + all_random)/(1 + exp(bci.gapsAge$fix_sum[i] + all_random)))
+    }
+  }
+  
+  # Make predicted raster (fixed and random effects)
+  predMeanRaster18Age <- raster::raster(x = matrix(data = bci.gapsAge[bci.gapsAge$Year=="2018","pred"],
+                                                    nrow = nCellY,
+                                                    ncol = nCellX,
+                                                    byrow = F),
+                                         xmn = raster::extent(bci.gaps18)@xmin,
+                                         xmx = raster::extent(bci.gaps18)@xmax,
+                                         ymn = raster::extent(bci.gaps18)@ymin,
+                                         ymx = raster::extent(bci.gaps18)@ymax)
+  predMeanRaster18Age <- raster::mask(predMeanRaster18Age, buffer)
+  
+  
+  predMeanRaster20Age <- raster::raster(x = matrix(data = bci.gapsAge[bci.gapsAge$Year=="2020","pred"],
+                                                    nrow = nCellY,
+                                                    ncol = nCellX,
+                                                    byrow = F),
+                                         xmn = raster::extent(bci.gaps20)@xmin,
+                                         xmx = raster::extent(bci.gaps20)@xmax,
+                                         ymn = raster::extent(bci.gaps20)@ymin,
+                                         ymx = raster::extent(bci.gaps20)@ymax)
+  predMeanRaster20Age <- raster::mask(predMeanRaster20Age, buffer)
+  
+  # Make predicted raster (fixed effects only)
+  fixRaster18Age <- raster::raster(x = matrix(data = bci.gapsAge[bci.gapsAge$Year=="2018","fix_pred"],
+                                               nrow = nCellY,
+                                               ncol = nCellX,
+                                               byrow = F),
+                                    xmn = raster::extent(bci.gaps18)@xmin,
+                                    xmx = raster::extent(bci.gaps18)@xmax,
+                                    ymn = raster::extent(bci.gaps18)@ymin,
+                                    ymx = raster::extent(bci.gaps18)@ymax)
+  fixRaster18Age <- raster::mask(fixRaster18Age, buffer)
+  
+  
+  fixRaster20Age <- raster::raster(x = matrix(data = bci.gapsAge[bci.gapsAge$Year=="2020","fix_pred"],
+                                               nrow = nCellY,
+                                               ncol = nCellX,
+                                               byrow = F),
+                                    xmn = raster::extent(bci.gaps20)@xmin,
+                                    xmx = raster::extent(bci.gaps20)@xmax,
+                                    ymn = raster::extent(bci.gaps20)@ymin,
+                                    ymx = raster::extent(bci.gaps20)@ymax)
+  fixRaster20Age <- raster::mask(fixRaster20Age, buffer)
+  
+  
+  #3. Aggregate and look at correlations
+  
+  #Create rasters where all non-NA values are 1
+  predMeanRaster18n <- predMeanRaster18
+  predMeanRaster18n[!is.na(raster::values(predMeanRaster18n))] <- 1
+  fixRaster18n <- fixRaster18
+  fixRaster18n[!is.na(raster::values(fixRaster18n))] <- 1
+  predMeanRaster20n <- predMeanRaster20
+  predMeanRaster20n[!is.na(raster::values(predMeanRaster20n))] <- 1
+  fixRaster20n <- fixRaster20
+  fixRaster20n[!is.na(raster::values(fixRaster20n))] <- 1
+  
+  # Create data frame to store results  
+  agResultsAge <- data.frame(agBy = 1:20,
+                              fixR_18 = NA,
+                              fixR_18lo = NA,
+                              fixR_18hi = NA,
+                              fixR_20 = NA,
+                              fixR_20lo = NA,
+                              fixR_20hi = NA)
+  
+  for(i in 1:nrow(agResultsAge)){
+    
+    # Get a matrix of observed cells
+    minObs <- 0.75*agResultsAge$agBy[i]^2
+    
+    agPred18_all <- raster::aggregate(predMeanRaster18Age, fact = agResultsAge$agBy[i], fun = mean, na.rm=T)
+    agPred18_fix <- raster::aggregate(fixRaster18Age, fact = agResultsAge$agBy[i], fun = mean, na.rm=T)
+    agObs18 <- raster::aggregate(obsRaster18, fact = agResultsAge$agBy[i], fun = mean, na.rm=T)
+    agPred18_all_n <- raster::aggregate(predMeanRaster18n, fact = agResultsAge$agBy[i], fun = sum, na.rm=T)
+    
+    # Get matrix of values for each aggregated raster
+    agPred18_all_mat <- raster::values(agPred18_all, format = "matrix")
+    agPred18_fix_mat <- raster::values(agPred18_fix, format = "matrix")
+    agObs18_mat <- raster::values(agObs18, format = "matrix")
+    nMat <- raster::values(agPred18_all_n, format = "matrix")
+    
+    # matrix of cells that need to be combined
+    combineMat <- which(nMat<minObs, arr.ind = T)
+    
+    while(nrow(combineMat)>0){
+      
+      # get surrounding cells for each matrix
+      rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+      rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+      cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+      cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+      
+      agPred18_all_mat_j <- agPred18_all_mat[rows,cols]
+      agPred18_fix_mat_j <- agPred18_fix_mat[rows,cols]
+      agObs18_mat_j <- agObs18_mat[rows,cols]
+      nMat_j <- nMat[rows,cols]
+      # set cell of interest to 0
+      nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+      
+      # Only proceed if there are non-NA neighboring cells
+      if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){  
+        
+        # find neighboring cell with most nearby observations
+        new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+        
+        
+        # replace value for new cell with a weighted mean of all other values
+        agPred18_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_all_mat_j[new_j[1],new_j[2]],agPred18_all_mat[combineMat[1,1],combineMat[1,2]]),
+                                                               w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        agPred18_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred18_fix_mat_j[new_j[1],new_j[2]],agPred18_fix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                               w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        agObs18_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs18_mat_j[new_j[1],new_j[2]],agObs18_mat[combineMat[1,1],combineMat[1,2]]),
+                                                          w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+        
+        # replace neighborhood in original matrices
+        agPred18_all_mat[rows,cols] <- agPred18_all_mat_j
+        agPred18_fix_mat[rows,cols] <- agPred18_fix_mat_j
+        agObs18_mat[rows,cols] <- agObs18_mat_j
+        nMat[rows,cols] <- nMat_j
+      }
+      
+      # Replace original observation with NaN
+      agPred18_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      agPred18_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      agObs18_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      nMat[combineMat[1,1],combineMat[1,2]] <- NaN
+      
+      # Redefine combineMat
+      combineMat <- which(nMat<minObs, arr.ind = T)
+    } 
+    
+    agResultsAge$fixR_18[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$estimate
+    agResultsAge$fixR_18lo[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[1]
+    agResultsAge$fixR_18hi[i] <- cor.test(x = c(agObs18_mat), y = c(agPred18_fix_mat))$conf.int[2]
+    
+    agPred20_all <- raster::aggregate(predMeanRaster20Age, fact = agResultsAge$agBy[i], fun = mean, na.rm=T)
+    agPred20_fix <- raster::aggregate(fixRaster20Age, fact = agResultsAge$agBy[i], fun = mean, na.rm=T)
+    agObs20 <- raster::aggregate(obsRaster20, fact = agResultsAge$agBy[i], fun = mean, na.rm=T)
+    agPred20_all_n <- raster::aggregate(predMeanRaster20n, fact = agResultsAge$agBy[i], fun = sum, na.rm=T)
+    
+    # Get matrix of values for each aggregated raster
+    agPred20_all_mat <- raster::values(agPred20_all, format = "matrix")
+    agPred20_fix_mat <- raster::values(agPred20_fix, format = "matrix")
+    agObs20_mat <- raster::values(agObs20, format = "matrix")
+    nMat <- raster::values(agPred20_all_n, format = "matrix")
+    
+    # matrix of cells that need to be combined
+    combineMat <- which(nMat<minObs, arr.ind = T)
+    
+    while(nrow(combineMat)>0){
+      
+      # get surrounding cells for each matrix
+      rows <- (combineMat[1,1]-1):(combineMat[1,1]+1)
+      rows <- rows[which(rows>0 & rows <= nrow(nMat))]
+      cols <- (combineMat[1,2]-1):(combineMat[1,2]+1)
+      cols <- cols[which(cols>0 & cols <= ncol(nMat))]
+      
+      agPred20_all_mat_j <- agPred20_all_mat[rows,cols]
+      agPred20_fix_mat_j <- agPred20_fix_mat[rows,cols]
+      agObs20_mat_j <- agObs20_mat[rows,cols]
+      nMat_j <- nMat[rows,cols]
+      # set cell of interest to 0
+      nMat_j[which(rows==combineMat[1,1]),which(cols==combineMat[1,2])] <- NaN
+      
+      # Only proceed if there are non-NA neighboring cells
+      if(length(c(nMat_j)[!is.na(c(nMat_j))])>0){
+        
+        # find neighboring cell with most nearby observations
+        new_j <- which(nMat_j==max(nMat_j,na.rm=T), arr.ind = T)[1,]
+        
+        
+        # replace value for new cell with a weighted mean of all other values
+        agPred20_all_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred20_all_mat_j[new_j[1],new_j[2]],agPred20_all_mat[combineMat[1,1],combineMat[1,2]]),
+                                                               w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        agPred20_fix_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agPred20_fix_mat_j[new_j[1],new_j[2]],agPred20_fix_mat[combineMat[1,1],combineMat[1,2]]),
+                                                               w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        agObs20_mat_j[new_j[1],new_j[2]] <- weighted.mean(x = c(agObs20_mat_j[new_j[1],new_j[2]],agObs20_mat[combineMat[1,1],combineMat[1,2]]),
+                                                          w = c(nMat_j[new_j[1],new_j[2]],nMat[combineMat[1,1],combineMat[1,2]]))
+        nMat_j[new_j[1],new_j[2]] <- nMat_j[new_j[1],new_j[2]] + nMat[combineMat[1,1],combineMat[1,2]]
+        
+        # replace neighborhood in original matrices
+        agPred20_all_mat[rows,cols] <- agPred20_all_mat_j
+        agPred20_fix_mat[rows,cols] <- agPred20_fix_mat_j
+        agObs20_mat[rows,cols] <- agObs20_mat_j
+        nMat[rows,cols] <- nMat_j
+      }
+      
+      # Replace original observation with NaN
+      agPred20_all_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      agPred20_fix_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      agObs20_mat[combineMat[1,1],combineMat[1,2]] <- NaN
+      nMat[combineMat[1,1],combineMat[1,2]] <- NaN
+      
+      # Redefine combineMat
+      combineMat <- which(nMat<minObs, arr.ind = T)
+    }
+    
+    agResultsAge$fixR_20[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$estimate
+    agResultsAge$fixR_20lo[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[1]
+    agResultsAge$fixR_20hi[i] <- cor.test(x = c(agObs20_mat), y = c(agPred20_fix_mat))$conf.int[2]
+  }        
+  
+## Plot results compared to original model
+        
+  # Take average of both time intervals
+    agResults$fixR_mean <- 0.5*(agResults$fixR_18 + agResults$fixR_20)
+    agResults$fixR_lo <- 0.5*(agResults$fixR_18lo + agResults$fixR_18lo)
+    agResults$fixR_hi <- 0.5*(agResults$fixR_18hi + agResults$fixR_20hi)
+    agResultsSoil$fixR_mean <- 0.5*(agResultsSoil$fixR_18 + agResultsSoil$fixR_20)
+    agResultsSoil$fixR_lo <- 0.5*(agResultsSoil$fixR_18lo + agResultsSoil$fixR_18lo)
+    agResultsSoil$fixR_hi <- 0.5*(agResultsSoil$fixR_18hi + agResultsSoil$fixR_20hi)
+    agResultsTopo$fixR_mean <- 0.5*(agResultsTopo$fixR_18 + agResultsTopo$fixR_20)
+    agResultsTopo$fixR_lo <- 0.5*(agResultsTopo$fixR_18lo + agResultsTopo$fixR_18lo)
+    agResultsTopo$fixR_hi <- 0.5*(agResultsTopo$fixR_18hi + agResultsTopo$fixR_20hi)
+    agResultsAge$fixR_mean <- 0.5*(agResultsAge$fixR_18 + agResultsAge$fixR_20)
+    agResultsAge$fixR_lo <- 0.5*(agResultsAge$fixR_18lo + agResultsAge$fixR_18lo)
+    agResultsAge$fixR_hi <- 0.5*(agResultsAge$fixR_18hi + agResultsAge$fixR_20hi)
+    
+    
+  par(mfrow=c(1,1), mar=c(4,1,1,0), oma=c(1,4,1,1), las=1)
+        
+      xVals <- (agResults$agBy*40)^2/10000
+      
+      plot(x = xVals,
+           y = agResults$fixR_mean,
+           log="x",
+           ylim=c(0,1.02),
+           xlab = NA,
+           ylab = NA,
+           type = "l",
+           col = "black",
+           lwd=2)
+      lines(x = xVals,
+            y = agResultsSoil$fixR_mean,
+            col="brown",
+            lwd=2)
+      lines(x = xVals,
+            y = agResultsTopo$fixR_mean,
+            col="darkgreen",
+            lwd=2)
+      lines(x = xVals,
+            y = agResultsAge$fixR_mean,
+            col="grey",
+            lwd=2)
+      
+      legend(c("Original model",
+               "Soil + year only",
+               "Forest age + year only",
+               "Topography + year only"),
+             x=0.15,y=1,
+             col=c("black","brown","grey","darkgreen"),
+             bty="n",
+             lwd=2)
+      abline(h=0,lty=2)
+      
+      mtext("Spatial grain (ha)", side=1, outer=T, line=-2)
+      mtext("Pearson correlation (r)", side=2, outer=T, line=1.5, las=0)
+      
+      
+      mean(agResults$fixR_mean^2-agResultsSoil$fixR_mean^2)
+      mean(agResults$fixR_mean^2-agResultsAge$fixR_mean^2)
+      mean(agResults$fixR_mean^2-agResultsTopo$fixR_mean^2)
+      
 #### DELETE?: Predicted vs observed values at various resolutions ####
     
     # First, aggregate predicted and observed rasters to different spatial scales

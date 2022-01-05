@@ -640,6 +640,7 @@ pdf(width=4.33, height = 3, file = "Figure_2.pdf")
   
 dev.off()
 
+#### Figure 4: code in script resultsINLA.R ####
 #### Figure 5: Topography and predicted values for a sample area ####
 
 # Read polygon buffer 25 m inland from lake
