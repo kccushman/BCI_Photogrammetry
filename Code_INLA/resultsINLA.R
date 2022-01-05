@@ -458,7 +458,7 @@ load("Code_INLA/INLA_fullModelResult_initialHt.RData")
     
     
     mtext("Spatial grain (ha)", side=1, outer=T, line=0.5, cex=cexLab)
-    mtext("Pearson correlation (r)", side=2, outer=T, line=0.5, las=0, cex=cexLab)
+    mtext(bquote("Pearson correlation ("~italic(rho)~")"), side=2, outer=T, line=0.5, las=0, cex=cexLab)
     
   dev.off()  
     
