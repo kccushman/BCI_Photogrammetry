@@ -3146,7 +3146,7 @@ dev.off()
     bci.gapsSoil <- bci.gapsAll
     
     # Get fitted values and reorder to match original data frame
-    bci.gapsSoil$pred <- model_soilsOnly$summary.fitted.values$mean[order(bci.gapsSoil_Order$Order)]
+    bci.gapsSoil$pred <- model_soilsOnly$summary.fitted.values$mean[order(bci.gapsAll_Order$Order)]
     
     ## Fixed effects only
     
@@ -3918,28 +3918,29 @@ dev.off()
     lines(x = xVals,
           y = agResultsSoil$fixR_mean,
           col="brown",
-          lwd=2)
+          lwd=2, lty=3)
     lines(x = xVals,
           y = agResultsTopo$fixR_mean,
           col="darkgreen",
-          lwd=2)
+          lwd=2, lty=3)
     lines(x = xVals,
           y = agResultsAge$fixR_mean,
           col="grey",
-          lwd=2)
+          lwd=2, lty=3)
     
     legend(c("Original model",
-             "Soil + year only",
-             "Forest age + year only",
-             "Topography + year only"),
+             "Soil only",
+             "Forest age only",
+             "Topography only"),
            x=0.15,y=1,
+           lty=c(1,3,3,3),
            col=c("black","brown","grey","darkgreen"),
            bty="n",
            lwd=2)
     abline(h=0,lty=2)
     
     mtext("Spatial grain (ha)", side=1, outer=T, line=-2)
-    mtext("Pearson correlation (r)", side=2, outer=T, line=1.5, las=0)
+    mtext(bquote("Pearson correlation ("~italic(rho)~")"), side=2, outer=T, line=1.5, las=0)
     
     
     mean(agResults$fixR_mean^2-agResultsSoil$fixR_mean^2)
