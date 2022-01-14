@@ -810,7 +810,7 @@ library(INLA)
   
   save(model_full, file = "Data_INLA/INLA_fullModelResult.RData")
   
-#### Run full model separately for each year ####
+#### Run alternate models separately for each year ####
   
   # Run commented code if returning to script (not running from beginning to format data) 
   # library(INLA)
@@ -866,7 +866,7 @@ library(INLA)
   
   save(model_full1, model_full2, file = "Data_INLA/INLA_fullModelResult_separate.RData")
   
-#### Run full model and 2018-2020 without biggest gaps ####
+#### Run alternate model for 2018-2020 without biggest gaps ####
   
   # Run commented code if returning to script (not running from beginning to format data) 
   # library(INLA)
@@ -927,7 +927,7 @@ library(INLA)
   
   save(model_full_alt, model_full2_alt, file = "Data_INLA/INLA_fullModelResult_noLargeGaps.RData")
   
-#### Run full model with initial canopy height ####
+#### Run alternate model with initial canopy height ####
   
  # Run commented code if returning to script (not running from beginning to format data) 
  # library(INLA)
@@ -971,7 +971,7 @@ library(INLA)
   
   save(model_full_ht, file = "Data_INLA/INLA_fullModelResult_initialHt.RData")
   
-#### Run full model isolating soil, topography, and age terms ####
+#### Run alternate models isolating soil, topography, and age terms ####
   
   # Run commented code if returning to script (not running from beginning to format data) 
   # library(INLA)
