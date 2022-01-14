@@ -2,16 +2,16 @@
 library(INLA)
 
   # Gap polygons
-    gaps15to18sp <- rgdal::readOGR("gaps15to18_shapefile_tin/gaps15to18sp.shp")
-    gaps18to20sp <- rgdal::readOGR("gaps18to20_shapefile_tin/gaps18to20sp.shp")
+    gaps15to18sp <- rgdal::readOGR("Data_GapShapefiles/gaps15to18_shapefile/gaps15to18sp.shp")
+    gaps18to20sp <- rgdal::readOGR("Data_GapShapefiles/gaps18to20_shapefile/gaps18to20sp.shp")
   
   # Gap rasters
-    gaps15to18 <- raster::raster("newGaps15to18_tin.tif")
-    gaps18to20 <- raster::raster("newGaps18to20_tin.tif")
+    gaps15to18 <- raster::raster("Data_HeightRasters/newGaps15to18.tif")
+    gaps18to20 <- raster::raster("Data_HeightRasters/newGaps18to20.tif")
     
   # Canopy height change rasters where only likely gap values (> 10 m initially) are included  
-    d15to18tall <- raster::raster("dCHM15to18tall_tin.tif")
-    d18to20tall <- raster::raster("dCHM18to20tall_tin.tif")
+    d15to18tall <- raster::raster("Data_HeightRasters/dCHM15to18tall.tif")
+    d18to20tall <- raster::raster("Data_HeightRasters/dCHM18to20tall.tif")
    
   # Canopy height change raster omitting two very large gaps in second interval (7190 and 15124 m2; largest in 15to18 was 2742)
     # find gap id of big gaps
@@ -21,19 +21,19 @@ library(INLA)
     d18to20tall_alt <- raster::mask(d18to20tall, gaps18to20sp[gaps18to20sp$gap_id%in%bigIDs,], inverse=T)
 
   # Canopy height raster at the beginning of each interval
-    chm15 <- raster::raster("CHM_2015_QAQC_tin.tif")
-    chm18 <- raster::raster("CHM_2018_QAQC_tin.tif")
+    chm15 <- raster::raster("Data_HeightRasters/CHM_2015_QAQC.tif")
+    chm18 <- raster::raster("Data_HeightRasters/CHM_2018_QAQC.tif")
     
     
   # Forest age polygon
-    age <- rgdal::readOGR("D:/BCI_Spatial/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
+    age <- rgdal::readOGR("Data_Ancillary/Enders_Forest_Age_1935/Ender_Forest_Age_1935.shp")
       age$AgeClass <- "Other"
       age$AgeClass[age$Mascaro_Co == "> 400"] <- "OldGrowth"
       age$AgeClass[age$Mascaro_Co %in% c("80-110", "120-130")] <- "Secondary"
       ageUse <- age[!(age$AgeClass=="Other"),]
       
   # Soil type polygon  
-    soil <- rgdal::readOGR("D:/BCI_Spatial/BCI_Soils/BCI_Soils.shp")
+    soil <- rgdal::readOGR("Data_Ancillary/BCI_Soils/BCI_Soils.shp")
     soil <- sp::spTransform(soil,raster::crs(d15to18tall))
     
     # Define parent material and soil form from soil class
@@ -68,17 +68,16 @@ library(INLA)
     soil[soil$SOIL=="Zetek",c("SoilForm")] <- c("PaleSwellingClay")
 
   # Aspect raster
-    aspectRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/Aspect_smooth_21.tif")
+    aspectRaster <- raster::raster("Data_TopographyRasters/Aspect_smooth_21.tif")
     # resample to same extent as gap rasters (adds NA area to edges)
     aspectRaster <- raster::resample(aspectRaster, gaps18to20)
     
   # Distance above drainage raster
-    drainRaster <- raster::raster("D:/BCI_Spatial/BCI_Topo/distAboveStream_1000.tif")
+    drainRaster <- raster::raster("Data_TopographyRasters/distAboveStream_1000.tif")
     # resample to same extent as gap rasters (adds NA area to edges)
     drainRaster <- raster::resample(drainRaster, gaps18to20)
     drainRasterSq <- drainRaster^2
-    drainRasterLog <- log(drainRaster+1)
-    
+
 #### Create SpatialPolygonsDataFrame across BCI with proper order for R-INLA ####
     
     # Define cell size (in m)
@@ -302,10 +301,8 @@ library(INLA)
                                nY = nCellY)
       
       bci.gaps18$aspectMean <- aspectQuant$meanVal
-      #bci.gaps18$aspectMed <- aspectQuant$medVal
       bci.gaps20$aspectMean <- aspectQuant$meanVal
-      #bci.gaps20$aspectMed <- aspectQuant$medVal
-      
+
       
     # Height above nearest drainage--linear
       drainQuant <- quantTopo(gapPoly = bci.gaps18,
@@ -327,15 +324,6 @@ library(INLA)
       bci.gaps18$drainMean_Sq <- drainQuantSq$meanVal
       bci.gaps20$drainMean_Sq <- drainQuantSq$meanVal
 
-    # Height above nearest drainage--log
-      drainQuantLog <- quantTopo(gapPoly = bci.gaps18,
-                              topoLayer = drainRasterLog,
-                              cellSz = cellSize,
-                              nX = nCellX,
-                              nY = nCellY)
-      
-      bci.gaps18$drainMean_Log <- drainQuantLog$meanVal
-      bci.gaps20$drainMean_Log <- drainQuantLog$meanVal
 
     # Initial canopy height -- linear
       canopyHt15 <- quantTopo(gapPoly = bci.gaps18,
@@ -354,35 +342,6 @@ library(INLA)
       
       bci.gaps20$initialHt <- canopyHt18$meanVal
 
-      
-    #Initial canopy height -- log
-      chm15log <- chm15
-      chm15vals <- raster::values(chm15)
-      chm15log[chm15vals<=0 & !is.na(chm15vals)] <- 0.001
-      chm15log <- log(chm15log)
-      
-      chm18log <- chm18
-      chm18vals <- raster::values(chm18)
-      chm18log[chm18vals<=0 & !is.na(chm18vals)] <- 0.001
-      chm18log <- log(chm18log)
-      
-      canopyHt15log <- quantTopo(gapPoly = bci.gaps18,
-                                 topoLayer = chm15log,
-                                 cellSz = cellSize,
-                                 nX = nCellX,
-                                 nY = nCellY)
-      
-      bci.gaps18$initialHtlog <- canopyHt15log$meanVal
-      
-      canopyHt18log <- quantTopo(gapPoly = bci.gaps18,
-                                 topoLayer = chm18log,
-                                 cellSz = cellSize,
-                                 nX = nCellX,
-                                 nY = nCellY)
-      
-      bci.gaps20$initialHtlog <- canopyHt18log$meanVal
-      
-      
 #### Calculate curvature and slope across a range of smoothing values ####
 
 # Vector of different sigmas quantified    
@@ -392,13 +351,13 @@ library(INLA)
     
   for(i in 1:length(smoothScales)){
     curvQuant <- quantTopo(gapPoly = bci.gaps18,
-                           topoLayer = raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",smoothScales[i],".tif")),
+                           topoLayer = raster::raster(paste0("Data_TopographyRasters/Curv_smooth_",smoothScales[i],".tif")),
                            cellSz = cellSize,
                            nX = nCellX,
                            nY = nCellY)
     
     curvQuant_Sq <- quantTopo(gapPoly = bci.gaps18,
-                              topoLayer = (raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Curv_smooth_",smoothScales[i],".tif")))^2,
+                              topoLayer = (raster::raster(paste0("Data_TopographyRasters/Curv_smooth_",smoothScales[i],".tif")))^2,
                               cellSz = cellSize,
                               nX = nCellX,
                               nY = nCellY)
@@ -429,13 +388,13 @@ library(INLA)
     
     for(i in 1:length(smoothScales)){
       slopeQuant <- quantTopo(gapPoly = bci.gaps18,
-                             topoLayer = raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",smoothScales[i],".tif")),
+                             topoLayer = raster::raster(paste0("Data_TopographyRasters/Slope_smooth_",smoothScales[i],".tif")),
                              cellSz = cellSize,
                              nX = nCellX,
                              nY = nCellY)
       
       slopeQuant_Sq <- quantTopo(gapPoly = bci.gaps18,
-                                topoLayer = (raster::raster(paste0("D:/BCI_Spatial/BCI_Topo/Slope_smooth_",smoothScales[i],".tif")))^2,
+                                topoLayer = (raster::raster(paste0("Data_TopographyRasters/Slope_smooth_",smoothScales[i],".tif")))^2,
                                 cellSz = cellSize,
                                 nX = nCellX,
                                 nY = nCellY)
@@ -502,23 +461,25 @@ library(INLA)
     nrow(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens),]) # 17059 observations
     nrow(bci.gapsAll[!is.na(bci.gapsAll$gapPropCens_alt),]) # 17043 observations (omitting large gaps)
     
-    # Remove median values from topographic covariates (keep mean)
+    # Remove median values from topographic covariates (not used, keep mean)
     medCols <- grepl(pattern="Med",names(bci.gapsAll))
     bci.gapsAll <- bci.gapsAll[,!medCols]
     
     # Scale topographic covariates
-    for(i in c(10:62)){
+    for(i in c(10:60)){
       bci.gapsAll$new <- NA
       bci.gapsAll[!is.na(bci.gapsAll$age),"new"] <- scale(bci.gapsAll[!is.na(bci.gapsAll$age),i])
       names(bci.gapsAll)[names(bci.gapsAll)=="new"] <- paste0("Sc_",names(bci.gapsAll)[i])
     }
 
 
-    save(bci.gaps18, bci.gaps20, bci.gapsAll, cellSize, nCellX, nCellY, cens, file="INLA/INLA_prelim_40m_tin.RData")
+    save(bci.gaps18, bci.gaps20, bci.gapsAll, cellSize, nCellX, nCellY, cens, file="Data_INLA/INLA_40m.RData")
     
 #### Smoothing scale sensitivity analysis ####
-    library(INLA)
-    load("INLA/INLA_prelim_40m_tin.RData")
+    
+    # Run commented code if returning to script (not running from beginning to format data) 
+    # library(INLA)
+    # load("Data_INLA/INLA_40m.RData")
  
     
     # Make a data frame to store results from sensitivity analysis
@@ -554,37 +515,14 @@ library(INLA)
       #summary(model_i)
       topoScaleResults$margLik[i] <- model_i$mlik[2]
       topoScaleResults$DIC[i] <- model_i$dic$dic
-      print(i)
     }
     
-    write.csv(topoScaleResults, "INLA/INLA_scaleTopo_MeanVals_Quad.csv", row.names = F)
-
+    write.csv(topoScaleResults, "Data_INLA/INLA_SmoothingScaleResults.csv", row.names = F)
  
-    # Plot results
-    
-      # Read results
-      resultsMeanQuad <- read.csv("INLA/INLA_scaleTopo_MeanVals_quad.csv")
-    
-      # Convert results to matrices--curvature scale along columns, slope scale along hows
-      meanQuad_DIC <- matrix(data = resultsMeanQuad$DIC,
-                           nrow = length(smoothScales),
-                           ncol = length(smoothScales),
-                           byrow = F,
-                           dimnames = list(smoothScales,smoothScales))
-      meanQuad_DIC <- meanQuad_DIC-min(meanQuad_DIC)
-      
-      plotMin <- min(meanQuad_DIC)
-      plotMax <- max(meanQuad_DIC)
-      plotBreaks <- seq(0,plotMax,2)
-    
-      library(plot.matrix)
-      par(mar=c(4,5,2,8))
-      plot(meanQuad_DIC, breaks = plotBreaks,
-           ylab = expression("Curvature scale ("~sigma~")"),
-           xlab = expression("Slope scale ("~sigma~")"),
-           main = expression(Delta~"DIC score"))
-    
-      resultsMeanQuad[which(resultsMeanQuad$DIC==min(resultsMeanQuad$DIC)),]
+    # FIGURE WITH THESE RESULTS IN FILE MakeFigures.R
+
+    # Best scale for curvature is 2, best scale for slope is 16
+    resultsMeanQuad[which(resultsMeanQuad$DIC==min(resultsMeanQuad$DIC)),]
 
 #### Using best scale result, do initial variable selection without Matern spatial autocorrelation term ####
   curvScale <- 2
@@ -870,62 +808,13 @@ library(INLA)
                      control.compute = list(dic = TRUE),
                      control.family = list(beta.censor.value = cens))
   
-  save(model_full, file = "INLA/INLA_fullModelResult.RData")
-  
-#### Re-run full model using log(HAND) ####
-  
-  library(INLA)
-  load("INLA/INLA_prelim_40m_tin.RData")
-  
-  curvScale <- 2
-  slopeScale <- 16
-  
-  # Make an ID value for each cell
-  bci.gapsAll$Order <- 1:nrow(bci.gapsAll)
-  
-  # Reorder so that INLA thinks there is one spatial pattern
-  newOrder <- c()
-  for(i in 1:nCellX){
-    # Interval 1
-    newOrder <- c(newOrder,(1 + (i-1)*(nCellY)):(i*nCellY))
-    # Interval 2
-    newOrder <- c(newOrder,(1 + (i-1)*(nCellY) + nCellX*nCellY):(i*nCellY + nCellX*nCellY))
-  }
-  
-  # Reorder and make a new ID column
-  bci.gapsAll_Order <- bci.gapsAll[newOrder,]
-  bci.gapsAll_Order$ID <- 1:nrow(bci.gapsAll_Order)
-  
-  # Reorder factors so that "base" level is the group with the most data
-  bci.gapsAll_Order$soilParent <- relevel(as.factor(bci.gapsAll_Order$soilParent), "Bohio")
-  bci.gapsAll_Order$soilForm <- relevel(as.factor(bci.gapsAll_Order$soilForm), "BrownFineLoam")
-  bci.gapsAll_Order$age <- relevel(as.factor(bci.gapsAll_Order$age), "OldGrowth")
-  bci.gapsAll_Order$Year <- relevel(as.factor(bci.gapsAll_Order$Year), "2020")
-  
-  # Run the best (and next most simple) models with full spatial autocorrelation
-  fixed_full_log <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean_Log + soilParent + soilForm + age + Year")
-  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
-  form_full_log <- formula(paste0("gapPropCens ~ ",fixed_full_log," + ",random_full))
-  
-  model_full_log <- inla(form_full_log,
-                     family = "beta",
-                     data = bci.gapsAll_Order,
-                     control.compute = list(dic = TRUE),
-                     control.family = list(beta.censor.value = cens))
-  
-  save(model_full_log, file = "INLA/INLA_fullModelResult_logDrain.RData")
-  
-  load("INLA/INLA_fullModelResult.RData")
-  load("INLA/INLA_fullModelResult_logDrain.RData")
-  
-  model_full$dic$dic
-  model_full_log$dic$dic
-  
-  # The original full model has a lower DIC value
+  save(model_full, file = "Data_INLA/INLA_fullModelResult.RData")
   
 #### Run full model separately for each year ####
-  library(INLA)
-  load("INLA/INLA_prelim_40m_tin.RData")
+  
+  # Run commented code if returning to script (not running from beginning to format data) 
+  # library(INLA)
+  # load("Data_INLA/INLA_40m.RData")
   
   curvScale <- 2
   slopeScale <- 16
@@ -975,12 +864,13 @@ library(INLA)
                       control.compute = list(dic = TRUE),
                       control.family = list(beta.censor.value = cens))
   
-  save(model_full1, model_full2, file = "INLA/INLA_fullModelResult_separate.RData")
+  save(model_full1, model_full2, file = "Data_INLA/INLA_fullModelResult_separate.RData")
   
 #### Run full model and 2018-2020 without biggest gaps ####
   
-  library(INLA)
-  load("INLA/INLA_prelim_40m_tin.RData")
+  # Run commented code if returning to script (not running from beginning to format data) 
+  # library(INLA)
+  # load("Data_INLA/INLA_40m.RData")
   
   curvScale <- 2
   slopeScale <- 16
@@ -1035,11 +925,13 @@ library(INLA)
                       control.compute = list(dic = TRUE),
                       control.family = list(beta.censor.value = cens))
   
-  save(model_full_alt, model_full2_alt, file = "INLA/INLA_fullModelResult_noLargeGaps.RData")
+  save(model_full_alt, model_full2_alt, file = "Data_INLA/INLA_fullModelResult_noLargeGaps.RData")
+  
 #### Run full model with initial canopy height ####
   
-  library(INLA)
-  load("INLA/INLA_prelim_40m_tin.RData")
+ # Run commented code if returning to script (not running from beginning to format data) 
+ # library(INLA)
+ # load("Data_INLA/INLA_40m.RData")
   
   curvScale <- 2
   slopeScale <- 16
@@ -1077,21 +969,13 @@ library(INLA)
                      control.compute = list(dic = TRUE),
                      control.family = list(beta.censor.value = cens))
   
-  fixed_full_htlog <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + soilParent + soilForm + age + Year + Sc_initialHtlog")
-  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
-  form_full_htlog <- formula(paste0("gapPropCens ~ ",fixed_full_htlog," + ",random_full))
-  
-  model_full_htlog <- inla(form_full_htlog,
-                        family = "beta",
-                        data = bci.gapsAll_Order,
-                        control.compute = list(dic = TRUE),
-                        control.family = list(beta.censor.value = cens))
-  
-  save(model_full_ht, model_full_htlog, file = "INLA/INLA_fullModelResult_initialHt.RData")
+  save(model_full_ht, file = "Data_INLA/INLA_fullModelResult_initialHt.RData")
   
 #### Run full model isolating soil, topography, and age terms ####
-  library(INLA)
-  load("Code_INLA/INLA_prelim_40m_tin.RData")
+  
+  # Run commented code if returning to script (not running from beginning to format data) 
+  # library(INLA)
+  # load("Data_INLA/INLA_40m.RData")
   
   curvScale <- 2
   slopeScale <- 16
@@ -1129,7 +1013,7 @@ library(INLA)
                         control.compute = list(dic = TRUE),
                         control.family = list(beta.censor.value = cens))
   
-  save(model_ageOnly, file = "Code_INLA/INLA_ModelResult_ageOnly.RData")
+  save(model_ageOnly, file = "Data_INLA/INLA_ModelResult_ageOnly.RData")
   
 
   
@@ -1144,7 +1028,7 @@ library(INLA)
                        control.compute = list(dic = TRUE),
                        control.family = list(beta.censor.value = cens))
   
-  save(model_soilsOnly, file = "Code_INLA/INLA_ModelResult_soilsOnly.RData")
+  save(model_soilsOnly, file = "Data_INLA/INLA_ModelResult_soilsOnly.RData")
   
   # Model with only topography terms
   fixed_topoOnly <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + Year")
@@ -1157,30 +1041,4 @@ library(INLA)
                           control.compute = list(dic = TRUE),
                           control.family = list(beta.censor.value = cens))
   
-  save(model_topoOnly, file = "Code_INLA/INLA_ModelResult_topoOnly.RData")
-  
-  # Model with soils and age
-  fixed_soilsAge <- paste0("soilParent + soilForm + age + Year")
-  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
-  form_soilsAge <- formula(paste0("gapPropCens ~ ",fixed_soilsAge," + ",random_full))
-  
-  model_soilsAge <- inla(form_soilsAge,
-                          family = "beta",
-                          data = bci.gapsAll_Order,
-                          control.compute = list(dic = TRUE),
-                          control.family = list(beta.censor.value = cens))
-  
-  save(model_soilsAge, file = "Code_INLA/INLA_ModelResult_soilsAge.RData")
-  
-  # Model with topography and age
-  fixed_topoAge <- paste0("Sc_curvMean_",curvScale," + Sc_slopeMean_",slopeScale," + Sc_slopeMean_",slopeScale,"_Sq + Sc_drainMean + Sc_drainMean_Sq + age + Year")
-  random_full <- "f(ID, model = \"matern2d\", nrow = nCellY*2, ncol = nCellX)"
-  form_topoAge <- formula(paste0("gapPropCens ~ ",fixed_topoAge," + ",random_full))
-  
-  model_topoAge <- inla(form_topoAge,
-                         family = "beta",
-                         data = bci.gapsAll_Order,
-                         control.compute = list(dic = TRUE),
-                         control.family = list(beta.censor.value = cens))
-  
-  save(model_topoAge, file = "Code_INLA/INLA_ModelResult_topoAge.RData")
+  save(model_topoOnly, file = "Data_INLA/INLA_ModelResult_topoOnly.RData")

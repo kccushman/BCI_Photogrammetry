@@ -1407,7 +1407,7 @@ raster::plot(cropExtent, add=T, col="red", lwd=2)
     
 #### Figure S6. Best smoothing scale for INLA analysis ####
     # Read results
-    resultsMeanQuad <- read.csv("INLA/INLA_scaleTopo_MeanVals_quad.csv")
+    resultsMeanQuad <- read.csv("Data_INLA/INLA_SmoothingScaleResults.csv")
     smoothScales <- c(1,2,3,4,6,8,12,16,24,32,48,64)
     
     # Convert results to matrices--curvature scale along columns, slope scale along hows
