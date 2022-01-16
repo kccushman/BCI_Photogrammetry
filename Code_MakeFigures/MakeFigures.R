@@ -1273,6 +1273,18 @@ raster::plot(cropExtent, add=T, col="red", lwd=2)
       # Subset of higher-res data nominally meeting our gap criteria
         valGapsSzHt <- valGaps15to18[valGaps15to18$area2 >= 25 & valGaps15to18$htDrop <= -5 & !is.na(valGaps15to18$htDrop),]
     
+    ## NOTES on what vslChck (visual check) fields indicate
+        # 0: disturbance is present/overlapping in both datasets, no discrepancy
+        # 1: true disturbance observed in one dataset but not the other--special category not apparent (i.e. not slowly decaying tree in separate category)
+        # 2: false positive in either dataset
+        # 3: disturbance is in high-res data but not in whole island data, unclear which is correct
+        # 4: disturbance is in high-res data but not in whole island data, disturbance is too small/shallow in whole island data to be classified as disturbance
+        # 5: disturbance is present in both datasets but not overlapping due to spatial mismatch
+        # 6: disturbance is present/overlapping in both datasets, but below the size/height threshold to meet whole island gap criteria
+        # 7: complete omission of slowly decaying tree in high-res data, observed in island wide data
+        # 8: slowly decaying tree is observed in both datasets but at different times
+        # 9: partial omission of slowly decaying tree in high-res data, observed in island wide data
+        # 10: size overestimate of disturbance in whole island data
 
     ## Stacked barplots
       # Monthly data
