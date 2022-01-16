@@ -56,13 +56,13 @@
   chm20 <- raster::crop(chm20, raster::extent(chm09))
   
 # Load cloud and QAQC masks for 2015-2020
-  cloudMask15 <- raster::raster("CloudMask_2015.tif")
-  cloudMask18 <- raster::raster("CloudMask_2018.tif")
-  cloudMask20 <- raster::raster("CloudMask_2020.tif")
+  cloudMask15 <- raster::raster("Data_QAQC/CloudMasks/CloudMask_2015.tif")
+  cloudMask18 <- raster::raster("Data_QAQC/CloudMasks/CloudMask_2018.tif")
+  cloudMask20 <- raster::raster("Data_QAQC/CloudMasks/CloudMask_2020.tif")
   
-  qaqcMask15 <- raster::raster("QAQCMask_2015.tif")
-  qaqcMask18 <- raster::raster("QAQCMask_2018.tif")
-  qaqcMask20 <- raster::raster("QAQCMask_2020.tif")
+  qaqcMask15 <- raster::raster("Data_QAQC/QAQCMask_2015.tif")
+  qaqcMask18 <- raster::raster("Data_QAQC/QAQCMask_2018.tif")
+  qaqcMask20 <- raster::raster("Data_QAQC/QAQCMask_2020.tif")
     
   # Resample to extent and resolution of CHMs
     cloudMask15 <- raster::resample(cloudMask15, chm15)
