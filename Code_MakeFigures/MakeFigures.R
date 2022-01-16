@@ -964,7 +964,7 @@ raster::plot(cropExtent, add=T, col="red", lwd=2)
 
 #### Figure S2: 2015 data correction ####
       
-  # Note: panels a and b are in script "Validation_50HaPlot.R"
+  # Note: panels a and b are in script "Code_QAQC/HtCorrection2015"
       
       chm15c <- raster::values(raster::raster("Data_HeightRasters/CHM_2015_QAQC.tif"))
       chm15 <- raster::values(raster::raster("Data_HeightRasters/CHM_2015_QAQC_wBias.tif"))
