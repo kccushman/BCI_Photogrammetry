@@ -3,6 +3,8 @@ This project quantifies canopy disturbances between 2015 and 2020 across Barro C
 
 Methods and results are described in the manuscript "Soils and topography control natural disturbance rates and thereby forest structure in a lowland tropical landscape", Ecology Letters (in press) by K.C Cushman, Matteo Detto, Milton Garcia, and Helene C. Muller-Landau.
 
+![EB-03-03519_0053_0122](https://user-images.githubusercontent.com/15330340/149802977-a1c868a7-c12e-4c1b-963c-48f641a674ab.JPG)
+
 Data supporting analyses are archived through Smithsonian Institution Figshare upon publication (DOI will become active when published: 10.25573/data.17102600). A zipped copy of this repository at the time of publication will also be archived in the Figshare data repository. Here, code scripts reference all data files from the folders in which they are organized on Figshare:
 
 - Code_AlignDroneData: R script for tiling raw point cloud data, and .bat files for aligning point cloud tiles in CloudCompare's command line tools.
