@@ -1,4 +1,13 @@
-#### find height correction for 2015 data that best matched hi-res data ####
+#### Packages ####
+
+  # Install the following packages, if needed
+  
+  # install.packages("raster") # version 3.3-13 used
+  # install.packages("rgdal") # version 1.5-16 used
+  # install.packages("sp") # version 1.4-2 used
+  # install.packages("wesanderson") # version 0.3.6 used
+
+#### Find height correction for 2015 data that best matched hi-res data ####
   
   # Read plot outline  
   plotShp <- rgdal::readOGR("Data_Ancillary/BCI50ha/BCI_50ha.shp")

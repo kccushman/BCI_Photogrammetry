@@ -1,3 +1,15 @@
+#### Packages ####
+
+  # Install the following packages, if needed
+  
+  # install.packages("ForestGapR") # version 0.0.3 used
+  # install.packages("hillshader") # version 0.1.0 used
+  # install.packages("raster") # version 3.3-13 used
+  # install.packages("rgdal") # version 1.5-16 used
+  # install.packages("sp") # version 1.4-2 used
+  # install.packages("viridis") # version 0.5.1 used
+  # install.packages("wesanderson") # version 0.3.6 used
+
 #### Define colors ####
   # Colors used in plots
   col18 <- "blue"

@@ -1,3 +1,14 @@
+#### Packages ####
+
+# Install the following packages, if needed
+
+# information for installing R-INLA (not on CRAN): https://www.r-inla.org/download-install # version 21.01.26 used
+# install.packages("raster") # version 3.3-13 used
+# install.packages("rgdal") # version 1.5-16 used
+# install.packages("sp") # version 1.4-2 used
+# install.packages("spatstat") # version 1.64-1 used
+
+
 #### Load data ####
 library(INLA)
 

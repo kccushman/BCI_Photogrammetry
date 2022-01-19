@@ -5,6 +5,15 @@
 
   # Code is provided for reference
 
+#### Packages ####
+
+# Install the following packages, if needed
+
+  # install.packages("lidR") # version 3.0.4 used
+  # install.packages("raster") # version 3.3-13 used
+  # install.packages("rgdal") # version 1.5-16 used
+  # install.packages("sp") # version 1.4-2 used
+
 #### Make lidR catalog entries for each dataset ####
   
   cat09 <- lidR::catalog("D:/BCI_Spatial/Lidar_Data/lidar tiles 2009/lidar tiles 2009/")

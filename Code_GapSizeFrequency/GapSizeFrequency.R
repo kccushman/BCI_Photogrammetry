@@ -1,3 +1,13 @@
+#### Packages ####
+
+# Install the following packages, if needed
+
+# install.packages("raster") # version 3.3-13 used
+# install.packages("rgdal") # version 1.5-16 used
+# install.packages("sp") # version 1.4-2 used
+# install.packages("viridis") # version 0.5.1 used
+# install.packages("wesanderson") # version 0.3.6 used
+
 #### READ DATA ####
     
 # Canopy height change rasters

@@ -1,3 +1,9 @@
+#### Packages ####
+
+  # Install the following packages, if needed
+  
+  # install.packages("raster") # version 3.3-13 used
+
 ##### Read DEM at 1 m resolution ####
 
 dem_1m <- raster::raster("Data_HeightRasters/LidarDEM_BCI.tif")  
