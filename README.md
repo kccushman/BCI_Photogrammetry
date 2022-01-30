@@ -1,7 +1,7 @@
 # BCI_Photogrammetry
 This project quantifies canopy disturbances between 2015 and 2020 across Barro Colorado Island, Panama, using drone photogrammetry. Disturbance rates are compared to potential drivers of spatial variation (soils, topography, forest age), and to patterns of standing forest structure in 2009 lidar data.
 
-Methods and results are described in the manuscript "Soils and topography control natural disturbance rates and thereby forest structure in a lowland tropical landscape", Ecology Letters (in press) by K.C Cushman, Matteo Detto, Milton Garcia, and Helene C. Muller-Landau.
+Methods and results are described in the manuscript "Soils and topography control natural disturbance rates and thereby forest structure in a lowland tropical landscape", Ecology Letters (2020) by K.C Cushman, Matteo Detto, Milton Garcia, and Helene C. Muller-Landau. https://doi.org/10.1111/ele.13978
 
 ![EB-03-03519_0053_0122](https://user-images.githubusercontent.com/15330340/149802977-a1c868a7-c12e-4c1b-963c-48f641a674ab.JPG)
 
